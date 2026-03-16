@@ -1,5 +1,6 @@
 import json
 import re
+from html import unescape
 from pathlib import Path
 from urllib.request import Request, urlopen
 
@@ -24,29 +25,40 @@ HEADERS = {
 def fetch(url: str) -> str:
     req = Request(url, headers=HEADERS)
     with urlopen(req, timeout=30) as resp:
+        raw = resp.read()
         charset = resp.headers.get_content_charset() or "utf-8"
-        return resp.read().decode(charset, errors="replace")
+        return raw.decode(charset, errors="replace")
+
+
+def limpar_html(html: str) -> str:
+    texto = unescape(html)
+    texto = re.sub(r"(?is)<script.*?>.*?</script>", " ", texto)
+    texto = re.sub(r"(?is)<style.*?>.*?</style>", " ", texto)
+    texto = re.sub(r"(?s)<[^>]+>", " ", texto)
+    texto = re.sub(r"\s+", " ", texto)
+    return texto.strip()
 
 
 def parse_sicalc(html: str):
-    # Exemplo esperado:
-    # Última Selic disponível (02/2026) 1.00
+    texto = limpar_html(html)
+
     m1 = re.search(
-        r'Última\s+Selic\s+disponível\s*\((\d{2}/\d{4})\)\s*([0-9]+(?:[.,][0-9]+)?)',
-        html,
-        re.IGNORECASE
+        r"Última\s+Selic\s+disponível\s*\((\d{2}/\d{4})\)\s*([0-9]+(?:[.,][0-9]+)?)",
+        texto,
+        re.IGNORECASE,
     )
 
-    # Exemplo esperado:
-    # Percentual em 03/2026 1.00
     m2 = re.search(
-        r'Percentual\s+em\s+(\d{2}/\d{4})\s*([0-9]+(?:[.,][0-9]+)?)',
-        html,
-        re.IGNORECASE
+        r"Percentual\s+em\s+(\d{2}/\d{4})\s*([0-9]+(?:[.,][0-9]+)?)",
+        texto,
+        re.IGNORECASE,
     )
 
     if not m1 or not m2:
-        raise RuntimeError("Não foi possível localizar os percentuais no Sicalc")
+        raise RuntimeError(
+            "Não foi possível localizar os percentuais no Sicalc. "
+            f"Trecho lido: {texto[:500]}"
+        )
 
     ultima_comp = m1.group(1)
     ultima_taxa = float(m1.group(2).replace(",", "."))
@@ -91,11 +103,9 @@ def main():
     base["competenciaProvisoria"] = comp_prov
     base["taxaProvisoria"] = taxa_prov
 
-    # Atualiza / preserva histórico
     base["taxas"][mm_aaaa_para_iso(ultima_comp)] = ultima_taxa
     base["taxas"][mm_aaaa_para_iso(comp_prov)] = taxa_prov
 
-    # Ordena as competências
     base["taxas"] = dict(sorted(base["taxas"].items()))
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
