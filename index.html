@@ -438,7 +438,7 @@
                     throw new Error('Arquivo de dados sem taxas válidas');
                 }
 
-                atualizarStatus(`✅ ${totalTaxas} taxas carregadas automaticamente`, true);
+                atualizarStatus(`✅ ${totalTaxas} competências carregadas da base automática`, true);
                 statusConexao = 'online';
                 await atualizarTodasLinhas();
             } catch (error) {
@@ -519,32 +519,39 @@
         function calcularTaxaSelicAcumulada(dataVencimento, dataPagamento) {
             const [mesVenc, anoVenc] = dataVencimento.split('/').map(Number);
             const [mesPag, anoPag] = dataPagamento.split('/').map(Number);
-            
+
             if (anoPag < anoVenc || (anoPag === anoVenc && mesPag <= mesVenc)) {
                 return 0;
             }
-            
+
             let somaTaxas = 0;
             let anoAtual = anoVenc;
             let mesAtual = mesVenc;
-            let detalhes = [];
-            
+            const detalhes = [];
+
             console.log(`=== CÁLCULO: ${dataVencimento} → ${dataPagamento} ===`);
-            
-            while (anoAtual < anoPag || (anoAtual === anoPag && mesAtual < mesPag)) {
+
+            while (true) {
                 mesAtual++;
                 if (mesAtual > 12) {
                     mesAtual = 1;
                     anoAtual++;
                 }
-                
+
+                if (anoAtual > anoPag || (anoAtual === anoPag && mesAtual >= mesPag)) {
+                    break;
+                }
+
                 const taxaMensal = obterTaxaMes(anoAtual, mesAtual);
                 somaTaxas += taxaMensal;
-                
+
                 const nomes = ['', 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
                 detalhes.push(`${nomes[mesAtual]}/${anoAtual}:${taxaMensal.toFixed(2)}%`);
             }
-            
+
+            somaTaxas += 1.0;
+            detalhes.push(`Mês pagamento ${dataPagamento}:1,00%`);
+
             console.log(`📋 SOMA: ${detalhes.join(' + ')} = ${somaTaxas.toFixed(2)}%`);
             return somaTaxas;
         }
