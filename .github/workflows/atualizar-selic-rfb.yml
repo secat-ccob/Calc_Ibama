@@ -1,0 +1,32 @@
+name: Atualizar base SELIC RFB
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */6 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Atualizar base
+        run: python scripts/update_selic.py
+
+      - name: Commitar arquivo atualizado
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dados/selic-rfb.json
+          git diff --staged --quiet || git commit -m "Atualiza base SELIC RFB"
+          git push
