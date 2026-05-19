@@ -795,6 +795,37 @@ function mostrarModalUltimaTaxa() {
     modal.style.display = 'block';
 }
 
+
+        function moverFocoComoTab(event) {
+            if (event.key !== 'Enter') return;
+
+            const elemento = event.target;
+            if (!elemento || elemento.tagName === 'TEXTAREA') return;
+            if (elemento.tagName !== 'INPUT' && elemento.tagName !== 'SELECT') return;
+            if (elemento.type === 'button' || elemento.type === 'submit' || elemento.type === 'reset') return;
+
+            event.preventDefault();
+
+            const focaveis = Array.from(document.querySelectorAll(
+                'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )).filter(el => {
+                return el.offsetParent !== null && !el.readOnly;
+            });
+
+            const indiceAtual = focaveis.indexOf(elemento);
+            if (indiceAtual === -1) return;
+
+            const proximo = focaveis[indiceAtual + 1];
+            if (proximo) {
+                proximo.focus();
+                if (typeof proximo.select === 'function' && (proximo.tagName === 'INPUT' || proximo.tagName === 'TEXTAREA')) {
+                    proximo.select();
+                }
+            }
+        }
+
+        document.addEventListener('keydown', moverFocoComoTab);
+
         // **INICIALIZAÇÃO COM MÊS VIGENTE**
         window.onload = function() {
             console.log('🚀 CALCULADORA SELIC inicializando...');
