@@ -5,12 +5,161 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Calculadora de taxa SELIC acumulada">
     <title>Calculadora Selic</title>
+
+    <!-- Versão: calculadora_selic_portal_v_1 -->
     <style>
+        :root {
+            --cor-primaria: #1f6f54;
+            --cor-primaria-escura: #15513d;
+            --cor-secundaria: #0f4c81;
+            --cor-fundo: #f4f7f6;
+            --cor-superficie: #ffffff;
+            --cor-texto: #1f2933;
+            --cor-texto-suave: #5b6770;
+            --cor-borda: #d9e2dd;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
+            height: 100%;
+        }
+
+        body {
             margin: 0;
-            padding: 20px;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            color: var(--cor-texto);
+            background:
+                radial-gradient(circle at center, rgba(31, 111, 84, 0.07) 0, rgba(31, 111, 84, 0.03) 28%, transparent 55%),
+                linear-gradient(180deg, #ffffff 0%, var(--cor-fundo) 100%);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 0;
+        }
+
+        .cabecalho {
+            flex: 0 0 auto;
+            width: 100%;
+            background: var(--cor-superficie);
+            border-bottom: 1px solid var(--cor-borda);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+            z-index: 10;
+        }
+
+        .cabecalho-conteudo {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 16px 24px 10px;
+        }
+
+        .marca-topo {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .marca-topo strong {
+            font-size: 1.15rem;
+            letter-spacing: 0.08em;
+            color: var(--cor-primaria-escura);
+        }
+
+        .marca-topo span {
+            font-size: 0.82rem;
+            color: var(--cor-texto-suave);
+        }
+
+        .menu-principal {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .menu-principal a {
+            display: inline-flex;
+            align-items: center;
+            min-height: 34px;
+            padding: 8px 12px;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            color: var(--cor-texto);
+            font-size: 0.92rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+        }
+
+        .menu-principal a:hover,
+        .menu-principal a:focus {
+            background: rgba(31, 111, 84, 0.08);
+            border-color: rgba(31, 111, 84, 0.22);
+            color: var(--cor-primaria-escura);
+            outline: none;
+        }
+
+        .menu-principal a.ativo {
+            background: var(--cor-primaria);
+            color: #ffffff;
+            border-color: var(--cor-primaria);
+        }
+
+        .conteudo-principal {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 32px 24px;
+            overflow-y: auto;
+        }
+
+        .conteudo-principal .container {
+            width: 100%;
+        }
+
+        .rodape {
+            flex: 0 0 auto;
+            width: 100%;
+            padding: 12px 24px;
+            border-top: 1px solid var(--cor-borda);
+            background: rgba(255, 255, 255, 0.88);
+            color: var(--cor-texto-suave);
+            text-align: center;
+            font-size: 0.82rem;
+            font-weight: 600;
+            z-index: 10;
+        }
+
+        @media (max-width: 720px) {
+            .cabecalho-conteudo {
+                padding: 14px 16px 10px;
+            }
+
+            .marca-topo {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 2px;
+            }
+
+            .menu-principal {
+                gap: 5px;
+            }
+
+            .menu-principal a {
+                font-size: 0.86rem;
+                padding: 7px 10px;
+            }
+
+            .conteudo-principal {
+                padding: 24px 14px;
+            }
         }
         
         .container {
@@ -183,7 +332,21 @@
             body { 
                 background-color: white; 
                 margin: 0; 
-                padding: 10px; 
+                padding: 10px;
+                height: auto;
+                display: block;
+                overflow: visible;
+            }
+
+            .cabecalho,
+            .rodape {
+                display: none !important;
+            }
+
+            .conteudo-principal {
+                display: block;
+                padding: 0;
+                overflow: visible;
             }
             
             .buttons { 
@@ -263,7 +426,26 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <header class="cabecalho">
+        <div class="cabecalho-conteudo">
+            <div class="marca-topo">
+                <strong>CALC-IBAMA</strong>
+                <span>Ferramentas de apoio administrativo</span>
+            </div>
+
+            <nav class="menu-principal" aria-label="Menu principal">
+                <a href="../">Início</a>
+                <a href="../simulador-amortizacao/">Simulador de amortização</a>
+                <a href="../simulador-consolidacao-debito/">Simulador de consolidação do débito</a>
+                <a class="ativo" href="./">Calculadora Selic</a>
+                <a href="../calculadora-restituicao/">Calculadora de Restituição</a>
+                <a href="../manuais/">Manuais</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="conteudo-principal">
+        <div class="container">
         <div class="title">
             Calculadora de Taxa Selic Acumulada
         </div>
@@ -318,7 +500,11 @@
             <button class="btn" onclick="imprimirPagina()">🖨️ Imprimir</button>
             <button class="btn" onclick="buscarDadosOnline()">🔄 Atualizar Base</button>
         </div>
-    </div>
+    </main>
+
+    <footer class="rodape">
+        CALC-IBAMA · SECAT/CCOB
+    </footer>
 
     <script>
         let contadorLinhas = 1;
