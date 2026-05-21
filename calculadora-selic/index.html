@@ -6,7 +6,7 @@
     <meta name="description" content="Calculadora de taxa SELIC acumulada">
     <title>Calculadora Selic</title>
 
-    <!-- Versão: calculadora_selic_portal_v_1 -->
+    <!-- Versão: calculadora_selic_portal_v_2 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -54,7 +54,7 @@
         .cabecalho-conteudo {
             max-width: 1180px;
             margin: 0 auto;
-            padding: 16px 24px 10px;
+            padding: 0 24px 10px;
         }
 
         .marca-topo {
@@ -62,17 +62,21 @@
             align-items: baseline;
             gap: 10px;
             margin-bottom: 12px;
+            padding: 12px 0;
+            background: #1f4e79;
+            box-shadow: 0 0 0 100vmax #1f4e79;
+            clip-path: inset(0 -100vmax);
         }
 
         .marca-topo strong {
             font-size: 1.15rem;
             letter-spacing: 0.08em;
-            color: var(--cor-primaria-escura);
+            color: #ffffff;
         }
 
         .marca-topo span {
             font-size: 0.82rem;
-            color: var(--cor-texto-suave);
+            color: rgba(255, 255, 255, 0.82);
         }
 
         .menu-principal {
@@ -139,7 +143,7 @@
 
         @media (max-width: 720px) {
             .cabecalho-conteudo {
-                padding: 14px 16px 10px;
+                padding: 0 16px 10px;
             }
 
             .marca-topo {
