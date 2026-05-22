@@ -1,0 +1,5145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Simulador de amortização</title>
+
+  <!-- Versão: simulador_amortizacao_portal_v_1 -->
+
+  <style>
+    :root {
+      --cor-primaria: #1f6f54;
+      --cor-primaria-escura: #15513d;
+      --cor-secundaria: #0f4c81;
+      --cor-fundo: #f4f7f6;
+      --cor-superficie: #ffffff;
+      --cor-texto: #1f2933;
+      --cor-texto-suave: #5b6770;
+      --cor-borda: #d9e2dd;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      color: var(--cor-texto);
+      background:
+        radial-gradient(circle at center, rgba(31, 111, 84, 0.07) 0, rgba(31, 111, 84, 0.03) 28%, transparent 55%),
+        linear-gradient(180deg, #ffffff 0%, var(--cor-fundo) 100%);
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .cabecalho {
+      flex: 0 0 auto;
+      width: 100%;
+      background: var(--cor-superficie);
+      border-bottom: 1px solid var(--cor-borda);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+      z-index: 10;
+    }
+
+    .cabecalho-conteudo {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0 24px 10px;
+    }
+
+    .marca-topo {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding: 12px 0;
+      background: #1f4e79;
+      box-shadow: 0 0 0 100vmax #1f4e79;
+      clip-path: inset(0 -100vmax);
+    }
+
+    .marca-topo strong {
+      font-size: 1.15rem;
+      letter-spacing: 0.08em;
+      color: #ffffff;
+    }
+
+    .marca-topo span {
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.82);
+    }
+
+    .menu-principal {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .menu-principal a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 8px 12px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: var(--cor-texto);
+      font-size: 0.92rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+      box-sizing: border-box;
+    }
+
+    .menu-principal a:hover,
+    .menu-principal a:focus {
+      background: rgba(31, 111, 84, 0.08);
+      border-color: rgba(31, 111, 84, 0.22);
+      color: var(--cor-primaria-escura);
+      outline: none;
+    }
+
+    .menu-principal a.ativo {
+      background: var(--cor-primaria);
+      color: #ffffff;
+      border-color: var(--cor-primaria);
+    }
+
+    .conteudo-principal {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+
+    .rodape {
+      flex: 0 0 auto;
+      width: 100%;
+      padding: 12px 24px;
+      border-top: 1px solid var(--cor-borda);
+      background: rgba(255, 255, 255, 0.88);
+      color: var(--cor-texto-suave);
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 600;
+      z-index: 10;
+      box-sizing: border-box;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background-color: white;
+      border: 1px solid #ccc;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .title {
+      background-color: #1f4e79;
+      color: white;
+      text-align: center;
+      padding: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      margin: 0;
+    }
+
+    .section-title {
+      background-color: #1f4e79;
+      color: white;
+      padding: 8px 12px;
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    .content {
+      padding: 12px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .row label {
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    .input, .input-readonly {
+      border: 1px solid #ccc;
+      background-color: #ffffff;
+      padding: 6px 8px;
+      border-radius: 3px;
+      font-size: 13px;
+      width: 100%;
+      box-sizing: border-box;
+      text-align: left;
+    }
+
+    .input-readonly {
+      background-color: #e0e0e0;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #444;
+      margin: 6px 0 10px 0;
+    }
+
+    .hr {
+      border: none;
+      border-top: 1px solid #ccc;
+      margin: 18px 0;
+    }
+
+    .radio-group {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .radio-group label {
+      font-weight: normal;
+      font-size: 13px;
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .btnbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .btn {
+      background-color: #e0e0e0;
+      color: black;
+      border: 1px solid #ccc;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .btn:hover {
+      background-color: #d0d0d0;
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background-color: #1f4e79;
+      color: white;
+      border-color: #1f4e79;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(0.95);
+    }
+
+    .btn-danger {
+      background-color: #f8d7da;
+      border-color: #f5c6cb;
+    }
+
+    .alert {
+      background-color: #fff3cd;
+      border: 1px solid #ffeaa7;
+      color: #856404;
+      padding: 10px;
+      margin: 10px 12px;
+      border-radius: 4px;
+      display: none;
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+
+    .success {
+      background-color: #d4edda;
+      border-color: #c3e6cb;
+      color: #155724;
+    }
+
+    .error {
+      background-color: #f8d7da;
+      border-color: #f5c6cb;
+      color: #721c24;
+    }
+
+    .status-info {
+      background-color: #e2e3e5;
+      border: 1px solid #d6d8db;
+      color: #383d41;
+      padding: 8px 10px;
+      margin: 10px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .simulation {
+      border: 1px solid #ccc;
+      margin: 12px;
+    }
+
+    .simulation .content {
+      padding: 12px;
+    }
+
+    .subsection-title {
+      font-weight: bold;
+      color: #1f4e79;
+      margin: 18px 0 10px 0;
+      font-size: 13px;
+    }
+
+    .small {
+      font-size: 12px;
+      color: #444;
+    }
+
+    .two-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .pdf-preview {
+      width: 100%;
+      height: 420px;
+      border: 1px solid #ccc;
+      background: #fff;
+    }
+
+    .disabled {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+
+    thead tr {
+      background-color: #1f4e79;
+      color: #fff;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px 8px;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    td.editable {
+      background: #fff;
+    }
+
+    td.result {
+      background: #e0e0e0;
+      font-weight: bold;
+    }
+
+    
+    .upload-status{
+      width:260px;
+      min-height:34px;
+      border:1px solid #ccc;
+      border-radius:3px;
+      background:#e0e0e0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-weight:bold;
+      color:#155724;
+      user-select:none;
+      box-sizing:border-box;
+    }
+    .upload-status.ok{
+      background:#1f7a1f;
+      border-color:#1f7a1f;
+      color:white;
+      letter-spacing:1px;
+    }
+    .upload-status.auto{
+      background:#fff3cd;
+      border-color:#ffeeba;
+      color:#856404;
+      font-size:12px;
+      letter-spacing:0;
+      padding:4px 10px;
+      text-align:center;
+      line-height:1.15;
+      white-space:normal;
+      width:auto;
+      min-width:0;
+      flex:1 1 auto;
+      max-width:none;
+      min-height:34px;
+      height:34px;
+    }
+    .upload-status.muted{
+      background:#d6d8db;
+      border-color:#c6c8cb;
+      color:#6c757d;
+      letter-spacing:1px;
+    }
+
+    .consol-source-chooser{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      margin:8px 0 10px 0;
+    }
+    .consol-source-chooser label{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-size:12px;
+      color:#333;
+      font-weight:normal;
+    }
+    .consol-source-chooser input[type="checkbox"]{
+      margin:0;
+    }
+
+    .deposit-date-obs {
+      margin: 0;
+      text-align:left;
+    }
+    .hr.deposit-date-obs-divider {
+      margin: 0 0 18px 0;
+    }
+
+    .percent-grid{
+      display:grid;
+      grid-template-columns: 160px 1fr 160px 1fr;
+      gap:8px 10px;
+      align-items:center;
+    }
+
+
+    /* TOAST (notificações no canto inferior direito) */
+    #toastContainer {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 420px;
+    }
+    .toast {
+      border-radius: 6px;
+      padding: 12px 42px 12px 12px;
+      border: 1px solid #ccc;
+      background: #fff3cd;
+      color: #856404;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+      font-size: 13px;
+      line-height: 1.35;
+      position: relative;
+      white-space: pre-wrap;
+      cursor: default;
+      user-select: text;
+    }
+    .toast.success {
+      background-color: #d4edda;
+      border-color: #c3e6cb;
+      color: #155724;
+    }
+    .toast.error {
+      background-color: #f8d7da;
+      border-color: #f5c6cb;
+      color: #721c24;
+    }
+    .toast .toast-close {
+      position: absolute;
+      right: 10px;
+      top: 8px;
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      border: 1px solid rgba(0,0,0,0.2);
+      background: rgba(255,255,255,0.65);
+      cursor: pointer;
+      font-weight: bold;
+      line-height: 20px;
+      text-align: center;
+      padding: 0;
+    }
+    .toast .toast-close:hover {
+      background: rgba(255,255,255,0.9);
+    }
+
+    @media (max-width: 720px) {
+      .cabecalho-conteudo {
+        padding: 0 16px 10px;
+      }
+
+      .marca-topo {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+      }
+
+      .menu-principal {
+        gap: 5px;
+      }
+
+      .menu-principal a {
+        font-size: 0.86rem;
+        padding: 7px 10px;
+      }
+
+      .conteudo-principal {
+        padding: 18px 14px;
+      }
+    }
+@media print {
+      html, body { height: auto; }
+      body { background-color: white; margin: 0; padding: 10px; display: block; overflow: visible; }
+      .cabecalho, .rodape { display: none !important; }
+      .conteudo-principal { display: block; overflow: visible; padding: 0; }
+      .btnbar, .alert, .status-info, .no-print { display: none !important; }
+      .container { box-shadow: none; border: 1px solid #000; }
+    }
+  
+        /* Fundo permanente dos grupos "Informações" */
+        .info-wrapper {
+            background-color: #feffc2;
+            padding: 10px 12px;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+        }
+
+        /* Título clicável dentro do fundo amarelo */
+        .info-wrapper .subsection-title.info-toggle {
+            margin: 0;
+        }
+
+    
+    .deposit-header span:last-child {
+      font-size: 14px;
+      line-height: 1;
+      margin-left: 8px;
+    }
+
+
+    .confirm-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100000;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .confirm-overlay.open {
+      display: flex;
+    }
+    .confirm-modal {
+      width: 100%;
+      max-width: 460px;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.22);
+      overflow: hidden;
+    }
+    .confirm-modal-header {
+      background: #1f4e79;
+      color: white;
+      padding: 12px 14px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .confirm-modal-body {
+      padding: 16px 14px;
+      font-size: 13px;
+      line-height: 1.4;
+      text-align: center;
+    }
+    .confirm-modal-actions {
+      padding: 0 14px 14px 14px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+  </style>
+</head>
+
+<body>
+  <header class="cabecalho">
+    <div class="cabecalho-conteudo">
+      <div class="marca-topo">
+        <strong>CALC-IBAMA</strong>
+        <span>Ferramentas de apoio administrativo</span>
+      </div>
+
+      <nav class="menu-principal" aria-label="Menu principal">
+        <a href="../">Início</a>
+        <a class="ativo" href="./">Simulador de amortização</a>
+        <a href="../simulador-consolidacao-debito/">Simulador de consolidação do débito</a>
+        <a href="../calculadora-selic/">Calculadora Selic</a>
+        <a href="../calculadora-restituicao/">Calculadora de Restituição</a>
+        <a href="../manuais/">Manuais</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="conteudo-principal">
+  <div class="container">
+    <div class="title">Simulador de amortização</div>
+
+    <div id="alertas" class="alert"></div>
+    <div id="statusInfo" class="status-info">Pronto. Preencha os dados e faça os uploads conforme necessário.</div>
+
+    <div class="section-title">DADOS DO DÉBITO</div>
+    <div class="content">
+      <div class="row">
+        <label>CPF/CNPJ</label>
+        <input class="input" id="cnpj" placeholder="Opcional" maxlength="18"/>
+      </div>
+
+      <div class="row">
+        <label id="labelNumeroDebito">Número do débito</label>
+        <input class="input" id="numerododebito" placeholder="Opcional"/>
+      </div>
+
+      <div class="row">
+        <label>Tipo do débito</label>
+        <div class="radio-group" id="tipododebito">
+          <label><input type="radio" name="tipo" value="AI"> Auto de Infração</label>
+          <label><input type="radio" name="tipo" value="TCFA_SIMPLES"> TCFA simples</label>
+          <label><input type="radio" name="tipo" value="TCFA_ACUMULADO"> TCFA acumulado</label>
+        </div>
+      </div>
+
+      <div class="hint">Após selecionar o tipo do débito, os campos das simulações serão liberados.</div>
+    </div>
+
+    <div class="hr"></div>
+
+    <div id="simulationsRoot"></div>
+
+    <div class="content no-print">
+      <div class="btnbar">
+        <button class="btn btn-primary" id="btnAddSimulation">Adicionar novo depósito/ pagamento</button>
+        <button class="btn btn-primary" id="btnRemoveSimulation">Remover último depósito/ pagamento</button>
+        <button class="btn" id="btnConsolidatedPdf">Gerar PDF consolidado (todas as simulações)</button>
+      </div>
+      <div class="small" style="margin-top:6px;">
+        Observação: o PDF consolidado junta os PDFs gerados em cada simulação, em ordem cronológica.
+      </div>
+    </div>
+  </div>
+  </main>
+
+
+  <div id="zeroDepositConfirm" class="confirm-overlay" aria-hidden="true">
+    <div class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="zeroDepositConfirmTitle">
+      <div class="confirm-modal-header" id="zeroDepositConfirmTitle">Aviso</div>
+      <div class="confirm-modal-body" id="zeroDepositConfirmMessage">valor do depósito/ pagamento zerado. Deseja continuar?</div>
+      <div class="confirm-modal-actions">
+        <button type="button" class="btn btn-primary" id="zeroDepositContinueBtn">Continuar simulação com valor zerado</button>
+        <button type="button" class="btn" id="zeroDepositFillBtn">Preencher valor do depósito/ pagamento</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastContainer"></div>
+
+  <footer class="rodape">
+    CALC-IBAMA · SECAT/CCOB
+  </footer>
+
+<script>
+/* ==========================
+   ALERTAS E STATUS
+========================== */
+function showAlert(msg, type = 'info') {
+  // Notificações em forma de toast (canto inferior direito)
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+
+  // Evita que o clique que disparou a mensagem a feche imediatamente
+  window.__toastSuppressNextDocClick = true;
+
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + (type === 'success' ? 'success' : type === 'error' ? 'error' : '');
+  toast.textContent = msg;
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'toast-close';
+  btn.textContent = '×';
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toast.remove();
+  });
+
+  toast.appendChild(btn);
+  container.appendChild(toast);
+}
+
+
+// Fechar toasts ao clicar em qualquer parte da página (exceto no clique que acabou de criar o toast)
+(function __toastDocClickHandler(){
+  document.addEventListener('click', () => {
+    if (window.__toastSuppressNextDocClick) {
+      window.__toastSuppressNextDocClick = false;
+      return;
+    }
+    const c = document.getElementById('toastContainer');
+    if (!c) return;
+    c.innerHTML = '';
+  });
+})();
+
+function setUploadOk(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.classList.remove('auto');
+  el.classList.remove('muted');
+  el.classList.add('ok');
+  el.textContent = 'CARREGADO';
+}
+function clearUploadOk(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.classList.remove('ok');
+  el.classList.remove('auto');
+  el.classList.remove('muted');
+  el.textContent = '';
+}
+function setUploadAuto(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.classList.remove('ok');
+  el.classList.remove('muted');
+  el.classList.add('auto');
+  el.textContent = 'Carregamento opcional: na ausência de carregamento, os campos serão preenchidos com os dados da data de consolidação do cálculo anterior.';
+}
+function setUploadMuted(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.classList.remove('ok');
+  el.classList.remove('auto');
+  el.classList.add('muted');
+  el.textContent = 'CARREGADO';
+}
+
+function promptZeroDepositDecision(simId){
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('zeroDepositConfirm');
+    const msg = document.getElementById('zeroDepositConfirmMessage');
+    const btnContinue = document.getElementById('zeroDepositContinueBtn');
+    const btnFill = document.getElementById('zeroDepositFillBtn');
+    if (!overlay || !msg || !btnContinue || !btnFill) {
+      resolve(false);
+      return;
+    }
+
+    msg.textContent = `Depósito/ pagamento ${String(simId).padStart(2,'0')}: valor do depósito/ pagamento zerado. Deseja continuar?`;
+
+    const cleanup = () => {
+      overlay.classList.remove('open');
+      overlay.setAttribute('aria-hidden', 'true');
+      btnContinue.onclick = null;
+      btnFill.onclick = null;
+      document.removeEventListener('keydown', onKeyDown);
+    };
+
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        cleanup();
+        resolve(false);
+      }
+    };
+
+    btnContinue.onclick = () => {
+      cleanup();
+      resolve(true);
+    };
+
+    btnFill.onclick = () => {
+      cleanup();
+      resolve(false);
+    };
+
+    overlay.classList.add('open');
+    overlay.setAttribute('aria-hidden', 'false');
+    document.addEventListener('keydown', onKeyDown);
+    btnFill.focus();
+  });
+}
+
+function focusDepositValueField(simId){
+  const input = document.getElementById(`valordodeposito_${simId}`);
+  if (!input) return;
+  input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => {
+    input.focus();
+    try { input.setSelectionRange(0, input.value.length); } catch(_) {}
+  }, 180);
+}
+
+function setValueSilent(input, value){
+  if(!input) return;
+  input.dataset.silentSet = '1';
+  input.value = value;
+  // remove flag next frame to allow user edits to clear status
+  requestAnimationFrame(() => { delete input.dataset.silentSet; });
+}
+function setStatus(msg) {
+  document.getElementById('statusInfo').textContent = msg;
+}
+
+function setDepositHeaderComputed(simId, computed) {
+  const t = document.getElementById(`depositTitle_${simId}`);
+  if (!t) return;
+  t.style.color = computed ? '#ffd200' : '#ffffff';
+}
+
+function clearSimulationComputedState(simId, opts = {}) {
+  const { clearInheritedStart = false } = opts;
+  const sim = state.simulations[simId - 1];
+  if (!sim) return;
+
+  sim.valorquefaltou = 0;
+  sim.numerodebitox = '';
+  sim.somadebitosnaoquitadosdt1 = 0;
+  sim.consolidadodebitoxdt1 = 0;
+  sim.saldodebitoxdt1 = 0;
+  sim.valorquitadodt1 = 0;
+  sim.valoraindanaocontabilizado = 0;
+  sim.fatordeimputacao = 0;
+  sim.valorrealdt1 = 0;
+  sim.saldoposdepositodt01 = 0;
+  sim.saldoFinalBase = 0;
+  sim.multaFinal = 0;
+  sim.jurosFinal = 0;
+  sim.selicFinal = 0;
+  sim.encargosFinal = 0;
+  sim.valorConsolidadoFinal = 0;
+  sim.tcfaTabelaDetalhada = [];
+  sim._tcfaPct = null;
+
+  sim._calculated = false;
+  sim._dirty = true;
+  setDepositHeaderComputed(simId, false);
+
+  const out = document.getElementById(`resultado_${simId}`);
+  if (out) out.textContent = 'Ainda não calculado.';
+
+  const iframe = document.getElementById(`pdfPreview_${simId}`);
+  if (iframe) iframe.src = '';
+
+  sim._pdfBlob = null;
+  if (sim._pdfUrl) {
+    try { URL.revokeObjectURL(sim._pdfUrl); } catch (_) {}
+  }
+  sim._pdfUrl = null;
+
+  const btnDown = document.getElementById(`btnDownloadPdf_${simId}`);
+  if (btnDown) btnDown.disabled = true;
+
+  [
+    `fatordeimputacao_${simId}`,
+    `valorrealdt1_${simId}`,
+    `saldoposdeposito_${simId}`,
+    `valorquefaltou_${simId}`,
+    `somadebitosnaoquitados_${simId}`,
+    `numerodebitox_${simId}`,
+    `saldodebitox_${simId}`,
+    `valorquitado_${simId}`,
+    `valoraindanaocontabilizado_${simId}`,
+    `consolidadodebitox_${simId}`,
+    `saldodebitoxdt1_${simId}`
+  ].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+
+  if (clearInheritedStart) {
+    sim.datadodeposito = '';
+    sim.saldoatualizadonadatadeposito = 0;
+    sim.valorconsolidadonadatadeposito = 0;
+
+    const dataIn = document.getElementById(`datadodeposito_${simId}`);
+    const saldoIn = document.getElementById(`saldoatualizadonadatadeposito_${simId}`);
+    const consIn = document.getElementById(`valorconsolidadonadatadeposito_${simId}`);
+
+    if (dataIn) setValueSilent(dataIn, '');
+    if (saldoIn) setValueSilent(saldoIn, '');
+    if (consIn) setValueSilent(consIn, '');
+  }
+}
+
+function invalidateCascadeFrom(simId) {
+  const startIndex = Number(simId) - 1;
+  if (startIndex < 0) return;
+
+  let shouldInvalidate = false;
+  for (let i = startIndex; i < state.simulations.length; i++) {
+    const sim = state.simulations[i];
+    if (!sim) continue;
+    if (sim._calculated || sim._pdfBlob || sim._pdfUrl) {
+      shouldInvalidate = true;
+      break;
+    }
+    if (i > startIndex && (sim.datadodeposito || Number(sim.saldoatualizadonadatadeposito || 0) > 0 || Number(sim.valorconsolidadonadatadeposito || 0) > 0)) {
+      shouldInvalidate = true;
+      break;
+    }
+  }
+
+  if (!shouldInvalidate) return;
+
+  for (let i = startIndex; i < state.simulations.length; i++) {
+    clearSimulationComputedState(i + 1, { clearInheritedStart: i > startIndex });
+  }
+}
+
+function markDepositDirty(simId) {
+  invalidateCascadeFrom(simId);
+}
+
+/* ==========================
+   FORMATAÇÕES (CPF/CNPJ, MOEDA, DATA)
+========================== */
+function onlyDigits(s) { return (s || '').replace(/\D/g, ''); }
+
+function formatCpfCnpj(digits) {
+  if (digits.length === 11) {
+    return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  }
+  if (digits.length === 14) {
+    return digits.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+  }
+  return digits;
+}
+
+function moedaParaNumero(valorMoeda) {
+  if (!valorMoeda) return 0;
+  const s = String(valorMoeda).replace(/\s/g,'').replace('R$','').replace(/\./g,'').replace(',', '.');
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function numeroParaMoeda(n) {
+  if (typeof n !== 'number' || isNaN(n)) n = 0;
+  return n.toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+}
+
+function roundMoneyValue(n) {
+  const v = Number(n || 0);
+  if (!Number.isFinite(v)) return 0;
+  return Math.round((v + Number.EPSILON) * 100) / 100;
+}
+
+function nonNegativeMoneyValue(value) {
+  const rounded = roundMoneyValue(value);
+  return rounded < 0 ? 0 : rounded;
+}
+
+function sumMoneyValues(...values) {
+  return roundMoneyValue(values.reduce((acc, v) => acc + Number(v || 0), 0));
+}
+
+function computeRoundedRateComponents(baseSaldo, pctMulta, pctJuros, pctSelic, pctEncargos) {
+  const base = roundMoneyValue(baseSaldo || 0);
+  const multa = nonNegativeMoneyValue(base * Number(pctMulta || 0));
+  const juros = nonNegativeMoneyValue(base * Number(pctJuros || 0));
+  const selic = nonNegativeMoneyValue(base * Number(pctSelic || 0));
+  const totalParcial = nonNegativeMoneyValue(sumMoneyValues(base, multa, juros, selic));
+  const encargos = nonNegativeMoneyValue(totalParcial * Number(pctEncargos || 0));
+  const consolidado = nonNegativeMoneyValue(sumMoneyValues(totalParcial, encargos));
+  return { base, multa, juros, selic, totalParcial, encargos, consolidado };
+}
+
+function parsePtBrNumberAny(v) {
+  if (v === null || v === undefined) return null;
+  if (typeof v === 'number') return v;
+  const s = String(v).trim();
+  if (!s) return null;
+  const cleaned = s.replace('R$','').replace(/\s/g,'').replace(/\./g,'').replace(',', '.').replace('%','');
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? null : n;
+}
+
+function normalizeDateDdMmYyyy(s) {
+  if (!s) return '';
+  const t = String(s).trim();
+  const m = t.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+  if (!m) return '';
+  return `${m[1]}/${m[2]}/${m[3]}`;
+}
+
+function formatMoneyDigitsString(digits) {
+  const only = String(digits || '').replace(/\D/g, '');
+  if (!only) return '';
+  const cents = only.padStart(3, '0');
+  const intPart = cents.slice(0, -2).replace(/^0+(?=\d)/, '') || '0';
+  const decPart = cents.slice(-2);
+  const intFmt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${intFmt},${decPart}`;
+}
+
+function bindRealtimeMoneyInput(input) {
+  if (!input || input.dataset.moneyBound === '1') return;
+  input.dataset.moneyBound = '1';
+
+  const apply = () => {
+    const digits = input.value.replace(/\D/g, '');
+    input.value = digits ? formatMoneyDigitsString(digits) : '';
+    try {
+      const len = input.value.length;
+      input.setSelectionRange(len, len);
+    } catch (_) {}
+  };
+
+  input.addEventListener('input', apply);
+  input.addEventListener('focus', apply);
+  input.addEventListener('blur', () => {
+    const digits = input.value.replace(/\D/g, '');
+    input.value = digits ? formatMoneyDigitsString(digits) : '0,00';
+  });
+}
+
+function maskDateDdMmYyyyRealtime(input) {
+  if (!input) return;
+  let digits = String(input.value || '').replace(/[^\d/]/g, '').replace(/\//g, '').slice(0, 8);
+  let out = '';
+  if (digits.length <= 2) out = digits;
+  else if (digits.length <= 4) out = digits.slice(0,2) + '/' + digits.slice(2);
+  else out = digits.slice(0,2) + '/' + digits.slice(2,4) + '/' + digits.slice(4);
+  input.value = out;
+  try {
+    const len = input.value.length;
+    input.setSelectionRange(len, len);
+  } catch (_) {}
+}
+
+function bindRealtimeDateInput(input) {
+  if (!input || input.dataset.dateBound === '1') return;
+  input.dataset.dateBound = '1';
+  input.addEventListener('input', () => maskDateDdMmYyyyRealtime(input));
+  input.addEventListener('blur', () => ensureInputDate(input));
+}
+
+function ensureInputMoney(input) {
+  if (!input) return;
+  const digits = input.value.replace(/\D/g, '');
+  input.value = digits ? formatMoneyDigitsString(digits) : '0,00';
+}
+
+function ensureInputDate(input) {
+  const raw = (input.value || '').trim();
+  if (!raw) return;
+
+  let tmp = raw.replace(/[^\d/]/g, '');
+  const parts = tmp.split('/').filter(Boolean);
+
+  if (parts.length === 3 && parts[2].length === 2) {
+    parts[2] = '20' + parts[2];
+    tmp = `${parts[0]}/${parts[1]}/${parts[2]}`;
+  } else if (/^\d{6}$/.test(tmp.replace(/\//g,''))) {
+    const d = tmp.replace(/\//g,'');
+    tmp = `${d.slice(0,2)}/${d.slice(2,4)}/20${d.slice(4,6)}`;
+  }
+
+  const m = tmp.match(/^(\d{2})\/(\d{2})\/(\d{2}|\d{4})$/);
+  if (!m) {
+    input.value = '';
+    showAlert('Data inválida. Use dd/mm/aaaa.', 'error');
+    return;
+  }
+
+  let dia = Number(m[1]), mes = Number(m[2]), ano = Number(m[3]);
+  if (String(m[3]).length === 2) ano = 2000 + ano;
+
+  if (mes < 1 || mes > 12 || dia < 1 || dia > 31 || ano < 1900 || ano > 2999) {
+    input.value = '';
+    showAlert('Data inválida. Use dd/mm/aaaa.', 'error');
+    return;
+  }
+  // Verificar se a data é futura (não permitido)
+  const dt = new Date(ano, mes - 1, dia);
+  // validação de coerência (Date autocorrige datas inválidas)
+  if (dt.getFullYear() !== ano || dt.getMonth() !== (mes - 1) || dt.getDate() !== dia) {
+    input.value = '';
+    showAlert('Data inválida. Use dd/mm/aaaa.', 'error');
+    return;
+  }
+  const hoje = new Date();
+  hoje.setHours(0,0,0,0);
+  dt.setHours(0,0,0,0);
+  if (dt.getTime() > hoje.getTime()) {
+    input.value = '';
+    showAlert('Data não pode ser futura.', 'error');
+    return;
+  }
+
+
+
+  input.value = `${String(dia).padStart(2,'0')}/${String(mes).padStart(2,'0')}/${String(ano).padStart(4,'0')}`;
+}
+
+
+
+function isDateStrFuture(ddmmyyyy) {
+  const m = String(ddmmyyyy || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return false;
+  const dia = Number(m[1]), mes = Number(m[2]), ano = Number(m[3]);
+  const dt = new Date(ano, mes - 1, dia);
+  dt.setHours(0,0,0,0);
+  const hoje = new Date();
+  hoje.setHours(0,0,0,0);
+  return dt.getTime() > hoje.getTime();
+}
+
+function compareDateStrDdMmYyyy(a, b) {
+  const ma = String(a || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  const mb = String(b || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!ma || !mb) return null;
+  const da = new Date(Number(ma[3]), Number(ma[2]) - 1, Number(ma[1]));
+  const db = new Date(Number(mb[3]), Number(mb[2]) - 1, Number(mb[1]));
+  da.setHours(0,0,0,0);
+  db.setHours(0,0,0,0);
+  if (da.getTime() < db.getTime()) return -1;
+  if (da.getTime() > db.getTime()) return 1;
+  return 0;
+}
+function formatPercentDisplay(frac) {
+  const f = (typeof frac === 'number' && !isNaN(frac)) ? frac : 0;
+  const pct = f * 100;
+  // exibir com 2 casas e vírgula
+  const s = pct.toFixed(2).replace('.', ',');
+  return s + '%';
+}
+
+function formatPercentPdfDisplay(frac) {
+  return `(${formatPercentDisplay(frac)})`;
+}
+
+function parsePercentInputToFraction(str) {
+  if (!str) return 0;
+  const raw = String(str).trim();
+  const n = parsePtBrNumberAny(raw);
+  if (n === null) return 0;
+  // Interpretação: usuário digita em percentuais (20 = 20%)
+  return n / 100;
+}
+
+
+
+function formatPercentMaskFromNumber(value) {
+  // Recebe número em percentual (ex.: 20 ou 107.79) ou fração (ex.: 0.2).
+  let n = (typeof value === 'number' && !isNaN(value)) ? value : 0;
+  if (n > 0 && n <= 1) n = n * 100; // heurística: fração -> %
+  // Formata com 2 casas, vírgula e separador de milhar, e adiciona "%"
+  const fixed = n.toFixed(2); // "107.79"
+  const [intPart, decPart] = fixed.split('.');
+  const intWithDots = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${intWithDots},${decPart}%`;
+}
+
+function bindPercentInput(input, onFraction) {
+  if (!input || input.dataset.pctBound === '1') return;
+  input.dataset.pctBound = '1';
+
+  const formatPercentFromDigits = (digits) => {
+    let d = (digits || '').replace(/\D/g, '');
+    if (!d) return '0,00%';
+    d = d.replace(/^0+(?=\d)/, '');
+    if (d.length === 1) d = '00' + d;
+    else if (d.length === 2) d = '0' + d;
+
+    const inteiro = d.slice(0, -2);
+    const centavos = d.slice(-2);
+    const inteiroComPonto = inteiro.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return `${inteiroComPonto},${centavos}%`;
+  };
+
+  const percentStringToFraction = (strPct) => {
+    if (!strPct) return 0;
+    const s = String(strPct).replace('%','').trim();
+    const n = moedaParaNumero(s); // percentual em número (ex.: 12,34 => 12.34)
+    if (isNaN(n)) return 0;
+    return n / 100; // fração
+  };
+
+  const onInput = () => {
+    let v = String(input.value || '').replace(/\./g, ',');
+    const digits = v.replace(/\D/g, '');
+    input.value = formatPercentFromDigits(digits);
+
+    const frac = percentStringToFraction(input.value);
+    if (typeof onFraction === 'function') onFraction(frac);
+  };
+
+  // Backspace deve remover dígitos, não o símbolo "%".
+  // Sem isso, ao apagar no final do campo, o navegador remove apenas o "%" e
+  // o formatter o recoloca, dando a impressão de que o backspace não funciona.
+  const onKeyDown = (ev) => {
+    if (ev.key === 'Backspace') {
+      ev.preventDefault();
+      const digits = String(input.value || '').replace(/\D/g, '');
+      const next = digits.length ? digits.slice(0, -1) : '';
+      input.value = formatPercentFromDigits(next);
+      const frac = percentStringToFraction(input.value);
+      if (typeof onFraction === 'function') onFraction(frac);
+      requestAnimationFrame(() => {
+        const len = input.value.length;
+        input.setSelectionRange(len, len);
+      });
+      return;
+    }
+  };
+
+  input.addEventListener('input', onInput);
+  input.addEventListener('keydown', onKeyDown);
+  input.addEventListener('blur', onInput);
+
+  onInput();
+}
+
+
+function clearCalculosUI(simId) {
+  const set = (id, val='') => { const el = document.getElementById(id); if (el) el.value = val; };
+  set(`fatordeimputacao_${simId}`, '');
+  set(`valorrealdt1_${simId}`, '');
+  set(`saldoposdeposito_${simId}`, '');
+  set(`valorquefaltou_${simId}`, '');
+  set(`somadebitosnaoquitados_${simId}`, '');
+  set(`numerodebitox_${simId}`, '');
+  set(`saldodebitox_${simId}`, '');
+  set(`valorquitado_${simId}`, '');
+  set(`valoraindanaocontabilizado_${simId}`, '');
+  set(`consolidadodebitox_${simId}`, '');
+  set(`saldodebitoxdt1_${simId}`, '');
+}
+
+function recomputeCalculosSim(simId) {
+  const sim = state.simulations[simId - 1];
+  if (!sim) return;
+
+  // Atualiza variáveis base a partir dos inputs (monetários)
+  const valDepEl = document.getElementById(`valordodeposito_${simId}`);
+  const saldoEl = document.getElementById(`saldoatualizadonadatadeposito_${simId}`);
+  const consEl = document.getElementById(`valorconsolidadonadatadeposito_${simId}`);
+
+  sim.valordodeposito = moedaParaNumero(valDepEl ? valDepEl.value : '');
+  sim.saldoatualizadonadatadeposito = moedaParaNumero(saldoEl ? saldoEl.value : '');
+  sim.valorconsolidadonadatadeposito = moedaParaNumero(consEl ? consEl.value : '');
+
+  // Se ainda não há valores suficientes, limpa campos calculados
+  if (!(sim.valordodeposito > 0) || !(sim.saldoatualizadonadatadeposito > 0) || !(sim.valorconsolidadonadatadeposito > 0)) {
+    clearCalculosUI(simId);
+    return;
+  }
+
+  try {
+    calcularParte01(sim);
+
+    document.getElementById(`fatordeimputacao_${simId}`).value = String((sim.fatordeimputacao || 0).toFixed(9)).replace('.', ',');
+    document.getElementById(`valorrealdt1_${simId}`).value = numeroParaMoeda(sim.valorrealdt1 || 0);
+    document.getElementById(`saldoposdeposito_${simId}`).value = numeroParaMoeda(sim.saldoposdepositodt01 || 0);
+
+    if (sim.tipododebito === 'TCFA_ACUMULADO') {
+      document.getElementById(`valorquefaltou_${simId}`).value = numeroParaMoeda(sim.valorquefaltou || 0);
+      document.getElementById(`somadebitosnaoquitados_${simId}`).value = numeroParaMoeda(sim.somadebitosnaoquitadosdt1 || 0);
+      document.getElementById(`numerodebitox_${simId}`).value = sim.numerodebitox || '';
+      document.getElementById(`saldodebitox_${simId}`).value = numeroParaMoeda(sim.saldodebitoxdt1 || 0);
+      document.getElementById(`valorquitado_${simId}`).value = numeroParaMoeda(sim.valorquitadodt1 || 0);
+      document.getElementById(`valoraindanaocontabilizado_${simId}`).value = numeroParaMoeda(sim.valoraindanaocontabilizado || 0);
+      document.getElementById(`consolidadodebitox_${simId}`).value = numeroParaMoeda(sim.consolidadodebitoxdt1 || 0);
+      document.getElementById(`saldodebitoxdt1_${simId}`).value = numeroParaMoeda(sim.saldodebitoxdt1 || 0);
+    }
+  } catch (e) {
+    // Em digitação manual é esperado que algumas pré-condições ainda não existam (ex.: Arquivo01 do acumulado).
+    // Não exibe alerta aqui: apenas limpa campos dependentes.
+    clearCalculosUI(simId);
+  }
+}
+
+
+/* ==========================
+   XLSX: LEITOR MÍNIMO OFFLINE
+   - ZIP + XML (sem bibliotecas externas)
+========================== */
+
+/* ---- ZIP (Store + Deflate) ----
+   Implementação mínima: usa o descompactador do navegador via "DecompressionStream"
+   quando disponível. Quando indisponível, exige que o arquivo XLSX seja salvo
+   sem compressão (muito raro). A maioria dos navegadores modernos suporta.
+*/
+async function unzipXlsx(arrayBuffer) {
+  // Leitor mínimo de ZIP usando Central Directory.
+  const u8 = new Uint8Array(arrayBuffer);
+
+  function readU32LE(off) {
+    return (u8[off] | (u8[off+1]<<8) | (u8[off+2]<<16) | (u8[off+3]<<24)) >>> 0;
+  }
+  function readU16LE(off) {
+    return (u8[off] | (u8[off+1]<<8)) >>> 0;
+  }
+
+  // Encontrar EOCD
+  let eocd = -1;
+  for (let i = u8.length - 22; i >= 0; i--) {
+    if (u8[i] === 0x50 && u8[i+1] === 0x4b && u8[i+2] === 0x05 && u8[i+3] === 0x06) {
+      eocd = i; break;
+    }
+  }
+  if (eocd < 0) throw new Error('ZIP inválido: EOCD não encontrado.');
+
+  const cdSize = readU32LE(eocd + 12);
+  const cdOffset = readU32LE(eocd + 16);
+
+  let ptr = cdOffset;
+  const files = new Map();
+
+  while (ptr < cdOffset + cdSize) {
+    // Central directory file header signature: 0x02014b50
+    if (!(u8[ptr] === 0x50 && u8[ptr+1] === 0x4b && u8[ptr+2] === 0x01 && u8[ptr+3] === 0x02)) {
+      break;
+    }
+    const compMethod = readU16LE(ptr + 10);
+    const compSize = readU32LE(ptr + 20);
+    const uncompSize = readU32LE(ptr + 24);
+    const nameLen = readU16LE(ptr + 28);
+    const extraLen = readU16LE(ptr + 30);
+    const commentLen = readU16LE(ptr + 32);
+    const localHeaderOff = readU32LE(ptr + 42);
+
+    const nameBytes = u8.slice(ptr + 46, ptr + 46 + nameLen);
+    const name = new TextDecoder().decode(nameBytes);
+
+    // Ler Local File Header
+    // signature 0x04034b50
+    if (!(u8[localHeaderOff] === 0x50 && u8[localHeaderOff+1] === 0x4b && u8[localHeaderOff+2] === 0x03 && u8[localHeaderOff+3] === 0x04)) {
+      throw new Error('ZIP inválido: Local file header incorreto.');
+    }
+    const lfNameLen = readU16LE(localHeaderOff + 26);
+    const lfExtraLen = readU16LE(localHeaderOff + 28);
+    const dataStart = localHeaderOff + 30 + lfNameLen + lfExtraLen;
+    const compData = u8.slice(dataStart, dataStart + compSize);
+
+    let dataU8;
+    if (compMethod === 0) {
+      dataU8 = compData;
+    } else if (compMethod === 8) {
+      if (!('DecompressionStream' in window)) {
+        throw new Error('Seu navegador não suporta DecompressionStream. Use Chrome/Edge/Firefox atualizados.');
+      }
+      const ds = new DecompressionStream('deflate-raw');
+      const blob = new Blob([compData]);
+      const stream = blob.stream().pipeThrough(ds);
+      const out = await new Response(stream).arrayBuffer();
+      dataU8 = new Uint8Array(out);
+      if (uncompSize && dataU8.length !== uncompSize) {
+        // tolera pequenas diferenças, mas normalmente bate
+      }
+    } else {
+      throw new Error('Método de compressão ZIP não suportado: ' + compMethod);
+    }
+
+    files.set(name, dataU8);
+
+    ptr += 46 + nameLen + extraLen + commentLen;
+  }
+
+  return files;
+}
+
+function xmlFromU8(u8) {
+  const txt = new TextDecoder('utf-8').decode(u8);
+  return new DOMParser().parseFromString(txt, 'application/xml');
+}
+
+function a1ToRowCol(a1) {
+  const m = String(a1).match(/^([A-Z]+)(\d+)$/i);
+  if (!m) return null;
+  const colLetters = m[1].toUpperCase();
+  const row = parseInt(m[2], 10);
+  let col = 0;
+  for (let i = 0; i < colLetters.length; i++) {
+    col = col * 26 + (colLetters.charCodeAt(i) - 64);
+  }
+  return { row, col };
+}
+
+function rowColToA1(row, col) {
+  let c = col;
+  let letters = '';
+  while (c > 0) {
+    const rem = (c - 1) % 26;
+    letters = String.fromCharCode(65 + rem) + letters;
+    c = Math.floor((c - 1) / 26);
+  }
+  return letters + String(row);
+}
+
+function parseMergeRef(ref) {
+  const [a,b] = ref.split(':');
+  const p1 = a1ToRowCol(a);
+  const p2 = a1ToRowCol(b);
+  if (!p1 || !p2) return null;
+  return {
+    r1: Math.min(p1.row, p2.row),
+    c1: Math.min(p1.col, p2.col),
+    r2: Math.max(p1.row, p2.row),
+    c2: Math.max(p1.col, p2.col),
+  };
+}
+
+function buildMergeIndex(mergeRanges) {
+  // Map "r,c" -> {r1,c1,r2,c2}
+  const idx = new Map();
+  for (const mr of mergeRanges) {
+    for (let r = mr.r1; r <= mr.r2; r++) {
+      for (let c = mr.c1; c <= mr.c2; c++) {
+        idx.set(`${r},${c}`, mr);
+      }
+    }
+  }
+  return idx;
+}
+
+class XlsxWorkbook {
+  constructor() {
+    this.sheets = []; // {name, cells: Map("r,c"->value), merges: mergeIndex, mergeRanges}
+    this.sharedStrings = [];
+  }
+
+  getSheetByName(name) {
+    return this.sheets.find(s => s.name === name);
+  }
+
+  findTextExact(text, {caseInsensitive=true} = {}) {
+    const target = caseInsensitive ? String(text).trim().toLowerCase() : String(text).trim();
+    for (const sheet of this.sheets) {
+      for (const [k, v] of sheet.cells.entries()) {
+        if (v === null || v === undefined) continue;
+        const sv = String(v).trim();
+        const cmp = caseInsensitive ? sv.toLowerCase() : sv;
+        if (cmp === target) {
+          const [r,c] = k.split(',').map(Number);
+          return { sheet, row:r, col:c, value:v };
+        }
+      }
+    }
+    return null;
+  }
+
+  findTextRegex(regex) {
+    const rx = (regex instanceof RegExp) ? regex : new RegExp(String(regex), 'i');
+    for (const sheet of this.sheets) {
+      for (const [k, v] of sheet.cells.entries()) {
+        if (v === null || v === undefined) continue;
+        const sv = String(v).trim();
+        if (rx.test(sv)) {
+          const [r,c] = k.split(',').map(Number);
+          return { sheet, row:r, col:c, value:v };
+        }
+      }
+    }
+    return null;
+  }
+
+  getCell(sheet, row, col) {
+    const key = `${row},${col}`;
+    if (sheet.cells.has(key)) return sheet.cells.get(key);
+
+    // Se estiver dentro de merge, retorna valor do topo-esquerda
+    const mr = sheet.merges.get(key);
+    if (mr) {
+      const tl = `${mr.r1},${mr.c1}`;
+      return sheet.cells.get(tl);
+    }
+    return undefined;
+  }
+
+  getMergeSpan(sheet, row, col) {
+    const mr = sheet.merges.get(`${row},${col}`);
+    if (!mr) return { colspan: 1, rowspan: 1, mr: null };
+    return { colspan: (mr.c2 - mr.c1 + 1), rowspan: (mr.r2 - mr.r1 + 1), mr };
+  }
+}
+
+async function loadXlsx(file) {
+  const buf = await file.arrayBuffer();
+  const zip = await unzipXlsx(buf);
+
+  const wb = new XlsxWorkbook();
+
+  // sharedStrings
+  const ss = zip.get('xl/sharedStrings.xml');
+  if (ss) {
+    const doc = xmlFromU8(ss);
+    const sis = doc.getElementsByTagName('si');
+    for (const si of sis) {
+      // Pode ter múltiplos <t> (rich text). Junta todos.
+      const ts = si.getElementsByTagName('t');
+      let out = '';
+      for (const t of ts) out += t.textContent || '';
+      wb.sharedStrings.push(out);
+    }
+  }
+
+  // workbook -> sheets
+  const wbXml = zip.get('xl/workbook.xml');
+  const relXml = zip.get('xl/_rels/workbook.xml.rels');
+  if (!wbXml || !relXml) throw new Error('XLSX inválido: workbook.xml ou rels ausente.');
+
+  const wbDoc = xmlFromU8(wbXml);
+  const relDoc = xmlFromU8(relXml);
+
+  const rels = new Map(); // rId -> target
+  for (const rel of relDoc.getElementsByTagName('Relationship')) {
+    const id = rel.getAttribute('Id');
+    const target = rel.getAttribute('Target');
+    rels.set(id, target);
+  }
+
+  const sheets = wbDoc.getElementsByTagName('sheet');
+  for (const sh of sheets) {
+    const name = sh.getAttribute('name');
+    const rid = sh.getAttribute('r:id');
+    const target = rels.get(rid);
+    if (!target) continue;
+    const path = 'xl/' + target.replace(/^\//,'');
+    const shXml = zip.get(path);
+    if (!shXml) continue;
+
+    const shDoc = xmlFromU8(shXml);
+    const cells = new Map();
+
+    // merges
+    const mergeRanges = [];
+    const mergeCells = shDoc.getElementsByTagName('mergeCell');
+    for (const mc of mergeCells) {
+      const ref = mc.getAttribute('ref');
+      const mr = parseMergeRef(ref);
+      if (mr) mergeRanges.push(mr);
+    }
+    const mergeIndex = buildMergeIndex(mergeRanges);
+
+    // cells
+    const cNodes = shDoc.getElementsByTagName('c');
+    for (const c of cNodes) {
+      const r = c.getAttribute('r');
+      const pos = a1ToRowCol(r);
+      if (!pos) continue;
+      const t = c.getAttribute('t'); // 's' shared string
+      const vNode = c.getElementsByTagName('v')[0];
+      const isNode = c.getElementsByTagName('is')[0]; // inline string
+      let value = null;
+
+      if (t === 's') {
+        const idx = vNode ? parseInt(vNode.textContent, 10) : -1;
+        value = (idx >= 0 && idx < wb.sharedStrings.length) ? wb.sharedStrings[idx] : '';
+      } else if (t === 'inlineStr') {
+        const tNode = isNode ? isNode.getElementsByTagName('t')[0] : null;
+        value = tNode ? (tNode.textContent || '') : '';
+      } else {
+        // number or general
+        if (vNode) {
+          const raw = vNode.textContent;
+          const num = parseFloat(raw);
+          value = isNaN(num) ? raw : num;
+        } else {
+          // pode haver texto em <t> sem inlineStr, mas raro
+          value = '';
+        }
+      }
+
+      cells.set(`${pos.row},${pos.col}`, value);
+    }
+
+    wb.sheets.push({ name, cells, merges: mergeIndex, mergeRanges });
+  }
+
+  return wb;
+}
+
+/* ==========================
+   EXTRAÇÃO POR RÓTULOS
+========================== */
+function cleanText(v) {
+  return String(v ?? '').replace(/\s+/g,' ').trim();
+}
+
+
+const PDFJS_CDN_URL = '../libs/pdfjs/pdf.min.js';
+const PDFJS_WORKER_CDN_URL = '../libs/pdfjs/pdf.worker.min.js';
+let _pdfJsLoaderPromise = null;
+
+function _normalizeAsciiUpper(s) {
+  return String(s ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+}
+
+function _escapeRegex(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function _extractFirstNumberByRegex(text, regex) {
+  const m = String(text ?? '').match(regex);
+  return m ? (parsePtBrNumberAny(m[1]) ?? 0) : null;
+}
+
+function _extractFirstStringByRegex(text, regex) {
+  const m = String(text ?? '').match(regex);
+  return m ? String(m[1] || '').trim() : '';
+}
+
+function _extractPctFromLines(lines, regex) {
+  for (const line of (lines || [])) {
+    const text = String(line?.text ?? '');
+    if (!regex.test(text)) continue;
+    const m = text.match(/\(([-\d\.,]+)\s*%\)/i);
+    if (m) {
+      const n = parsePtBrNumberAny(m[1]);
+      if (n !== null && n !== undefined) return n / 100;
+    }
+  }
+  return 0;
+}
+
+function _extractSituacaoDebtStatus(text, labelRegex) {
+  const source = cleanText(text);
+  const rx = new RegExp(labelRegex.source + String.raw`\s*:\s*(Sim|N[ãa]o)(?:\s*-\s*Em\s*:\s*(\d{2}\/\d{2}\/\d{4}))?`, 'i');
+  const m = source.match(rx);
+  if (!m) return null;
+  return {
+    value: _normalizeAsciiUpper(m[1] || ''),
+    date: normalizeDateDdMmYyyy(m[2] || ''),
+  };
+}
+
+function _getEncargosLegaisPctBySituacao(text, dataConsolidacao) {
+  const source = cleanText(text);
+  const dataCons = normalizeDateDdMmYyyy(dataConsolidacao || '');
+  const dividaAtiva = _extractSituacaoDebtStatus(source, /D[ií]vida\s+Ativa/i);
+
+  if (!dividaAtiva || !dividaAtiva.value) {
+    throw new Error('Não foi possível localizar a informação de Dívida Ativa no PDF carregado.');
+  }
+
+  if (dividaAtiva.value === 'NAO') return 0;
+
+  if (dividaAtiva.value !== 'SIM') {
+    throw new Error('Não foi possível interpretar a situação de Dívida Ativa no PDF carregado.');
+  }
+
+  if (!dataCons || !dividaAtiva.date) {
+    throw new Error('Não foi possível comparar a data de inscrição em Dívida Ativa com a data de consolidação.');
+  }
+
+  const cmpDividaAtiva = compareDateStrDdMmYyyy(dividaAtiva.date, dataCons);
+  if (cmpDividaAtiva === null) {
+    throw new Error('Não foi possível comparar a data de inscrição em Dívida Ativa com a data de consolidação.');
+  }
+
+  if (cmpDividaAtiva > 0) return 0;
+
+  const cobrancaJudicial = _extractSituacaoDebtStatus(source, /Cobr\.?\s+Judicial/i);
+
+  if (!cobrancaJudicial || !cobrancaJudicial.value) {
+    throw new Error('Não foi possível localizar a informação de Cobrança Judicial no PDF carregado.');
+  }
+
+  if (cobrancaJudicial.value === 'NAO') return 0.10;
+
+  if (cobrancaJudicial.value !== 'SIM') {
+    throw new Error('Não foi possível interpretar a situação de Cobrança Judicial no PDF carregado.');
+  }
+
+  if (!cobrancaJudicial.date) {
+    throw new Error('Não foi possível comparar a data de inscrição em Cobrança Judicial com a data de consolidação.');
+  }
+
+  const cmpCobrancaJudicial = compareDateStrDdMmYyyy(cobrancaJudicial.date, dataCons);
+  if (cmpCobrancaJudicial === null) {
+    throw new Error('Não foi possível comparar a data de inscrição em Cobrança Judicial com a data de consolidação.');
+  }
+
+  return cmpCobrancaJudicial > 0 ? 0.10 : 0.20;
+}
+
+function _isPdfFooterLineText(text) {
+  const t = cleanText(text);
+  return (
+    /^Emitido por:/i.test(t) ||
+    /^Ambiente:/i.test(t) ||
+    /^P[áa]g\s+\d+\s*\/\s*\d+/i.test(t) ||
+    /^\(0\)Valor consolidado/i.test(t) ||
+    /^\(1\)Valor Nominal:/i.test(t) ||
+    /^\(2\)Valor Cr[eé]dito:/i.test(t)
+  );
+}
+
+function _stripPdfFooterLines(lines) {
+  return (Array.isArray(lines) ? lines : []).filter(l => !_isPdfFooterLineText(String(l?.text ?? '')));
+}
+
+function _getLinesBetween(allLines, startRegex, endRegexList = [], options = {}) {
+  const lines = Array.isArray(allLines) ? allLines : [];
+  const startIdx = lines.findIndex(l => startRegex.test(String(l?.text ?? '')));
+  if (startIdx < 0) return [];
+  let endIdx = lines.length;
+  for (let i = startIdx + 1; i < lines.length; i++) {
+    const t = String(lines[i]?.text ?? '');
+    if (endRegexList.some(rx => rx.test(t))) {
+      endIdx = i;
+      break;
+    }
+  }
+  const out = lines.slice(startIdx, endIdx);
+  return options && options.stripFooters ? _stripPdfFooterLines(out) : out;
+}
+
+function _joinPdfLineTexts(lines) {
+  return (lines || []).map(l => String(l?.text ?? '')).join('\n');
+}
+
+function _extractPdfEmitidoDate(modelOrText) {
+  const src = typeof modelOrText === 'string'
+    ? modelOrText
+    : _joinPdfLineTexts((modelOrText && modelOrText.lines) || []);
+  return _extractFirstStringByRegex(src, /Emitido em:\s*(\d{2}\/\d{2}\/\d{4})/i);
+}
+
+async function ensurePdfJsLoaded() {
+  if (window.pdfjsLib) {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_CDN_URL;
+    return window.pdfjsLib;
+  }
+  if (_pdfJsLoaderPromise) return _pdfJsLoaderPromise;
+
+  _pdfJsLoaderPromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[data-pdfjs-loader="1"]');
+    if (existing) {
+      existing.addEventListener('load', () => {
+        if (!window.pdfjsLib) return reject(new Error('Não foi possível inicializar o leitor de PDF.'));
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_CDN_URL;
+        resolve(window.pdfjsLib);
+      }, { once: true });
+      existing.addEventListener('error', () => reject(new Error('Não foi possível carregar o motor de leitura de PDF.')), { once: true });
+      return;
+    }
+
+    const s = document.createElement('script');
+    s.src = PDFJS_CDN_URL;
+    s.async = true;
+    s.dataset.pdfjsLoader = '1';
+    s.onload = () => {
+      if (!window.pdfjsLib) {
+        reject(new Error('Não foi possível inicializar o leitor de PDF.'));
+        return;
+      }
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_CDN_URL;
+      resolve(window.pdfjsLib);
+    };
+    s.onerror = () => reject(new Error('Não foi possível carregar o motor de leitura de PDF.'));
+    document.head.appendChild(s);
+  });
+
+  return _pdfJsLoaderPromise;
+}
+
+function _buildPdfLinesFromItems(pageNumber, items) {
+  const sorted = [...items].sort((a, b) => {
+    if (Math.abs(a.y - b.y) > 2) return b.y - a.y;
+    return a.x - b.x;
+  });
+
+  const groups = [];
+  for (const it of sorted) {
+    const text = String(it.str ?? '').replace(/\u00a0/g, ' ');
+    if (!text.trim()) continue;
+
+    const last = groups[groups.length - 1];
+    if (last && Math.abs(last.y - it.y) <= Math.max(2.2, (it.fontSize || 8) * 0.35)) {
+      last.items.push(it);
+      last.y = (last.y + it.y) / 2;
+    } else {
+      groups.push({ page: pageNumber, y: it.y, items: [it] });
+    }
+  }
+
+  return groups.map(group => {
+    const lineItems = [...group.items].sort((a, b) => a.x - b.x);
+    let text = '';
+    let prevEnd = null;
+    for (const it of lineItems) {
+      const part = String(it.str ?? '').replace(/\u00a0/g, ' ').trim();
+      if (!part) continue;
+      const width = Number(it.w || 0);
+      if (prevEnd !== null) {
+        const gap = it.x - prevEnd;
+        if (gap > Math.max(1.5, (it.fontSize || 8) * 0.18) && !text.endsWith(' ')) text += ' ';
+      }
+      text += part;
+      prevEnd = it.x + width;
+    }
+    return {
+      page: group.page,
+      y: group.y,
+      items: lineItems,
+      text: cleanText(text),
+    };
+  }).filter(l => l.text);
+}
+
+function detectPdfDebitoType(model) {
+  const norm = _normalizeAsciiUpper(model?.fullText || '');
+  if (norm.includes('TCFA - ACUMULADO')) return 'TCFA_ACUMULADO';
+  if (norm.includes('AUTO DE INFRACAO')) return 'AI';
+  if (norm.includes('TAXA DE CONTROLE E FISCALIZACAO AMBIENTAL - TCFA -')) return 'TCFA_SIMPLES';
+  return null;
+}
+
+function validatePdfTypeAgainstSelection(expectedType, detectedType) {
+  if (!expectedType || !detectedType) {
+    throw new Error('Não foi possível identificar o tipo do arquivo PDF carregado.');
+  }
+  if (expectedType !== detectedType) {
+    throw new Error('O arquivo carregado não corresponde ao tipo de débito selecionado.');
+  }
+}
+
+async function parsePdfFile(file) {
+  const pdfjsLib = await ensurePdfJsLoaded();
+  const data = new Uint8Array(await file.arrayBuffer());
+  const pdf = await pdfjsLib.getDocument({ data }).promise;
+
+  const pages = [];
+  const allLines = [];
+
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const tc = await page.getTextContent();
+    const items = (tc.items || []).map(it => {
+      const t = it.transform || [1,0,0,1,0,0];
+      const fontSize = Math.hypot(t[0] || 0, t[1] || 0) || Math.abs(t[3] || 0) || 8;
+      return {
+        str: it.str || '',
+        x: Number(t[4] || 0),
+        y: Number(t[5] || 0),
+        w: Number(it.width || 0),
+        h: Number(it.height || 0),
+        fontSize
+      };
+    });
+
+    const lines = _buildPdfLinesFromItems(p, items);
+    pages.push({ pageNumber: p, items, lines });
+    allLines.push(...lines);
+  }
+
+  const fullText = allLines.map(l => l.text).join('\n');
+  const model = { pages, lines: allLines, fullText };
+  model.detectedType = detectPdfDebitoType(model);
+  return model;
+}
+
+function parseAiOrTcfaSimplesFromPdfModel(model, expectedType, options = {}) {
+  validatePdfTypeAgainstSelection(expectedType, model.detectedType);
+
+  const endMarkers = expectedType === 'AI'
+    ? [/Anexo\s*-\s*Composição do Débito/i]
+    : [];
+
+  const blockLines = _getLinesBetween(
+    model.lines,
+    /Consolidação do débito em:/i,
+    endMarkers,
+    { stripFooters: true }
+  );
+  const blockText = _joinPdfLineTexts(blockLines);
+  const fullNoFooters = _joinPdfLineTexts(_stripPdfFooterLines(model.lines));
+
+  const saldoLabel = expectedType === 'AI' ? 'Saldo Atualizado' : 'Saldo Atual';
+  const saldoRegex = new RegExp(String.raw`(?:\(\=\)\s*)?` + _escapeRegex(saldoLabel) + String.raw`\s+([\d\.,]+)`, 'i');
+
+  let dataConsolidacao = _extractFirstStringByRegex(blockText, /Consolidação do débito em:\s*(\d{2}\/\d{2}\/\d{4})/i);
+  if (!dataConsolidacao && expectedType === 'AI') {
+    for (const line of (blockLines || [])) {
+      const txt = String(line?.text ?? '');
+      if (!/\(\+\)\s*Multa/i.test(txt)) continue;
+      const m = txt.match(/até\s*(\d{2}\/\d{2}\/\d{4})/i);
+      if (m) {
+        dataConsolidacao = String(m[1] || '').trim();
+        break;
+      }
+    }
+    if (!dataConsolidacao) {
+      dataConsolidacao = _extractFirstStringByRegex(blockText, /\(\+\)\s*Multa[\s\S]*?até\s*(\d{2}\/\d{2}\/\d{4})/i);
+    }
+  }
+
+  const saldoAtualizado = _extractFirstNumberByRegex(blockText, saldoRegex);
+  let valorConsolidado = _extractFirstNumberByRegex(blockText, /(?:\(\=\)\s*)?Valor Consolidado\s+([\d\.,]+)/i);
+  if (valorConsolidado === null) {
+    valorConsolidado = _extractFirstNumberByRegex(fullNoFooters, /(?:\(\=\)\s*)?Valor Consolidado\s+([\d\.,]+)/i);
+  }
+
+  if (saldoAtualizado === null || valorConsolidado === null) {
+    throw new Error('Não foi possível localizar os dados principais no PDF carregado.');
+  }
+
+  if (options.requirePositiveSaldo !== false && !(saldoAtualizado > 0)) {
+    throw new Error('Não foi possível localizar os dados principais no PDF carregado.');
+  }
+
+  const pctMulta = _extractPctFromLines(blockLines, /\(\+\)\s*Multa/i);
+  const pctJuros = _extractPctFromLines(blockLines, /\(\+\)\s*Juros/i);
+  const pctSelic = _extractPctFromLines(blockLines, /\(\+\)\s*SELIC/i);
+  const pctEncargos = _getEncargosLegaisPctBySituacao(blockText || fullNoFooters, dataConsolidacao);
+
+  let trimestreAno = '';
+  if (expectedType === 'TCFA_SIMPLES') {
+    trimestreAno = _extractFirstStringByRegex(model.fullText, /Trimestre\/Ano:\s*([0-9]\/\d{4})/i);
+  }
+
+  return {
+    detectedType: model.detectedType,
+    dataConsolidacao,
+    saldoAtualizado,
+    valorConsolidado,
+    pctMulta,
+    pctJuros,
+    pctSelic,
+    pctEncargos,
+    trimestreAno,
+  };
+}
+
+function _parseTcfaAcumuladoRowFromLineText(lineText) {
+  const tokens = cleanText(lineText).split(/\s+/).filter(Boolean);
+  if (!tokens.length || !/^\d{5,}$/.test(tokens[0])) return null;
+
+  const pickNumber = (idx, fallback = 0) => {
+    if (idx < 0 || idx >= tokens.length) return fallback;
+    const n = parsePtBrNumberAny(tokens[idx]);
+    return n === null || n === undefined ? fallback : n;
+  };
+
+  return {
+    debito: String(tokens[0] || '').trim(),
+    trimestreAno: String(tokens[1] || '').trim(),
+    saldoAtualizado: pickNumber(9, 0),
+    multaPct: pickNumber(10, 0),
+    jurosPct: pickNumber(12, 0),
+    selicPct: pickNumber(14, 0),
+    encargosPct: pickNumber(16, 0),
+    consolidado: pickNumber(tokens.length - 1, 0),
+  };
+}
+
+function parseTcfaAcumuladoFromPdfModel(model) {
+  validatePdfTypeAgainstSelection('TCFA_ACUMULADO', model.detectedType);
+
+  const blockLines = _getLinesBetween(
+    model.lines,
+    /Consolidação do débito em:/i,
+    [],
+    { stripFooters: true }
+  );
+  const blockText = _joinPdfLineTexts(blockLines);
+
+  const dataConsolidacao = _extractFirstStringByRegex(blockText, /Consolidação do débito em:\s*(\d{2}\/\d{2}\/\d{4})/i);
+  const saldoAtualizado = _extractFirstNumberByRegex(blockText, /(?:\(\=\)\s*)?Saldo Atual\s+([\d\.,]+)/i);
+  const valorConsolidado = _extractFirstNumberByRegex(blockText, /(?:\(\=\)\s*)?Valor Consolidado\s+([\d\.,]+)/i);
+
+  const compLines = _stripPdfFooterLines(model.lines);
+  const startIdx = compLines.findIndex(l => /\bDébito\b/i.test(l.text) && /Trimestre\/Ano/i.test(l.text));
+  if (startIdx < 0) throw new Error('Não foi possível localizar a tabela de composição do débito no PDF carregado.');
+
+  const rows = [];
+  for (let i = startIdx + 1; i < compLines.length; i++) {
+    const text = cleanText(compLines[i].text);
+    if (!text) continue;
+    if (/^TOTAIS\b/i.test(text)) break;
+    if (/^Consolidação do débito em:/i.test(text)) break;
+    if (!/^\d{5,}\b/.test(text)) continue;
+    const row = _parseTcfaAcumuladoRowFromLineText(text);
+    if (row) rows.push(row);
+  }
+
+  if (!rows.length) {
+    throw new Error('Não foi possível ler os débitos da composição no PDF carregado.');
+  }
+
+  return {
+    detectedType: model.detectedType,
+    dataConsolidacao,
+    saldoAtualizado,
+    valorConsolidado,
+    rows,
+  };
+}
+
+function findLabelCell(workbook, exactOrRegex) {
+  if (exactOrRegex instanceof RegExp) return workbook.findTextRegex(exactOrRegex);
+  return workbook.findTextExact(exactOrRegex);
+}
+
+function getRightCellValue(workbook, found) {
+  const { sheet, row, col } = found;
+  const span = workbook.getMergeSpan(sheet, row, col);
+  const targetCol = col + span.colspan;
+  return workbook.getCell(sheet, row, targetCol);
+}
+
+function getDownCellValue(workbook, found) {
+  const { sheet, row, col } = found;
+  const span = workbook.getMergeSpan(sheet, row, col);
+  const targetRow = row + span.rowspan;
+  return workbook.getCell(sheet, targetRow, col);
+}
+
+function getAdjacentValueSmart(workbook, found) {
+  // tenta direita, senão abaixo
+  const right = getRightCellValue(workbook, found);
+  if (right !== undefined && cleanText(right) !== '') return right;
+  const down = getDownCellValue(workbook, found);
+  if (down !== undefined && cleanText(down) !== '') return down;
+  return right !== undefined ? right : down;
+}
+
+function findNumericValueByLabelCandidates(workbook, regexList) {
+  for (const rx of regexList) {
+    const hit = findLabelCell(workbook, rx);
+    if (!hit) continue;
+    const n = parsePtBrNumberAny(getAdjacentValueSmart(workbook, hit));
+    if (n !== null) return n;
+  }
+  return 0;
+}
+
+
+function percentToFraction(value) {
+  // Aceita string com % ou número.
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number') {
+    if (value > 1) return value / 100;
+    if (value >= 0) return value;
+    return null;
+  }
+  const s = String(value).trim();
+  if (!s) return null;
+
+  // extrai algo como 20,00% ou 143,25 %
+  const m = s.match(/(-?\d+[\d\.]*[\,\.]?\d*)\s*%/);
+  if (m) {
+    const n = parsePtBrNumberAny(m[1]);
+    return (n === null) ? null : (n / 100);
+  }
+
+  // se não tiver %, tenta número puro
+  const n = parsePtBrNumberAny(s);
+  if (n === null) return null;
+  if (n > 1) return n / 100;
+  return n;
+}
+
+function findPercentValueByLabelCandidates(workbook, regexList) {
+  // Procura o rótulo e tenta achar um percentual à direita na mesma linha.
+  for (const rx of regexList) {
+    const hit = findLabelCell(workbook, rx);
+    if (!hit) continue;
+
+    const { sheet, row, col } = hit;
+
+    // varre algumas células à direita procurando algo com %
+    for (let c = col + 1; c <= col + 30; c++) {
+      const v = workbook.getCell(sheet, row, c);
+      const frac = percentToFraction(v);
+      if (frac !== null) return frac;
+      // tentativa: se v for string e contiver algo como (20,00%)
+      if (typeof v === 'string' && /%/.test(v)) {
+        const frac2 = percentToFraction(v);
+        if (frac2 !== null) return frac2;
+      }
+    }
+
+    // varre também a linha imediatamente abaixo (caso o percentual esteja abaixo do rótulo)
+    for (let c = col; c <= col + 30; c++) {
+      const v = workbook.getCell(sheet, row + 1, c);
+      const frac = percentToFraction(v);
+      if (frac !== null) return frac;
+      if (typeof v === 'string' && /%/.test(v)) {
+        const frac2 = percentToFraction(v);
+        if (frac2 !== null) return frac2;
+      }
+    }
+
+    // fallback: célula imediatamente à direita (merge-aware)
+    const adj = getAdjacentValueSmart(workbook, hit);
+    const fracAdj = percentToFraction(adj);
+    if (fracAdj !== null) return fracAdj;
+  }
+  return 0;
+}
+
+
+
+// ==========================
+// TCFA ACUMULADO: helpers de extração por interseção (Arquivo02)
+// ==========================
+function _isDebitoNumero(v) {
+  const s = String(v ?? '').trim();
+  return /^\d{5,}$/.test(s);
+}
+
+function _findFirstCellInSheetByText(sheet, regex) {
+  // retorna {row, col, value} da primeira ocorrência (varredura por row asc, col asc)
+  const entries = [];
+  for (const [k, v] of sheet.cells.entries()) {
+    const s = String(v ?? '').trim();
+    if (!s) continue;
+    if (regex.test(s)) {
+      const [r,c] = k.split(',').map(Number);
+      entries.push({row:r, col:c, value:v});
+    }
+  }
+  entries.sort((a,b) => (a.row-b.row) || (a.col-b.col));
+  return entries[0] || null;
+}
+
+function _findDebitoRowInSheet(sheet, debitoStr) {
+  const target = String(debitoStr ?? '').trim();
+  if (!target) return null;
+  const hits = [];
+  for (const [k, v] of sheet.cells.entries()) {
+    const s = String(v ?? '').trim();
+    if (s === target) {
+      const [r,c] = k.split(',').map(Number);
+      hits.push({row:r, col:c});
+    }
+  }
+  hits.sort((a,b)=> (a.row-b.row) || (a.col-b.col));
+  return hits[0]?.row ?? null;
+}
+
+function _readPercentAtIntersection(wb, sheet, headerCell, debitoRow) {
+  // tenta ler na coluna do header; se header for mesclado, tenta dentro da largura do merge
+  const span = wb.getMergeSpan(sheet, headerCell.row, headerCell.col);
+  const maxTry = Math.max(1, span.colspan);
+  for (let offset = 0; offset < Math.min(maxTry, 4); offset++) {
+    const v = wb.getCell(sheet, debitoRow, headerCell.col + offset);
+    const n = parsePtBrNumberAny(v);
+    if (n !== null && n !== undefined) return n;
+  }
+  // fallback: tenta nas 3 colunas seguintes
+  for (let offset = 1; offset <= 3; offset++) {
+    const v = wb.getCell(sheet, debitoRow, headerCell.col + offset);
+    const n = parsePtBrNumberAny(v);
+    if (n !== null && n !== undefined) return n;
+  }
+  return null;
+}
+
+function _extractDebitoNumeroFromArquivo01Row(sim, row, maxColScan) {
+  // Procura o número do débito na linha, varrendo colunas da esquerda para a direita
+  // Preferência: último valor numérico (>=5 dígitos) antes da coluna de saldo
+  let found = '';
+  for (let c = 1; c <= maxColScan; c++) {
+    const v = sim._getCellArquivo01(row, c);
+    const s = String(v ?? '').trim();
+    if (/^\d{5,}$/.test(s)) found = s;
+  }
+  return found;
+}
+/* ==========================
+   PDF: GERADOR OFFLINE MÍNIMO
+   - Tabelas simples, texto e linhas
+========================== */
+
+class MiniPdf {
+  constructor() {
+    this.objects = [];
+    this.pages = [];
+    this.fontObjId = null;
+  }
+
+  _addObject(str) {
+    this.objects.push(str);
+    return this.objects.length; // 1-based
+  }
+
+  _encodePdfWinAnsiHex(s) {
+    const map = {
+      '€':128,'‚':130,'ƒ':131,'„':132,'…':133,'†':134,'‡':135,'ˆ':136,'‰':137,'Š':138,'‹':139,'Œ':140,'Ž':142,
+      '‘':145,'’':146,'“':147,'”':148,'•':149,'–':150,'—':151,'˜':152,'™':153,'š':154,'›':155,'œ':156,'ž':158,'Ÿ':159,
+      'ª':170,'º':186,'°':176,'Ç':199,'ç':231,'Á':193,'À':192,'Â':194,'Ã':195,'É':201,'Ê':202,'Í':205,'Ó':211,'Ô':212,'Õ':213,'Ú':218,
+      'á':225,'à':224,'â':226,'ã':227,'é':233,'ê':234,'í':237,'ó':243,'ô':244,'õ':245,'ú':250
+    };
+    const bytes = [];
+    for (const ch of String(s)) {
+      const cp = ch.codePointAt(0);
+      if (cp <= 127) bytes.push(cp);
+      else if (map[ch] !== undefined) bytes.push(map[ch]);
+      else bytes.push(63);
+    }
+    return bytes.map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+
+  addPage({width=595.28, height=841.89} = {}) {
+    const content = [];
+    const page = { width, height, content };
+    this.pages.push(page);
+    return page;
+  }
+
+  text(page, x, y, s, size=10) {
+    const hex = this._encodePdfWinAnsiHex(s);
+    page.content.push(`BT /F1 ${size} Tf ${x.toFixed(2)} ${y.toFixed(2)} Td <${hex}> Tj ET\n`);
+  }
+
+  line(page, x1,y1,x2,y2, w=1) {
+    page.content.push(`${w} w ${x1.toFixed(2)} ${y1.toFixed(2)} m ${x2.toFixed(2)} ${y2.toFixed(2)} l S\n`);
+  }
+
+  rect(page, x,y,w,h, stroke=1, fill=0) {
+    page.content.push(`${stroke} w ${fill ? `${x.toFixed(2)} ${y.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f\n` : `${x.toFixed(2)} ${y.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re S\n`}`);
+  }
+
+  // cor em RGB 0-1
+  fillColor(page, r,g,b) {
+    page.content.push(`${r} ${g} ${b} rg\n`);
+  }
+
+  strokeColor(page, r,g,b) {
+    page.content.push(`${r} ${g} ${b} RG\n`);
+  }
+
+  build() {
+    // Header
+    let out = '%PDF-1.4\n';
+
+    // Font object
+    this.fontObjId = this._addObject(`<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>`);
+
+    // Pages: create content streams and page objs
+    const pageObjIds = [];
+    for (const p of this.pages) {
+      const stream = p.content.join('');
+      const contentObj = this._addObject(`<< /Length ${stream.length} >>\nstream\n${stream}endstream`);
+      const pageObj = this._addObject(
+        `<< /Type /Page /Parent 0 0 R /MediaBox [0 0 ${p.width.toFixed(2)} ${p.height.toFixed(2)}] ` +
+        `/Resources << /Font << /F1 ${this.fontObjId} 0 R >> >> ` +
+        `/Contents ${contentObj} 0 R >>`
+      );
+      pageObjIds.push(pageObj);
+    }
+
+    // Pages tree
+    const kids = pageObjIds.map(id => `${id} 0 R`).join(' ');
+    const pagesObjId = this._addObject(`<< /Type /Pages /Kids [${kids}] /Count ${pageObjIds.length} >>`);
+
+    // Fix Parent refs (replace "0 0 R" placeholder)
+    for (let i = 0; i < this.objects.length; i++) {
+      this.objects[i] = this.objects[i].replace('/Parent 0 0 R', `/Parent ${pagesObjId} 0 R`);
+    }
+
+    // Catalog
+    const catalogObjId = this._addObject(`<< /Type /Catalog /Pages ${pagesObjId} 0 R >>`);
+
+    // xref
+    const offsets = [];
+    offsets.push(0);
+    for (let i = 0; i < this.objects.length; i++) {
+      offsets.push(out.length);
+      out += `${i+1} 0 obj\n${this.objects[i]}\nendobj\n`;
+    }
+
+    const xrefPos = out.length;
+    out += `xref\n0 ${this.objects.length+1}\n`;
+    out += `0000000000 65535 f \n`;
+    for (let i = 1; i < offsets.length; i++) {
+      out += String(offsets[i]).padStart(10,'0') + ` 00000 n \n`;
+    }
+    out += `trailer\n<< /Size ${this.objects.length+1} /Root ${catalogObjId} 0 R >>\nstartxref\n${xrefPos}\n%%EOF`;
+
+    return new Blob([out], {type:'application/pdf'});
+  }
+}
+
+
+function pdfReportTcfaAcumulado(sim) {
+  const pdf = new MiniPdf();
+  // A4 landscape
+  const W = 841.89, H = 595.28;
+  let page = pdf.addPage({width: W, height: H});
+  let y = H - 40;
+
+  // Helpers para evitar sobreposição
+  const approxTextW = (s, fontSize) => String(s ?? '').length * fontSize * 0.50;
+  const pdfMeasureCanvas = document.createElement('canvas');
+  const pdfMeasureCtx = pdfMeasureCanvas.getContext ? pdfMeasureCanvas.getContext('2d') : null;
+  function measurePdfTextW(s, fontSize) {
+    if (!pdfMeasureCtx) return approxTextW(s, fontSize);
+    const px = fontSize * (96 / 72);
+    pdfMeasureCtx.font = `${px}px Helvetica, Arial, sans-serif`;
+    // canvas mede em px; converter de volta para pt para comparar com as medidas do PDF
+    return pdfMeasureCtx.measureText(String(s ?? '')).width * (72 / 96);
+  }
+  function fitTextToWidth(text, width, fontSize) {
+    let fs = fontSize;
+    while (fs > 6 && approxTextW(text, fs) > (width - 4)) fs -= 1;
+    if (approxTextW(text, fs) <= (width - 4)) return {text, fontSize: fs};
+    // ainda não coube: truncar
+    const maxChars = Math.max(1, Math.floor((width - 10) / (fs * 0.50)));
+    const t = String(text ?? '');
+    const trunc = t.length > maxChars ? (t.slice(0, Math.max(1, maxChars - 1)) + '…') : t;
+    return {text: trunc, fontSize: fs};
+  }
+  function drawCellText(x, yBase, w, text, fontSize, bold=false) {
+    const r = fitTextToWidth(text, w, fontSize);
+    pdf.text(page, x + 2, yBase + 4, r.text, r.fontSize);
+    if (bold) {
+      // Simulação simples de negrito: desenhar duas vezes com leve deslocamento
+      pdf.text(page, x + 2.35, yBase + 4, r.text, r.fontSize);
+    }
+  }
+  function wrapLines(text, maxWidth, fontSize) {
+    const words = String(text || '').replace(/\s+/g, ' ').trim().split(' ');
+    const lines = [];
+    let line = '';
+    for (const w of words) {
+      const test = line ? (line + ' ' + w) : w;
+      if (approxTextW(test, fontSize) <= maxWidth) {
+        line = test;
+      } else {
+        if (line) lines.push(line);
+        line = w;
+      }
+    }
+    if (line) lines.push(line);
+    return lines;
+  }
+  function wrapLinesFooter(text, maxWidth, fontSize) {
+    const words = String(text || '').replace(/\s+/g, ' ').trim().split(' ');
+    const lines = [];
+    let line = '';
+    const usableWidth = Math.max(20, maxWidth - 2);
+    for (const w of words) {
+      const test = line ? (line + ' ' + w) : w;
+      if (measurePdfTextW(test, fontSize) <= usableWidth) {
+        line = test;
+      } else {
+        if (line) lines.push(line);
+        line = w;
+      }
+    }
+    if (line) lines.push(line);
+    return lines;
+  }
+
+
+  // Title bar (apenas na 1ª página)
+  pdf.strokeColor(page, 0,0,0);
+  pdf.fillColor(page, 0.121,0.306,0.475);
+  pdf.rect(page, 40, y, W-80, 22, 1, 1);
+  pdf.fillColor(page, 1,1,1);
+  const titulo = 'Simulação de amortização';
+  const tituloSize = 12;
+  const estW = titulo.length * tituloSize * 0.50;
+  const boxW = (W - 80);
+  const xTitulo = 40 + Math.max(0, (boxW - estW) / 2);
+  pdf.text(page, xTitulo, y+7, titulo, tituloSize);
+
+  y -= 34;
+  pdf.fillColor(page, 0,0,0);
+
+  const hdr = getPdfHeaderData();
+  const cnpjShow = hdr.cnpj || '00.000.000/0000-00';
+  const debShow = (hdr.numerododebito && hdr.numerododebito.trim()) ? hdr.numerododebito.trim() : 'Não identificado';
+  const tipoShow = hdr.tipododebitoLabel || 'TCFA acumulado';
+
+  // Cabeçalho: identificação + data de consolidação
+    const info = [];
+  info.push(`CPF/CNPJ: ${cnpjShow}`);
+  if (sim.tipododebito === 'TCFA_ACUMULADO') {
+    info.push(`Débito acumulado: ${debShow}`);
+  } else {
+    info.push(`Número do débito: ${debShow}`);
+  }
+  if (sim.tipododebito === 'TCFA_ACUMULADO') {
+    info.push(`Tipo do débito: ${tipoShow}`);
+    // Removido do cabeçalho no TCFA acumulado (já consta na linha "Memória de cálculo...")
+  } else {
+    info.push(`Tipo do débito: ${tipoShow}`);
+    info.push(`Data de consolidação: ${sim.datadeconsolidacao || ''}`);
+  }
+  for (const line of info) { pdf.text(page, 40, y, line, 10); y -= 14; }
+
+  y -= 8;
+  pdf.line(page, 40, y, W-40, y);
+  y -= 18;
+
+  // Após a linha divisória: repetir data/valor do depósito (por depósito)
+  const zeroDepositUpdateMode = isZeroDepositUpdateMode(sim);
+  if (!zeroDepositUpdateMode) {
+    pdf.text(page, 40, y, `Data do depósito ou pagamento: ${sim.datadodeposito || ''}`, 10); y -= 14;
+    pdf.text(page, 40, y, `Valor do depósito ou pagamento: R$ ${numeroParaMoeda(sim.valordodeposito || 0)}`, 10); y -= 14;
+  }
+
+  const cols = ['Débito','Trimestre/Ano','Saldo Atual.','% Multa','Valor Multa','% Juros','Valor Juros','% Selic','Valor Selic','% Encargos','Valor Encargos','Valor Consolidado'];
+
+  const x0 = 40;
+  const tableW = W - 80;
+
+  // Larguras base (ajustáveis) — serão escaladas para preencher a largura da tabela
+  let colWs = [62,78,68,42,56,42,56,42,56,42,56,72];
+  const sumW = colWs.reduce((a,b)=>a+b,0);
+
+  // Escalar horizontalmente para a tabela encostar na margem direita (sem alterar fonte nem altura)
+  const k = tableW / sumW;
+  colWs = colWs.map(w => w * k);
+
+  // Ajuste fino para fechar exatamente a largura (evita erro de arredondamento)
+  const sum2 = colWs.reduce((a,b)=>a+b,0);
+  colWs[colWs.length - 1] += (tableW - sum2);
+
+  const rowH = 16;
+  const items = sim.tcfaTabelaDetalhada || [];
+
+  // Totais
+  let totSaldo = 0, totMulta = 0, totJuros = 0, totSelic = 0, totEnc = 0, totCons = 0;
+  for (const it of items) {
+    totSaldo = sumMoneyValues(totSaldo, it.saldoAtualizado || 0);
+    totMulta = sumMoneyValues(totMulta, it.multaVal || 0);
+    totJuros = sumMoneyValues(totJuros, it.jurosVal || 0);
+    totSelic = sumMoneyValues(totSelic, it.selicVal || 0);
+    totEnc = sumMoneyValues(totEnc, it.encargosVal || 0);
+    totCons = sumMoneyValues(totCons, it.consolidado || 0);
+  }
+
+  const fmtPct = (p) => (Number(p||0).toFixed(2).replace('.', ',') + '%');
+  // Título da memória + informações-resumo antes da tabela
+  const saldoPreAmortizacaoTcfa = Number(sim.saldoatualizadonadatadeposito || 0);
+  const valorAmortizadoTcfa = roundMoneyValue(saldoPreAmortizacaoTcfa - totSaldo);
+  pdf.text(page, 40, y, `Memória de cálculo (consolidação em ${sim.datadeconsolidacao || ''})`, 10); y -= 14;
+  if (!zeroDepositUpdateMode) {
+    pdf.text(page, 40, y, `Saldo pré-amortização: R$ ${numeroParaMoeda(saldoPreAmortizacaoTcfa)}`, 10); y -= 14;
+    pdf.text(page, 40, y, `Valor amortizado: R$ ${numeroParaMoeda(valorAmortizadoTcfa)}`, 10);
+    y -= 28;
+  } else {
+    y -= 14;
+  }
+
+
+  // Texto explicativo final (mesmo tamanho do texto da tabela)
+  const explic = "O cálculo de débitos acumulados prioriza a quitação integral dos débitos mais antigos. Caso o depósito ou pagamento não amortize totalmente o débito seguinte, o valor residual é apropriado proporcionalmente*. Os débitos não afetados pelo depósito ou pagamento permanecem inalterados.\n*Cálculo proporcional: baseia-se na relação entre o valor depositado (ou pago) e o valor consolidado na data do depósito ou pagamento. Após aplicação dessa proporção sobre o saldo do débito, obtém-se o saldo remanescente, ao qual são aplicadas as taxas da data pretendida para determinar o valor consolidado correspondente.";
+
+  // Rodapé amarrado exatamente à mesma geometria horizontal da tabela:
+  // mesma origem (x0) e mesma largura útil interna da tabela, com a mesma
+  // margem visual usada pelas células (2 pt de cada lado).
+  const footerX = x0 + 2;
+  const footerInnerW = tableW - 4;
+  const paragraphs = explic.split('\n');
+  const lines = [];
+  for (let i=0;i<paragraphs.length;i++) {
+    const seg = wrapLinesFooter(paragraphs[i], footerInnerW, 8);
+    for (const s of seg) lines.push(s);
+  }
+
+  const footerLineH = 12;
+  const footerGap = 8;
+  const footerLastLineY = 36;
+  const footerTopLineY = footerLastLineY + Math.max(0, (lines.length - 1) * footerLineH);
+  const tableRowsH = rowH * (items.length + 2); // cabeçalho + itens + totais
+  const singlePageFooterMode = (y - tableRowsH) >= (footerTopLineY + footerGap);
+
+  // Função para iniciar nova página (sem barra de título) e repetir cabeçalho da tabela
+  function newTablePage() {
+    page = pdf.addPage({width: W, height: H});
+    y = H - 50;
+
+    // Cabeçalho da tabela
+    pdf.fillColor(page, 0.121,0.306,0.475);
+    pdf.rect(page, x0, y, colWs.reduce((a,b)=>a+b,0), rowH, 1, 1);
+    pdf.fillColor(page, 1,1,1);
+    let cx = x0;
+    for (let i=0;i<cols.length;i++){ drawCellText(cx, y, colWs[i], cols[i], 8); cx += colWs[i]; }
+    y -= rowH;
+    pdf.fillColor(page, 0,0,0);
+  }
+
+  // Cabeçalho da tabela (página atual)
+  if (y < 60 + rowH) newTablePage();
+  pdf.fillColor(page, 0.121,0.306,0.475);
+  pdf.rect(page, x0, y, colWs.reduce((a,b)=>a+b,0), rowH, 1, 1);
+  pdf.fillColor(page, 1,1,1);
+  let cx = x0;
+  for (let i=0;i<cols.length;i++){ drawCellText(cx, y, colWs[i], cols[i], 8); cx += colWs[i]; }
+  y -= rowH;
+  pdf.fillColor(page, 0,0,0);
+
+  function drawRow(vals, shade=true, fontSize=8, boldRow=false) {
+    if (y < 40 + rowH) newTablePage();
+    if (shade) {
+      pdf.fillColor(page, 0.92,0.92,0.92);
+      pdf.rect(page, x0, y, colWs.reduce((a,b)=>a+b,0), rowH, 1, 1);
+      pdf.fillColor(page, 0,0,0);
+    } else {
+      pdf.fillColor(page, 1,1,1);
+      pdf.rect(page, x0, y, colWs.reduce((a,b)=>a+b,0), rowH, 1, 1);
+      pdf.fillColor(page, 0,0,0);
+    }
+    let cx2 = x0;
+    for (let i=0;i<vals.length;i++){
+      drawCellText(cx2, y, colWs[i], vals[i], fontSize, boldRow);
+      cx2 += colWs[i];
+    }
+    y -= rowH;
+  }
+
+  // Linhas de itens
+  for (let idxIt = 0; idxIt < items.length; idxIt++) {
+    const it = items[idxIt];
+    const vals = [
+      String(it.debito ?? ''),
+      String(it.trimestreAno ?? ''),
+      'R$ ' + numeroParaMoeda(it.saldoAtualizado ?? 0),
+      fmtPct(it.multaPct), 'R$ ' + numeroParaMoeda(it.multaVal ?? 0),
+      fmtPct(it.jurosPct), 'R$ ' + numeroParaMoeda(it.jurosVal ?? 0),
+      fmtPct(it.selicPct), 'R$ ' + numeroParaMoeda(it.selicVal ?? 0),
+      fmtPct(it.encargosPct), 'R$ ' + numeroParaMoeda(it.encargosVal ?? 0),
+      'R$ ' + numeroParaMoeda(it.consolidado ?? 0)
+    ];
+    drawRow(vals, (idxIt % 2 === 0), 8);
+  }
+
+  // Linha TOTAIS
+  const totalVals = [
+    'TOTAIS',
+    '',
+    'R$ ' + numeroParaMoeda(totSaldo),
+    '', 'R$ ' + numeroParaMoeda(totMulta),
+    '', 'R$ ' + numeroParaMoeda(totJuros),
+    '', 'R$ ' + numeroParaMoeda(totSelic),
+    '', 'R$ ' + numeroParaMoeda(totEnc),
+    'R$ ' + numeroParaMoeda(totCons)
+  ];
+  drawRow(totalVals, (items.length % 2 === 0), 8, true);
+
+  pdf.fillColor(page, 0,0,0);
+
+  if (singlePageFooterMode && pdf.pages.length === 1) {
+    y = footerTopLineY;
+  } else {
+    // garantir espaço; se não couber, nova página
+    const neededH = (lines.length * footerLineH) + 10;
+    if (y - neededH < 30) {
+      page = pdf.addPage({width: W, height: H});
+      y = H - 50;
+    }
+    y -= footerGap;
+  }
+
+  for (const line of lines) {
+    if (!line) { y -= footerLineH; continue; }
+    const lineW = measurePdfTextW(line, 8);
+    const lineX = footerX + Math.max(0, (footerInnerW - lineW) / 2);
+    pdf.text(page, lineX, y, line, 8);
+    y -= footerLineH;
+  }
+
+  return pdf.build();
+}
+
+function pdfReportFromSimulation(sim) {
+  if (sim.tipododebito === 'TCFA_ACUMULADO') {
+    return pdfReportTcfaAcumulado(sim);
+  }
+
+  const pdf = new MiniPdf();
+  let page = pdf.addPage();
+
+  const W = 595.28, H = 841.89;
+  let y = H - 40;
+
+  const explicSimples = "*Cálculo proporcional: baseia-se na relação entre o valor depositado (ou pago) e o valor consolidado na data do depósito ou pagamento. Após aplicação dessa proporção sobre o saldo do débito, obtém-se o saldo remanescente, ao qual são aplicadas as taxas da data pretendida para determinar o valor consolidado correspondente.";
+  const pdfMeasureCanvas = document.createElement('canvas');
+  const pdfMeasureCtx = pdfMeasureCanvas.getContext ? pdfMeasureCanvas.getContext('2d') : null;
+  function measurePdfTextW(s, fontSize) {
+    if (!pdfMeasureCtx) return String(s ?? '').length * fontSize * 0.50;
+    const px = fontSize * (96 / 72);
+    pdfMeasureCtx.font = `${px}px Helvetica, Arial, sans-serif`;
+    return pdfMeasureCtx.measureText(String(s ?? '')).width * (72 / 96);
+  }
+  function wrapLinesFooter(text, maxWidth, fontSize) {
+    const words = String(text || '').replace(/\s+/g, ' ').trim().split(' ');
+    const lines = [];
+    let line = '';
+    const usableWidth = Math.max(20, maxWidth - 2);
+    for (const w of words) {
+      const test = line ? (line + ' ' + w) : w;
+      if (measurePdfTextW(test, fontSize) <= usableWidth) {
+        line = test;
+      } else {
+        if (line) lines.push(line);
+        line = w;
+      }
+    }
+    if (line) lines.push(line);
+    return lines;
+  }
+
+  // Title bar
+  pdf.strokeColor(page, 0,0,0);
+  pdf.fillColor(page, 0.121,0.306,0.475); // #1f4e79 approx
+  pdf.rect(page, 40, y, W-80, 22, 1, 1);
+  pdf.fillColor(page, 1,1,1);
+  // Título centralizado (estimativa simples de largura do texto)
+  const titulo = 'Simulação de amortização';
+  const tituloSize = 12;
+  const estW = titulo.length * tituloSize * 0.50; // aproximação para Helvetica
+  const boxW = (W - 80);
+  const xTitulo = 40 + Math.max(0, (boxW - estW) / 2);
+  pdf.text(page, xTitulo, y+7, titulo, tituloSize);
+
+  y -= 34;
+  pdf.fillColor(page, 0,0,0);
+
+  // Header info
+  const zeroDepositUpdateMode = isZeroDepositUpdateMode(sim);
+  const info = [
+    `CPF/CNPJ: ${_pdfHdrGlobal.cnpj || ''}`,
+    `Número do débito: ${_pdfHdrGlobal.numerododebito || ''}`
+  ];
+  if (sim.tipododebito === 'TCFA_SIMPLES') {
+    info.push(`Trimestre/Ano: ${getTcfaSimplesTrimestreAno()}`);
+  }
+  info.push(`Tipo do débito: ${_pdfHdrGlobal.tipododebitoLabel}`);
+  if (!zeroDepositUpdateMode) {
+    info.push(`Data do depósito ou pagamento: ${sim.datadodeposito || ''}`);
+    info.push(`Valor do depósito ou pagamento: R$ ${numeroParaMoeda(sim.valordodeposito || 0)}`);
+  }
+  info.push(`Data de consolidação: ${sim.datadeconsolidacao || ''}`);
+  for (const line of info) {
+    pdf.text(page, 40, y, line, 10);
+    y -= 14;
+  }
+
+  y -= 6;
+  pdf.line(page, 40, y, W-40, y, 1);
+  y -= 18;
+
+  // Result table for simple
+  if (sim.tipododebito !== 'TCFA_ACUMULADO') {
+    // Regras do DÉBITO SIMPLES:
+    // saldo base na data final = saldo pós-depósito (data do depósito)
+    // multa = saldoBase * pctMulta
+    // juros = saldoBase * pctJuros
+    // selic = saldoBase * pctSelic
+    // totalParcial = saldoBase + multa + juros + selic
+    // encargos = totalParcial * pctEncargos
+    // consolidado = totalParcial + encargos
+
+    const saldoBase = sim.saldoposdepositodt01 || 0;
+
+    const pctMulta = sim._pctMultaArquivo02 || 0;
+    const pctJuros = sim._pctJurosArquivo02 || 0;
+    const pctSelic = sim._pctSelicArquivo02 || 0;
+    const pctEnc = sim._pctEncargosArquivo02 || 0;
+
+    const calc = computeRoundedRateComponents(saldoBase, pctMulta, pctJuros, pctSelic, pctEnc);
+
+    sim.saldoFinalBase = calc.base;
+    sim.multaFinal = calc.multa;
+    sim.jurosFinal = calc.juros;
+    sim.selicFinal = calc.selic;
+    sim.totalParcialFinal = calc.totalParcial;
+    sim.encargosFinal = calc.encargos;
+    sim.valorConsolidadoFinal = calc.consolidado;
+
+    // Render da tabela no PDF
+    const dataCons = sim.datadeconsolidacao || '';
+    pdf.text(page, 40, y, `Memória de cálculo (consolidação em ${dataCons})`, 10);
+    y -= 24; // espaço extra para evitar sobreposição com a tabela
+
+    const rows = [];
+    if (!zeroDepositUpdateMode) {
+      rows.push(['(=) Saldo pré-amortização', '', `R$ ${numeroParaMoeda(sim.saldoatualizadonadatadeposito || 0)}`]);
+      rows.push(['(-) Valor amortizado', '', `R$ ${numeroParaMoeda(sim.valorrealdt1 || 0)}`]);
+    }
+    rows.push(
+      ['(=) Saldo pós-amortização', '', `R$ ${numeroParaMoeda(sim.saldoFinalBase || 0)}`],
+      ['(+)Multa', formatPercentPdfDisplay(pctMulta), `R$ ${numeroParaMoeda(sim.multaFinal || 0)}`],
+      ['(+)Juros', formatPercentPdfDisplay(pctJuros), `R$ ${numeroParaMoeda(sim.jurosFinal || 0)}`],
+      ['(+)Selic', formatPercentPdfDisplay(pctSelic), `R$ ${numeroParaMoeda(sim.selicFinal || 0)}`],
+      ['(=)Total Parcial', '', `R$ ${numeroParaMoeda(sim.totalParcialFinal || 0)}`],
+      ['(+)Encargos Legais', formatPercentPdfDisplay(pctEnc), `R$ ${numeroParaMoeda(sim.encargosFinal || 0)}`],
+      ['(=)Valor Consolidado', '', `R$ ${numeroParaMoeda(sim.valorConsolidadoFinal || 0)}`],
+    );
+
+    const x1 = 40, x2 = W - 40;
+    const col1w = 245;
+    const colPctW = 115;
+        // Evitar que a tabela seja cortada: se não couber inteira, quebra a página antes de desenhar
+    const rowH = 18;
+
+    const neededH = (rowH * (rows.length + 1)) + 10;
+    if (y - neededH < 80) {
+      page = pdf.addPage();
+      y = H - 60;
+      pdf.fillColor(page, 0,0,0);
+      pdf.text(page, 40, y, `Memória de cálculo (consolidação em ${dataCons})`, 10);
+      y -= 24;
+    }
+
+    // Cabeçalho
+    pdf.fillColor(page, 0.121, 0.306, 0.475);
+    pdf.rect(page, x1, y, x2 - x1, rowH, 1, 1);
+    pdf.fillColor(page, 1, 1, 1);
+    pdf.text(page, x1 + 6, y + 5, 'Campo', 10);
+    pdf.text(page, x1 + col1w + 6, y + 5, 'Percentual', 10);
+    pdf.text(page, x1 + col1w + colPctW + 6, y + 5, 'Valor', 10);
+    y -= rowH;
+
+    // Linhas
+    for (const r of rows) {
+      pdf.fillColor(page, 0.878, 0.878, 0.878);
+      pdf.rect(page, x1, y, x2 - x1, rowH, 1, 1);
+      pdf.fillColor(page, 0, 0, 0);
+      pdf.text(page, x1 + 6, y + 5, r[0], 10);
+      pdf.text(page, x1 + col1w + 6, y + 5, r[1], 10);
+      pdf.text(page, x1 + col1w + colPctW + 6, y + 5, r[2], 10);
+      y -= rowH;
+    }
+
+    const footerX = x1 + 2;
+    const footerInnerW = (x2 - x1) - 4;
+    const lines = wrapLinesFooter(explicSimples, footerInnerW, 8);
+    const footerLineH = 12;
+    const footerGap = 8;
+    const footerLastLineY = 36;
+    const footerTopLineY = footerLastLineY + Math.max(0, (lines.length - 1) * footerLineH);
+    const singlePageFooterMode = (pdf.pages.length === 1) && (y >= (footerTopLineY + footerGap));
+
+    if (singlePageFooterMode) {
+      y = footerTopLineY;
+    } else {
+      const neededFooterH = (lines.length * footerLineH) + 10;
+      if (y - neededFooterH < 30) {
+        page = pdf.addPage();
+        y = H - 60;
+      } else {
+        y -= footerGap;
+      }
+    }
+
+    for (const line of lines) {
+      if (!line) { y -= footerLineH; continue; }
+      const lineW = measurePdfTextW(line, 8);
+      const lineX = footerX + Math.max(0, (footerInnerW - lineW) / 2);
+      pdf.text(page, lineX, y, line, 8);
+      y -= footerLineH;
+    }
+
+  } else {
+    pdf.text(page, 40, y, 'Resultado (TCFA acumulado)', 11);
+    y -= 12;
+    pdf.text(page, 40, y, 'Débitos não afetados pelo depósito ou pagamento permanecem inalterados.', 10);
+    y -= 18;
+
+    const cols = ['Débito', 'Saldo atualizado', 'Valor consolidado'];
+    const x1 = 40, x2 = W-40;
+    const rowH = 16;
+    const colWs = [145, 185, 185];
+
+    // header
+    pdf.fillColor(page, 0.121,0.306,0.475);
+    pdf.rect(page, x1, y, x2-x1, rowH, 1, 1);
+    pdf.fillColor(page, 1,1,1);
+
+    let cx = x1;
+    for (let i = 0; i < cols.length; i++) {
+      pdf.text(page, cx+4, y+4, cols[i], 9);
+      cx += colWs[i];
+    }
+    y -= rowH;
+
+    // rows
+    const items = sim.tcfaTabelaResumo || [];
+    for (const it of items) {
+      if (y < 80) {
+        // new page
+        y = H - 60;
+        const p2 = pdf.addPage();
+        // simple continuation
+        // NOTE: para simplificar, não duplicamos cabeçalhos novamente aqui.
+        // Em um refinamento futuro, repetir cabeçalho e títulos.
+      }
+      pdf.fillColor(page, 0.878,0.878,0.878);
+      pdf.rect(page, x1, y, x2-x1, rowH, 1, 1);
+      pdf.fillColor(page, 0,0,0);
+      let cx2 = x1;
+      pdf.text(page, cx2+4, y+4, String(it.debito ?? ''), 9); cx2 += colWs[0];
+      pdf.text(page, cx2+4, y+4, `R$ ${numeroParaMoeda(it.saldo ?? 0)}`, 9); cx2 += colWs[1];
+      pdf.text(page, cx2+4, y+4, `R$ ${numeroParaMoeda(it.consolidado ?? 0)}`, 9);
+      y -= rowH;
+    }
+  }
+
+  return pdf.build();
+}
+
+/* ==========================
+   MODELO DE DADOS (SIMULAÇÕES)
+========================== */
+let _pdfHdrGlobal = { cnpj:'', numerododebito:'', tipododebitoLabel:'' };
+
+const state = {
+  simulations: [],
+  tipoDebito: null, // 'AI' | 'TCFA_SIMPLES' | 'TCFA_ACUMULADO'
+  tcfaSimplesTrimestreAno: '',
+};
+
+function updateRemoveButtonState() {
+  const btn = document.getElementById('btnRemoveSimulation');
+  if (!btn) return;
+  btn.disabled = state.simulations.length <= 1;
+  btn.classList.toggle('disabled', btn.disabled);
+}
+
+function removeLastSimulation() {
+  if (state.simulations.length <= 1) return;
+
+  const lastId = state.simulations.length;
+  const sim = state.simulations.pop();
+
+  try {
+    if (sim && sim._pdfUrl) URL.revokeObjectURL(sim._pdfUrl);
+  } catch {}
+
+  const el = document.querySelector(`.simulation[data-sim="${lastId}"]`);
+  if (el) el.remove();
+
+  updateRemoveButtonState();
+  showAlert(`Depósito/ pagamento ${String(lastId).padStart(2,'0')}: removido.`, 'success');
+}
+
+
+function tipoLabel(tipo) {
+  if (tipo === 'AI') return 'Auto de Infração';
+  if (tipo === 'TCFA_SIMPLES') return 'TCFA simples';
+  if (tipo === 'TCFA_ACUMULADO') return 'TCFA acumulado';
+  return '';
+}
+
+function getSimulationOrdinal(sim) {
+  if (!sim) return 0;
+  const explicit = Number(sim._simId || 0);
+  if (explicit > 0) return explicit;
+  const idx = state.simulations.indexOf(sim);
+  return idx >= 0 ? (idx + 1) : 0;
+}
+
+function isZeroDepositUpdateMode(sim) {
+  return getSimulationOrdinal(sim) >= 2 && Number(sim?.valordodeposito || 0) === 0;
+}
+
+/* ==========================
+   REGRAS DE EXTRAÇÃO (RÓTULOS)
+========================== */
+function getSaldoLabelByTipo(tipo) {
+  // conforme guia
+  if (tipo === 'AI') return '(=)Saldo Atualizado';
+  return '(=)Saldo Atual';
+}
+
+const LABELS = {
+  valorConsolidado: '(=)Valor Consolidado',
+  totais: 'TOTAIS',
+  // data de consolidação: tenta achar linha com esse texto
+  dataConsolidacaoRegex: /Consolida.*d[eé]bito.*?(\d{2}[\/\-]\d{2}[\/\-]\d{4})/i,
+};
+
+/* ==========================
+   CÁLCULOS (PARTE 01)
+========================== */
+function buildTcfaAcumuladoRowsFromArquivo01(sim) {
+  if (Array.isArray(sim._rowsArquivo01Tabela) && sim._rowsArquivo01Tabela.length) {
+    return sim._rowsArquivo01Tabela.map((r, idx) => ({
+      row: idx + 1,
+      debito: String(r.debito ?? '').trim(),
+      saldoAtualizado: Number(r.saldoAtualizado || 0),
+      consolidado: Number(r.consolidado || 0),
+      trimestreAno: String(r.trimestreAno || '').trim(),
+    })).filter(r => r.debito);
+  }
+
+  const rowTotais = sim._rowTotaisArquivo01;
+  if (!rowTotais) throw new Error('Não foi possível localizar "TOTAIS" no Arquivo01.');
+
+  const debitoCol = sim._colDebitoArquivo01 || 1;
+  const saldoCol = sim._colSaldoAtualizadoArquivo01 || 10;
+  const consolidadoCol = sim._colConsolidadoArquivo01 || 19;
+
+  const rows = [];
+  for (let r = 1; r < rowTotais; r++) {
+    const debRaw = sim._getCellArquivo01(r, debitoCol);
+    const debTxt = cleanText(debRaw);
+    const isDebitNumber = (typeof debRaw === 'number' && Number.isFinite(debRaw)) || /^\d{3,}$/.test(debTxt);
+    if (!isDebitNumber) continue;
+
+    rows.push({
+      row: r,
+      debito: String(debTxt).trim(),
+      saldoAtualizado: parsePtBrNumberAny(sim._getCellArquivo01(r, saldoCol)) ?? 0,
+      consolidado: parsePtBrNumberAny(sim._getCellArquivo01(r, consolidadoCol)) ?? 0,
+    });
+  }
+
+  if (!rows.length) throw new Error('Não foi possível ler os débitos do Arquivo01.');
+  return rows;
+}
+
+function buildTcfaAcumuladoRowsFromPreviousResult(prevSim) {
+  const prevRows = Array.isArray(prevSim?.tcfaTabelaDetalhada) ? prevSim.tcfaTabelaDetalhada : [];
+  const rows = prevRows
+    .map((r, idx) => ({
+      row: idx + 1,
+      debito: String(r.debito ?? '').trim(),
+      trimestreAno: String(r.trimestreAno ?? '').trim(),
+      saldoAtualizado: Number(r.saldoAtualizado || 0),
+      consolidado: Number(r.consolidado || 0),
+      situacao: String(r.situacao || ''),
+    }))
+    .filter(r => r.debito);
+
+  if (!rows.length) throw new Error('Não foi possível localizar a tabela de resultado do depósito/ pagamento anterior.');
+  return rows;
+}
+
+function isTcfaAcumuladoPreviousRowActive(row) {
+  const situacaoNorm = _normalizeAsciiUpper(String(row?.situacao || ''));
+  if (situacaoNorm.includes('QUITADO PARCIALMENTE')) return true;
+  if (situacaoNorm.includes('NAO QUITADO')) return true;
+  return Number(row?.saldoAtualizado || 0) > 0 || Number(row?.consolidado || 0) > 0;
+}
+
+function applyTcfaAcumuladoParte01FromRows(sim, sourceRows) {
+  if (!Array.isArray(sourceRows) || !sourceRows.length) {
+    throw new Error('Não foi possível localizar os débitos base para o cálculo do TCFA acumulado.');
+  }
+
+  sim.valorquefaltou = roundMoneyValue((sim.valorconsolidadonadatadeposito || 0) - (sim.valordodeposito || 0));
+
+  let idx = sourceRows.length - 1;
+  let soma = roundMoneyValue(sourceRows[idx].consolidado || 0);
+  let parcial = sourceRows[idx];
+
+  if (soma >= sim.valorquefaltou) {
+    sim.somadebitosnaoquitadosdt1 = roundMoneyValue(soma);
+    sim.consolidadodebitoxdt1 = Number(parcial.consolidado || 0);
+    sim.saldodebitoxdt1 = Number(parcial.saldoAtualizado || 0);
+    sim.numerodebitox = String(parcial.debito || '').trim();
+    sim._rowParcialArquivo01 = parcial.row;
+    sim._rowsNaoQuitadosArquivo01 = [];
+  } else {
+    const rowsNaoQuitados = [sourceRows[idx]];
+    while (idx > 0 && soma < sim.valorquefaltou) {
+      idx -= 1;
+      const atual = sourceRows[idx];
+      soma = sumMoneyValues(soma, atual.consolidado || 0);
+      parcial = atual;
+      if (soma < sim.valorquefaltou) {
+        rowsNaoQuitados.push(atual);
+      }
+    }
+
+    sim.somadebitosnaoquitadosdt1 = roundMoneyValue(soma);
+    sim.consolidadodebitoxdt1 = Number(parcial.consolidado || 0);
+    sim.saldodebitoxdt1 = Number(parcial.saldoAtualizado || 0);
+    sim.numerodebitox = String(parcial.debito || '').trim();
+    sim._rowParcialArquivo01 = parcial.row;
+    sim._rowsNaoQuitadosArquivo01 = rowsNaoQuitados.map(r => r.row);
+  }
+
+  sim.valorquitadodt1 = roundMoneyValue((sim.valorconsolidadonadatadeposito || 0) - (sim.somadebitosnaoquitadosdt1 || 0));
+  sim.valoraindanaocontabilizado = roundMoneyValue((sim.valordodeposito || 0) - (sim.valorquitadodt1 || 0));
+  sim.fatordeimputacao = (sim.consolidadodebitoxdt1 || 0) === 0 ? 0 : (sim.valoraindanaocontabilizado || 0) / (sim.consolidadodebitoxdt1 || 0);
+  sim.valorrealdt1 = roundMoneyValue((sim.saldodebitoxdt1 || 0) * (sim.fatordeimputacao || 0));
+  sim.saldoposdepositodt01 = nonNegativeMoneyValue((sim.saldodebitoxdt1 || 0) - (sim.valorrealdt1 || 0));
+}
+
+function getCarryoverDataFromPrevious(prevSim) {
+  if (!prevSim) {
+    return { saldo: 0, consolidado: 0, data: '' };
+  }
+
+  if (prevSim.tipododebito === 'TCFA_ACUMULADO') {
+    const rows = Array.isArray(prevSim.tcfaTabelaDetalhada) ? prevSim.tcfaTabelaDetalhada : [];
+    let saldo = 0;
+    let consolidado = 0;
+    for (const r of rows) {
+      saldo = sumMoneyValues(saldo, r.saldoAtualizado || 0);
+      consolidado = sumMoneyValues(consolidado, r.consolidado || 0);
+    }
+
+    return {
+      saldo: saldo > 0 ? saldo : (prevSim.saldoFinalBase ?? prevSim.saldoposdepositodt01 ?? 0),
+      consolidado: consolidado > 0 ? consolidado : (prevSim.valorConsolidadoFinal ?? 0),
+      data: prevSim.datadeconsolidacao || '',
+    };
+  }
+
+  return {
+    saldo: prevSim.saldoFinalBase ?? prevSim.saldoposdepositodt01 ?? 0,
+    consolidado: prevSim.valorConsolidadoFinal ?? 0,
+    data: prevSim.datadeconsolidacao || '',
+  };
+}
+
+function computeSimpleConsolidadoByRates(baseSaldo, pctMulta, pctJuros, pctSelic, pctEncargos) {
+  return computeRoundedRateComponents(baseSaldo, pctMulta, pctJuros, pctSelic, pctEncargos).consolidado;
+}
+
+function buildTcfaAcumuladoRowsFromUploadedDepositMemory(prevSim, parsedRows) {
+  const prevRows = buildTcfaAcumuladoRowsFromPreviousResult(prevSim)
+    .filter(r => isTcfaAcumuladoPreviousRowActive(r));
+
+  const uploadRows = Array.isArray(parsedRows) ? parsedRows : [];
+  const mapUpload = new Map(uploadRows.map(r => [String(r.debito || '').trim(), r]));
+  const recomposed = [];
+
+  for (const prevRow of prevRows) {
+    const key = String(prevRow.debito || '').trim();
+    const up = mapUpload.get(key);
+    if (!up) {
+      throw new Error(`Não foi possível localizar na memória carregada os percentuais do débito ${key}.`);
+    }
+
+    const base = roundMoneyValue(prevRow.saldoAtualizado || 0);
+    const pctMulta = Number(up.multaPct || 0) / 100;
+    const pctJuros = Number(up.jurosPct || 0) / 100;
+    const pctSelic = Number(up.selicPct || 0) / 100;
+    const pctEnc = Number(up.encargosPct || 0) / 100;
+    const consolidado = computeSimpleConsolidadoByRates(base, pctMulta, pctJuros, pctSelic, pctEnc);
+
+    recomposed.push({
+      row: Number(prevRow.row || (recomposed.length + 1)),
+      debito: key,
+      trimestreAno: String(prevRow.trimestreAno || up.trimestreAno || '').trim(),
+      saldoAtualizado: base,
+      consolidado,
+      situacao: String(prevRow.situacao || ''),
+    });
+  }
+
+  if (!recomposed.length) {
+    throw new Error('Não foi possível compatibilizar a memória de cálculo da data do depósito/ pagamento com o resultado do depósito/ pagamento anterior.');
+  }
+
+  return recomposed;
+}
+
+function refreshArquivo01Status(simId) {
+  const sim = state.simulations[simId - 1];
+  if (!sim) return;
+  if (simId >= 2) {
+    if (sim._arquivo01ManualLoaded) setUploadOk(`statusUpload01_${simId}`);
+    else setUploadAuto(`statusUpload01_${simId}`);
+    return;
+  }
+  if (sim._arquivo01Carregado) setUploadOk(`statusUpload01_${simId}`);
+  else clearUploadOk(`statusUpload01_${simId}`);
+}
+
+function applyUploadedDepositMemoryOverride(simId) {
+  const sim = state.simulations[simId - 1];
+  if (!sim || simId < 2 || !sim._arquivo01ManualLoaded || !sim._arquivo01ParsedData) return;
+
+  const dataIn = document.getElementById(`datadodeposito_${simId}`);
+  const saldoIn = document.getElementById(`saldoatualizadonadatadeposito_${simId}`);
+  const consIn = document.getElementById(`valorconsolidadonadatadeposito_${simId}`);
+
+  const baseSaldo = moedaParaNumero(saldoIn ? saldoIn.value : '') || Number(sim.saldoatualizadonadatadeposito || 0);
+  sim.saldoatualizadonadatadeposito = baseSaldo;
+
+  const parsed = sim._arquivo01ParsedData;
+  if (parsed.dataConsolidacao) {
+    sim.datadodeposito = normalizeDateDdMmYyyy(parsed.dataConsolidacao || '');
+    if (dataIn && sim.datadodeposito) setValueSilent(dataIn, sim.datadodeposito);
+  }
+  if (saldoIn) setValueSilent(saldoIn, numeroParaMoeda(baseSaldo || 0));
+
+  if (sim.tipododebito === 'TCFA_ACUMULADO') {
+    const prevSim = state.simulations[simId - 2];
+    const sourceRows = buildTcfaAcumuladoRowsFromUploadedDepositMemory(prevSim, parsed.rows || []);
+    sim._rowsArquivo01TabelaOverride = sourceRows;
+    const totalConsolidado = sourceRows.reduce((acc, r) => sumMoneyValues(acc, r.consolidado || 0), 0);
+    sim.valorconsolidadonadatadeposito = totalConsolidado;
+    if (consIn) setValueSilent(consIn, numeroParaMoeda(totalConsolidado || 0));
+  } else {
+    sim._rowsArquivo01TabelaOverride = null;
+    const valorConsolidado = computeSimpleConsolidadoByRates(
+      baseSaldo,
+      parsed.pctMulta || 0,
+      parsed.pctJuros || 0,
+      parsed.pctSelic || 0,
+      parsed.pctEncargos || 0
+    );
+    sim.valorconsolidadonadatadeposito = valorConsolidado;
+    if (consIn) setValueSilent(consIn, numeroParaMoeda(valorConsolidado || 0));
+  }
+
+  recomputeCalculosSim(simId);
+  refreshArquivo01Status(simId);
+  syncConsolidacaoSourceUi(simId);
+}
+
+function calcularParte01(sim) {
+  const tipo = sim.tipododebito;
+
+  if (tipo === 'TCFA_ACUMULADO') {
+    const simIndex = state.simulations.indexOf(sim);
+    if (simIndex > 0) {
+      const prevSim = state.simulations[simIndex - 1];
+      const sourceRows = Array.isArray(sim._rowsArquivo01TabelaOverride) && sim._rowsArquivo01TabelaOverride.length
+        ? sim._rowsArquivo01TabelaOverride
+        : buildTcfaAcumuladoRowsFromPreviousResult(prevSim);
+      applyTcfaAcumuladoParte01FromRows(sim, sourceRows);
+    } else {
+      const sourceRows = buildTcfaAcumuladoRowsFromArquivo01(sim);
+      applyTcfaAcumuladoParte01FromRows(sim, sourceRows);
+    }
+
+  } else {
+    // fator imputação (simples)
+    sim.fatordeimputacao = (sim.valorconsolidadonadatadeposito || 0) === 0 ? 0 : (sim.valordodeposito || 0) / (sim.valorconsolidadonadatadeposito || 0);
+
+    // valor amortizado real (simples)
+    const saldoBaseDeposito = roundMoneyValue(sim.saldoatualizadonadatadeposito || 0);
+    sim.valorrealdt1 = roundMoneyValue(saldoBaseDeposito * (sim.fatordeimputacao || 0));
+
+    // saldo pós-depósito (simples)
+    sim.saldoposdepositodt01 = nonNegativeMoneyValue(saldoBaseDeposito - (sim.valorrealdt1 || 0));
+  }
+}
+
+/* ==========================
+   CÁLCULOS (PARTE 02 - DATA FINAL)
+   Regra adotada:
+   - Para débito simples: usa valores da memória final e aplica o fator para estimar o residual na data final.
+   - Para TCFA acumulado: "não quitados" são copiados do Arquivo02; o parcial é recalculado com o fator; quitados ficam com zero.
+========================== */
+function calcularParte02(sim) {
+  // Parte 02 (débito simples): recomposição na data final usando percentuais do Arquivo02
+  // Base: saldo pós-depósito (já amortizado na data do depósito)
+  // Fórmulas (conforme planilhas):
+  // multa = base * pctMulta
+  // juros = base * pctJuros
+  // selic = base * pctSelic
+  // totalParcial = base + multa + juros + selic
+  // encargos = totalParcial * pctEncargos
+  // consolidadoFinal = totalParcial + encargos
+
+  if (sim.tipododebito !== 'TCFA_ACUMULADO') {
+    const base = sim.saldoposdepositodt01 || 0;
+
+    const pctMulta = sim._pctMultaArquivo02 || 0;
+    const pctJuros = sim._pctJurosArquivo02 || 0;
+    const pctSelic = sim._pctSelicArquivo02 || 0;
+    const pctEnc = sim._pctEncargosArquivo02 || 0;
+
+    const calc = computeRoundedRateComponents(base, pctMulta, pctJuros, pctSelic, pctEnc);
+
+    sim.saldoFinalBase = calc.base;
+    sim.multaFinal = calc.multa;
+    sim.jurosFinal = calc.juros;
+    sim.selicFinal = calc.selic;
+    sim.totalParcialFinal = calc.totalParcial;
+    sim.encargosFinal = calc.encargos;
+    sim.valorConsolidadoFinal = calc.consolidado;
+
+  } else {
+    // TCFA acumulado: recompor apenas o débito parcial e copiar os demais não quitados inalterados do Arquivo02
+    const rows = sim._rowsArquivo02Tabela || [];
+    const debitoParcial = String(sim.numerodebitox || '').trim();
+    if (!debitoParcial) throw new Error('TCFA acumulado: número do débito parcial não identificado.');
+
+    const idxParcial = rows.findIndex(r => String(r.debito).trim() === debitoParcial);
+    if (idxParcial < 0) throw new Error('TCFA acumulado: não foi possível localizar o débito parcial no Arquivo02.');
+
+    const parcialRow = rows[idxParcial];
+
+    // Percentuais do Arquivo02 (em %)
+    const pctMulta = Number(parcialRow.multaPct || 0);
+    const pctJuros = Number(parcialRow.jurosPct || 0);
+    const pctSelic = Number(parcialRow.selicPct || 0);
+    const pctEnc   = Number(parcialRow.encargosPct || 0);
+
+    // Guardar para preencher os campos da UI
+    sim._tcfaPct = { multa: pctMulta, juros: pctJuros, selic: pctSelic, encargos: pctEnc };
+
+    // Converter % -> fração
+    const pMulta = pctMulta / 100;
+    const pJuros = pctJuros / 100;
+    const pSelic = pctSelic / 100;
+    const pEnc   = pctEnc   / 100;
+
+    // Base (saldo pós-amortização calculado no Passo 01)
+    const calcParcial = computeRoundedRateComponents(sim.saldoposdepositodt01 || 0, pMulta, pJuros, pSelic, pEnc);
+    const base = calcParcial.base;
+    const multaVal = calcParcial.multa;
+    const jurosVal = calcParcial.juros;
+    const selicVal = calcParcial.selic;
+    const encargosVal = calcParcial.encargos;
+    const consolidadoParcial = calcParcial.consolidado;
+
+    // Montar tabela no formato da aba "Memória de Cálculo" (xlsm)
+    const tabela = [];
+
+    // Débitos quitados (acima do parcial) -> valores zerados, preservando os percentuais da fonte titular
+    for (let i = 0; i < idxParcial; i++) {
+      const rQuitado = rows[i];
+      tabela.push({
+        debito: rQuitado.debito,
+        trimestreAno: rQuitado.trimestreAno || '',
+        saldoAtualizado: 0,
+        multaPct: Number(rQuitado.multaPct || 0), multaVal: 0,
+        jurosPct: Number(rQuitado.jurosPct || 0), jurosVal: 0,
+        selicPct: Number(rQuitado.selicPct || 0), selicVal: 0,
+        encargosPct: Number(rQuitado.encargosPct || 0), encargosVal: 0,
+        consolidado: 0,
+        situacao: 'Quitado'
+      });
+    }
+
+    // Débito parcial -> recomposição pela base pós-amortização + percentuais do Arquivo02
+    tabela.push({
+      debito: parcialRow.debito,
+      trimestreAno: parcialRow.trimestreAno || '',
+      saldoAtualizado: base,
+      multaPct: pctMulta, multaVal: multaVal,
+      jurosPct: pctJuros, jurosVal: jurosVal,
+      selicPct: pctSelic, selicVal: selicVal,
+      encargosPct: pctEnc, encargosVal: encargosVal,
+      consolidado: consolidadoParcial,
+      situacao: 'Quitado parcialmente'
+    });
+
+    // Demais não quitados -> permanecem inalterados em relação ao pagamento,
+// porém devem ser exibidos com seus percentuais e valores na data final.
+// Regra: base = saldo atualizado (Arquivo02) e recomposição por percentuais do próprio débito.
+for (let i = idxParcial + 1; i < rows.length; i++) {
+  const r = rows[i];
+  const baseNQ = Number(r.saldoAtualizado || 0);
+
+  const pctM = Number(r.multaPct || 0);
+  const pctJ = Number(r.jurosPct || 0);
+  const pctS = Number(r.selicPct || 0);
+  const pctE = Number(r.encargosPct || 0);
+
+  const pM = pctM / 100;
+  const pJ = pctJ / 100;
+  const pS = pctS / 100;
+  const pE = pctE / 100;
+
+  const calcNQ = computeRoundedRateComponents(baseNQ, pM, pJ, pS, pE);
+  const baseNQFinal = calcNQ.base;
+  const multaNQ = calcNQ.multa;
+  const jurosNQ = calcNQ.juros;
+  const selicNQ = calcNQ.selic;
+  const encargosNQ = calcNQ.encargos;
+  const consolidadoNQ = calcNQ.consolidado;
+
+  // guardar consolidado no próprio objeto para somatórios
+  r.consolidado = consolidadoNQ;
+
+  tabela.push({
+    debito: r.debito,
+    trimestreAno: r.trimestreAno || '',
+    saldoAtualizado: baseNQFinal,
+    multaPct: pctM, multaVal: multaNQ,
+    jurosPct: pctJ, jurosVal: jurosNQ,
+    selicPct: pctS, selicVal: selicNQ,
+    encargosPct: pctE, encargosVal: encargosNQ,
+    consolidado: consolidadoNQ,
+    situacao: 'Não quitado'
+  });
+}
+
+sim.tcfaTabelaDetalhada = tabela;
+
+    // Consolidado final do acumulado
+    let somaDemais = 0;
+    for (let i = idxParcial + 1; i < rows.length; i++) somaDemais = sumMoneyValues(somaDemais, rows[i].consolidado ?? 0);
+    sim.valorConsolidadoFinal = sumMoneyValues(consolidadoParcial, somaDemais);
+
+  }
+}
+
+/* ==========================
+   UI: CRIAR BLOCO DE SIMULAÇÃO
+========================== */
+function createSimulationBlock(index) {
+  const simId = index + 1;
+  const deposito01Title = (simId >= 2)
+    ? 'DADOS: DATA DO DEPÓSITO/ PAGAMENTO (Saldo preenchido automaticamente com os dados do cálculo anterior)'
+    : 'DADOS: DATA DO DEPÓSITO/ PAGAMENTO (Arquivo01)';
+  const root = document.createElement('div');
+  root.className = 'simulation';
+  root.dataset.sim = String(simId);
+
+  root.innerHTML = `
+    <div class="section-title deposit-header" id="depositHeader_${simId}" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;"><span id="depositTitle_${simId}">NOVO DEPÓSITO/ PAGAMENTO: ${String(simId).padStart(2,'0')}</span><span id="depositArrow_${simId}">▼</span></div>
+    <div class="content" id="depositBody_${simId}">
+      <div class="two-cols">
+        <div>
+          <div class="row">
+            <label>Valor do depósito/ pagamento</label>
+            <input class="input" id="valordodeposito_${simId}" placeholder="0,00">
+          </div>
+        </div>
+        <div>
+          <div class="row">
+            <label>Data do depósito/ pagamento</label>
+            <input class="input" id="datadodeposito_${simId}" placeholder="dd/mm/aaaa" maxlength="10">
+          </div>
+        </div>
+      </div>
+
+      <div class="small deposit-date-obs">Obs: caso a data do depósito/ pagamento seja diferente da mostrada, carregue abaixo a memória de cálculo da data do depósito/ pagamento.</div>
+
+      <div class="hr deposit-date-obs-divider"></div>
+
+      <div class="subsection-title">${deposito01Title}</div>
+
+      <div id="arquivo01Bar_${simId}">
+      <div class="btnbar" style="align-items:center; flex-wrap:nowrap;">
+        <button class="btn" id="btnUpload01_${simId}">Carregar memória de cálculo da data do depósito/ pagamento (PDF)</button>
+        <input type="file" id="file01_${simId}" accept=".pdf,application/pdf" style="display:none;">
+        <div class="upload-status" id="statusUpload01_${simId}"></div>
+      </div>
+      <div class="small" id="arquivo01Spacer_${simId}">&nbsp;</div>
+    </div>
+
+      <div class="info-wrapper">
+      <div class="subsection-title info-toggle" id="toggleCalculos_${simId}" style="cursor:pointer; display:flex; align-items:center; justify-content:space-between; margin-top:4px;">
+        <span>Informações (Data do depósito/ pagamento)</span>
+        <span id="arrowCalculos_${simId}">▼</span>
+      </div>
+
+      <div id="calculosContainer_${simId}" style="display:none;">
+        <div class="two-cols" style="margin-top:10px;">
+          <div class="row">
+            <label>Saldo Atualizado<br>(data do depósito/ pagamento)</label>
+            <input class="input" id="saldoatualizadonadatadeposito_${simId}" placeholder="0,00">
+          </div>
+          <div class="row">
+            <label>Valor Consolidado<br>(data do depósito/ pagamento)</label>
+            <input class="input" id="valorconsolidadonadatadeposito_${simId}" placeholder="0,00">
+          </div>
+        </div>
+
+        <div class="subsection-title" id="acum_title_${simId}">DADOS ADICIONAIS (SOMENTE PARA DÉBITOS ACUMULADOS)</div>
+        <div id="acum_only_${simId}">
+          <div class="two-cols">
+            <div class="row">
+              <label>Valor complementar para quitação (data do depósito/ pagamento)</label>
+              <input class="input-readonly" id="valorquefaltou_${simId}" readonly>
+            </div>
+            <div class="row">
+              <label>Soma dos débitos não quitados (data do depósito/ pagamento)</label>
+              <input class="input-readonly" id="somadebitosnaoquitados_${simId}" readonly>
+            </div>
+          </div>
+
+          <div class="two-cols">
+            <div class="row">
+              <label>Número do primeiro débito não quitado (data do depósito/ pagamento)</label>
+              <input class="input-readonly" id="numerodebitox_${simId}" readonly>
+            </div>
+            <div class="row">
+              <label>Saldo atualizado do primeiro débito não quitado (data do depósito/ pagamento)</label>
+              <input class="input-readonly" id="saldodebitox_${simId}" readonly>
+            </div>
+          </div>
+
+          <div class="row">
+            <label>Valor quitado na data do depósito/ pagamento</label>
+            <input class="input-readonly" id="valorquitado_${simId}" readonly>
+          </div>
+
+          <div class="subsection-title">DADOS A SEREM LANÇADOS PARA O CÁLCULO DE AMORTIZAÇÃO (TCFA acumulado)</div>
+          <div class="two-cols">
+            <div class="row">
+              <label>Valor ainda não contabilizado</label>
+              <input class="input-readonly" id="valoraindanaocontabilizado_${simId}" readonly>
+            </div>
+            <div class="row">
+              <label>Valor consolidado do débito (data do depósito/ pagamento)</label>
+              <input class="input-readonly" id="consolidadodebitox_${simId}" readonly>
+            </div>
+          </div>
+
+          <div class="row">
+            <label>Saldo atualizado do débito (data do depósito/ pagamento)</label>
+            <input class="input-readonly" id="saldodebitoxdt1_${simId}" readonly>
+          </div>
+        </div>
+
+        <div class="subsection-title">CÁLCULO DE AMORTIZAÇÃO (data do depósito/ pagamento)</div>
+
+        <div class="two-cols">
+          <div class="row">
+            <label>Fator de imputação</label>
+            <input class="input-readonly" id="fatordeimputacao_${simId}" readonly>
+          </div>
+          <div class="row">
+            <label>Valor amortizado real</label>
+            <input class="input-readonly" id="valorrealdt1_${simId}" readonly>
+          </div>
+        </div>
+
+        <div class="row">
+          <label>Saldo atualizado pós-depósito/ pagamento</label>
+          <input class="input-readonly" id="saldoposdeposito_${simId}" readonly>
+        </div>
+      </div>
+
+</div>
+
+      <div class="hr"></div>
+
+      <div class="subsection-title">DADOS: DATA DE CONSOLIDAÇÃO (Arquivo02)</div>
+
+      <div class="consol-source-chooser" id="consolSourceChooser_${simId}">
+        <label><input type="checkbox" id="chkUseDepositData_${simId}" disabled> Usar os mesmos dados da data do depósito/ pagamento</label>
+        <label><input type="checkbox" id="chkUseNewArquivo02_${simId}" checked> Carregar novo arquivo</label>
+      </div>
+
+      <div class="btnbar" style="align-items:center;">
+        <button class="btn" id="btnUpload02_${simId}">Carregar memória de cálculo da data de consolidação (PDF)</button>
+        <input type="file" id="file02_${simId}" accept=".pdf,application/pdf" style="display:none;">
+        <div class="upload-status" id="statusUpload02_${simId}"></div>
+      </div>
+      <div class="small">A data de consolidação será extraída desse PDF.</div>
+      <div class="small">&nbsp;</div>
+
+      <div class="info-wrapper">
+      <div class="subsection-title info-toggle" id="toggleDadosConsol_${simId}" style="cursor:pointer; display:flex; align-items:center; justify-content:space-between; margin-top:4px;">
+        <span>Informações (Data da consolidação)</span>
+        <span id="arrowDadosConsol_${simId}">▼</span>
+      </div>
+
+      <div id="dadosConsolContainer_${simId}" style="display:none; margin-top:10px;">
+        <div class="row">
+          <label>Data de consolidação</label>
+          <input class="input" id="datadeconsolidacao_${simId}" placeholder="dd/mm/aaaa" maxlength="10">
+        </div>
+
+        <div class="percent-grid" style="margin-top:10px;">
+          <label>Multa (%)</label>
+          <input class="input pct" id="pctMulta_${simId}" placeholder="0,00%">
+          <label>Juros (%)</label>
+          <input class="input pct" id="pctJuros_${simId}" placeholder="0,00%">
+
+          <label>Selic (%)</label>
+          <input class="input pct" id="pctSelic_${simId}" placeholder="0,00%">
+          <label>Encargos legais (%)</label>
+          <input class="input pct" id="pctEncargos_${simId}" placeholder="0,00%">
+        </div>
+      </div>
+    </div>
+
+      <div class="hr"></div>
+
+      <div class="btnbar" style="margin-top:8px;">
+        <button class="btn btn-primary" id="btnCalcular_${simId}">Calcular e gerar PDF</button>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="subsection-title">RESULTADO</div>
+      <div id="resultado_${simId}" class="small">Ainda não calculado.</div>
+
+      <div class="subsection-title">PDF GERADO</div>
+      <iframe class="pdf-preview" id="pdfPreview_${simId}"></iframe>
+
+      <div class="btnbar">
+        <button class="btn" id="btnDownloadPdf_${simId}">Baixar PDF</button>
+      </div>
+
+    </div>
+  `;
+
+  return root;
+}
+
+function getTipoSelecionado() {
+  const r = document.querySelector('input[name="tipo"]:checked');
+  if (!r) return null;
+  return r.value;
+}
+
+
+function updateNumeroDebitoLabel() {
+  const lbl = document.getElementById('labelNumeroDebito');
+  if (!lbl) return;
+  const tipo = getTipoSelecionado();
+  if (tipo === 'TCFA_ACUMULADO') {
+    lbl.textContent = 'Número do débito acumulado';
+  } else {
+    lbl.textContent = 'Número do débito';
+  }
+}
+function toggleBlocksByTipo() {
+  const tipo = getTipoSelecionado();
+  state.tipoDebito = tipo;
+
+  // habilitar / desabilitar blocos
+  document.querySelectorAll('.simulation').forEach(simEl => {
+    const simId = simEl.dataset.sim;
+    const acumOnly = simEl.querySelector(`#acum_only_${simId}`);
+    const acumTitle = simEl.querySelector(`#acum_title_${simId}`);
+    if (!tipo) {
+      simEl.classList.add('disabled');
+      if (acumOnly) acumOnly.style.display = 'none';
+      if (acumTitle) acumTitle.style.display = 'none';
+      return;
+    }
+    simEl.classList.remove('disabled');
+    if (acumOnly) {
+      const showAcum = (tipo === 'TCFA_ACUMULADO');
+      acumOnly.style.display = showAcum ? 'block' : 'none';
+      if (acumTitle) acumTitle.style.display = showAcum ? 'block' : 'none';
+    }
+
+    // Ajustes específicos de edição (somente para TCFA acumulado)
+    const isAcum = (tipo === 'TCFA_ACUMULADO');
+
+    const saldoInp = simEl.querySelector(`#saldoatualizadonadatadeposito_${simId}`);
+    const vcInp = simEl.querySelector(`#valorconsolidadonadatadeposito_${simId}`);
+    if (saldoInp && vcInp) {
+      saldoInp.readOnly = true; vcInp.readOnly = true;
+      saldoInp.className = 'input-readonly'; vcInp.className = 'input-readonly';
+    }
+
+    const dataConsInp = simEl.querySelector(`#datadeconsolidacao_${simId}`);
+    const pctMultaInp = simEl.querySelector(`#pctMulta_${simId}`);
+    const pctJurosInp = simEl.querySelector(`#pctJuros_${simId}`);
+    const pctSelicInp = simEl.querySelector(`#pctSelic_${simId}`);
+    const pctEncInp   = simEl.querySelector(`#pctEncargos_${simId}`);
+    [dataConsInp, pctMultaInp, pctJurosInp, pctSelicInp, pctEncInp].forEach(inp => {
+      if (!inp) return;
+      if (isAcum) {
+        inp.readOnly = true;
+        inp.className = 'input-readonly';
+      } else {
+        // data consolidação é editável no simples, percentuais também
+        inp.readOnly = false;
+        inp.className = 'input';
+      }
+    });
+
+    updateUploadButtonsState(Number(simId));
+  });
+}
+
+function updateUploadButtonsState(simId) {
+  const sim = state.simulations[Number(simId) - 1] || null;
+  const btn01 = document.getElementById(`btnUpload01_${simId}`);
+  const btn02 = document.getElementById(`btnUpload02_${simId}`);
+  if (!btn01 || !btn02) return;
+
+  btn01.disabled = false;
+  btn02.disabled = false;
+  btn01.title = '';
+  btn02.title = '';
+
+  if (sim && sim._consolidacaoMode === 'arquivo01') {
+    btn02.disabled = true;
+    btn02.title = 'Os dados da data da consolidação estão sendo obtidos da memória da data do depósito/ pagamento.';
+  }
+
+  const tipo = getTipoSelecionado();
+  if (tipo !== 'TCFA_ACUMULADO') return;
+  if (Number(simId) >= 2) return;
+
+  const dataDep = document.getElementById(`datadodeposito_${simId}`)?.value.trim() || '';
+  const valorDep = moedaParaNumero(document.getElementById(`valordodeposito_${simId}`)?.value || '');
+  const dataOk = !!normalizeDateDdMmYyyy(dataDep);
+  const valorOk = valorDep > 0;
+  const arquivo01Carregado = !!(sim && sim._arquivo01Carregado);
+
+  if (!(dataOk && valorOk)) {
+    btn01.title = 'Preencha a data e o valor do depósito/ pagamento antes de carregar o arquivo';
+  }
+
+  if (!arquivo01Carregado && sim._consolidacaoMode !== 'arquivo01') {
+    btn02.title = 'Carregue a memória de cálculo da data do depósito/ pagamento primeiro';
+  }
+}
+
+function cloneConsolidacaoSnapshot(snapshot) {
+  if (!snapshot) return null;
+  return {
+    kind: snapshot.kind || '',
+    dataConsolidacao: snapshot.dataConsolidacao || '',
+    pctMulta: Number(snapshot.pctMulta || 0),
+    pctJuros: Number(snapshot.pctJuros || 0),
+    pctSelic: Number(snapshot.pctSelic || 0),
+    pctEncargos: Number(snapshot.pctEncargos || 0),
+    trimestreAno: String(snapshot.trimestreAno || '').trim(),
+    rows: Array.isArray(snapshot.rows) ? snapshot.rows.map(r => ({ ...r })) : [],
+  };
+}
+
+function getArquivo01ConsolidacaoSnapshot(sim) {
+  if (!sim) return null;
+  return cloneConsolidacaoSnapshot(sim._arquivo01ConsolidacaoData);
+}
+
+function getArquivo02ReserveSnapshot(sim) {
+  if (!sim) return null;
+  return cloneConsolidacaoSnapshot(sim._arquivo02ReserveData);
+}
+
+function updateArquivo02StatusForMode(simId) {
+  const sim = state.simulations[simId - 1];
+  if (!sim) return;
+  if (sim._consolidacaoMode === 'arquivo01') {
+    if (sim._arquivo02ReserveData) setUploadMuted(`statusUpload02_${simId}`);
+    else clearUploadOk(`statusUpload02_${simId}`);
+    return;
+  }
+  if (sim._arquivo02ReserveData) setUploadOk(`statusUpload02_${simId}`);
+  else clearUploadOk(`statusUpload02_${simId}`);
+}
+
+function applyConsolidacaoSnapshotToTitular(simId, snapshot, sourceMode) {
+  const sim = state.simulations[simId - 1];
+  if (!sim) return;
+
+  const snap = cloneConsolidacaoSnapshot(snapshot);
+  sim._consolidacaoMode = sourceMode || 'arquivo02';
+
+  const dtConsInput = document.getElementById(`datadeconsolidacao_${simId}`);
+  const pctMultaInput = document.getElementById(`pctMulta_${simId}`);
+  const pctJurosInput = document.getElementById(`pctJuros_${simId}`);
+  const pctSelicInput = document.getElementById(`pctSelic_${simId}`);
+  const pctEncInput = document.getElementById(`pctEncargos_${simId}`);
+
+  if (!snap) {
+    sim.datadeconsolidacao = '';
+    sim._pctMultaArquivo02 = 0;
+    sim._pctJurosArquivo02 = 0;
+    sim._pctSelicArquivo02 = 0;
+    sim._pctEncargosArquivo02 = 0;
+    sim._rowsArquivo02Tabela = [];
+    setValueSilent(dtConsInput, '');
+    setValueSilent(pctMultaInput, '');
+    setValueSilent(pctJurosInput, '');
+    setValueSilent(pctSelicInput, '');
+    setValueSilent(pctEncInput, '');
+    return;
+  }
+
+  sim.datadeconsolidacao = normalizeDateDdMmYyyy(snap.dataConsolidacao || '');
+  setValueSilent(dtConsInput, sim.datadeconsolidacao || '');
+
+  if (sim.tipododebito === 'TCFA_ACUMULADO') {
+    const rows = Array.isArray(snap.rows) ? snap.rows.map(r => ({ ...r })) : [];
+    sim._rowsArquivo02Tabela = rows;
+
+    let pctM = 0, pctJ = 0, pctS = 0, pctE = 0;
+    if (sim.numerodebitox) {
+      const parcial = rows.find(x => String(x.debito).trim() === String(sim.numerodebitox).trim());
+      if (parcial) {
+        pctM = Number(parcial.multaPct || 0) / 100;
+        pctJ = Number(parcial.jurosPct || 0) / 100;
+        pctS = Number(parcial.selicPct || 0) / 100;
+        pctE = Number(parcial.encargosPct || 0) / 100;
+      }
+    }
+    sim._pctMultaArquivo02 = pctM;
+    sim._pctJurosArquivo02 = pctJ;
+    sim._pctSelicArquivo02 = pctS;
+    sim._pctEncargosArquivo02 = pctE;
+
+    setValueSilent(pctMultaInput, pctM ? formatPercentDisplay(pctM) : '');
+    setValueSilent(pctJurosInput, pctJ ? formatPercentDisplay(pctJ) : '');
+    setValueSilent(pctSelicInput, pctS ? formatPercentDisplay(pctS) : '');
+    setValueSilent(pctEncInput, pctE ? formatPercentDisplay(pctE) : '');
+  } else {
+    sim._rowsArquivo02Tabela = [];
+    sim._pctMultaArquivo02 = Number(snap.pctMulta || 0);
+    sim._pctJurosArquivo02 = Number(snap.pctJuros || 0);
+    sim._pctSelicArquivo02 = Number(snap.pctSelic || 0);
+    sim._pctEncargosArquivo02 = Number(snap.pctEncargos || 0);
+
+    setValueSilent(pctMultaInput, formatPercentDisplay(sim._pctMultaArquivo02));
+    setValueSilent(pctJurosInput, formatPercentDisplay(sim._pctJurosArquivo02));
+    setValueSilent(pctSelicInput, formatPercentDisplay(sim._pctSelicArquivo02));
+    setValueSilent(pctEncInput, formatPercentDisplay(sim._pctEncargosArquivo02));
+
+    if (sim.tipododebito === 'TCFA_SIMPLES') {
+      const trimestreAno = String(snap.trimestreAno || '').trim();
+      sim._trimestreAnoArquivo02 = trimestreAno;
+      if (simId === 1 && trimestreAno) state.tcfaSimplesTrimestreAno = trimestreAno;
+    }
+  }
+}
+
+function syncConsolidacaoSourceUi(simId) {
+  const sim = state.simulations[simId - 1];
+  if (!sim) return;
+  const chkDep = document.getElementById(`chkUseDepositData_${simId}`);
+  const chkNew = document.getElementById(`chkUseNewArquivo02_${simId}`);
+  const btn02 = document.getElementById(`btnUpload02_${simId}`);
+  if (!chkDep || !chkNew || !btn02) return;
+
+  chkDep.disabled = !sim._arquivo01Carregado;
+  chkDep.checked = sim._consolidacaoMode === 'arquivo01' && !chkDep.disabled;
+  chkNew.checked = !chkDep.checked;
+
+  btn02.disabled = chkDep.checked;
+  updateArquivo02StatusForMode(simId);
+}
+
+function selectConsolidacaoSource(simId, mode, opts = {}) {
+  const sim = state.simulations[simId - 1];
+  if (!sim) return;
+  const silent = !!opts.silent;
+
+  if (mode === 'arquivo01') {
+    const snap = getArquivo01ConsolidacaoSnapshot(sim);
+    if (!snap) return;
+    applyConsolidacaoSnapshotToTitular(simId, snap, 'arquivo01');
+  } else {
+    const snap = getArquivo02ReserveSnapshot(sim);
+    applyConsolidacaoSnapshotToTitular(simId, snap, 'arquivo02');
+  }
+
+  syncConsolidacaoSourceUi(simId);
+
+  if (!silent) {
+    invalidateCascadeFrom(simId);
+  }
+}
+
+/* ==========================
+   LÓGICA DE UPLOAD + EXTRAÇÃO
+========================== */
+
+function getCommonHeaderData() {
+  const cnpjDigits = onlyDigits(document.getElementById('cnpj').value);
+  return {
+    cnpj: formatCpfCnpj(cnpjDigits),
+    numerododebito: document.getElementById('numerododebito').value.trim(),
+    tipododebito: getTipoSelecionado(),
+    tipododebitoLabel: tipoLabel(getTipoSelecionado()),
+  };
+}
+
+function getPdfHeaderData() {
+  const cnpjEl = document.getElementById('cnpj');
+  const debEl = document.getElementById('numerododebito');
+  const tipo = getTipoSelecionado();
+
+  const cnpjDigits = onlyDigits((cnpjEl ? cnpjEl.value : ''));
+  let cnpjFmt = formatCpfCnpj(cnpjDigits);
+  if (!cnpjDigits) cnpjFmt = '00.000.000/0000-00';
+
+  let deb = (debEl ? debEl.value : '').trim();
+  if (!deb) deb = 'Não identificado';
+
+  return {
+    cnpj: cnpjFmt,
+    numerododebito: deb,
+    tipododebito: tipo,
+    tipododebitoLabel: tipoLabel(tipo),
+  };
+}
+
+function getTcfaSimplesTrimestreAno() {
+  const firstSim = state.simulations[0];
+  return String(state.tcfaSimplesTrimestreAno || (firstSim && firstSim._trimestreAnoArquivo02) || '').trim();
+}
+
+
+async function handleUploadArquivo01(sim, file) {
+  setStatus('Lendo Arquivo01...');
+  const model = await parsePdfFile(file);
+  const simId = state.simulations.indexOf(sim) + 1;
+
+  if (sim.tipododebito === 'TCFA_ACUMULADO') {
+    const parsed = parseTcfaAcumuladoFromPdfModel(model);
+    const parsedDataDeposito = normalizeDateDdMmYyyy(parsed.dataConsolidacao || '');
+    if (simId >= 2) {
+      const prevSim = state.simulations[simId - 2] || null;
+      const prevDataCons = normalizeDateDdMmYyyy(prevSim?.datadeconsolidacao || '');
+      if (parsedDataDeposito && prevDataCons && compareDateStrDdMmYyyy(parsedDataDeposito, prevDataCons) < 0) {
+        throw new Error(`Falha: a Memória de Cálculo tem data anterior à data de consolidação do depósito/ pagamento ${String(simId - 1).padStart(2,'0')}.`);
+      }
+    }
+    sim.datadodeposito = parsedDataDeposito || sim.datadodeposito || '';
+    sim._arquivo01ConsolidacaoData = {
+      kind: 'TCFA_ACUMULADO',
+      dataConsolidacao: parsed.dataConsolidacao || '',
+      rows: Array.isArray(parsed.rows) ? parsed.rows : [],
+    };
+    if (simId >= 2) {
+      sim._arquivo01ManualLoaded = true;
+      sim._arquivo01ParsedData = {
+        kind: 'TCFA_ACUMULADO',
+        dataConsolidacao: parsed.dataConsolidacao || '',
+        rows: Array.isArray(parsed.rows) ? parsed.rows : [],
+      };
+    } else {
+      sim._arquivo01ManualLoaded = false;
+      sim._arquivo01ParsedData = null;
+      sim.saldoatualizadonadatadeposito = Number(parsed.saldoAtualizado || 0);
+      sim.valorconsolidadonadatadeposito = Number(parsed.valorConsolidado || 0);
+      sim._rowsArquivo01Tabela = Array.isArray(parsed.rows) ? parsed.rows : [];
+    }
+  } else {
+    const parsed = parseAiOrTcfaSimplesFromPdfModel(model, sim.tipododebito, { requirePositiveSaldo: simId < 2 });
+    const parsedDataDeposito = normalizeDateDdMmYyyy(parsed.dataConsolidacao || '');
+    if (simId >= 2) {
+      const prevSim = state.simulations[simId - 2] || null;
+      const prevDataCons = normalizeDateDdMmYyyy(prevSim?.datadeconsolidacao || '');
+      if (parsedDataDeposito && prevDataCons && compareDateStrDdMmYyyy(parsedDataDeposito, prevDataCons) < 0) {
+        throw new Error(`Falha: a Memória de Cálculo tem data anterior à data de consolidação do depósito/ pagamento ${String(simId - 1).padStart(2,'0')}.`);
+      }
+    }
+    sim.datadodeposito = parsedDataDeposito || sim.datadodeposito || '';
+    sim._arquivo01ConsolidacaoData = {
+      kind: sim.tipododebito,
+      dataConsolidacao: parsed.dataConsolidacao || '',
+      pctMulta: Number(parsed.pctMulta || 0),
+      pctJuros: Number(parsed.pctJuros || 0),
+      pctSelic: Number(parsed.pctSelic || 0),
+      pctEncargos: Number(parsed.pctEncargos || 0),
+      trimestreAno: String(parsed.trimestreAno || '').trim(),
+    };
+    if (simId >= 2) {
+      sim._arquivo01ManualLoaded = true;
+      sim._arquivo01ParsedData = {
+        kind: sim.tipododebito,
+        dataConsolidacao: parsed.dataConsolidacao || '',
+        pctMulta: Number(parsed.pctMulta || 0),
+        pctJuros: Number(parsed.pctJuros || 0),
+        pctSelic: Number(parsed.pctSelic || 0),
+        pctEncargos: Number(parsed.pctEncargos || 0),
+        trimestreAno: String(parsed.trimestreAno || '').trim(),
+      };
+    } else {
+      sim._arquivo01ManualLoaded = false;
+      sim._arquivo01ParsedData = null;
+      const valorConsolidadoCalculado = computeSimpleConsolidadoByRates(
+        Number(parsed.saldoAtualizado || 0),
+        Number(parsed.pctMulta || 0),
+        Number(parsed.pctJuros || 0),
+        Number(parsed.pctSelic || 0),
+        Number(parsed.pctEncargos || 0)
+      );
+      sim.saldoatualizadonadatadeposito = Number(parsed.saldoAtualizado || 0);
+      sim.valorconsolidadonadatadeposito = valorConsolidadoCalculado;
+    }
+  }
+
+  setStatus('Arquivo01 lido com sucesso.');
+}
+
+async function handleUploadArquivo02(sim, file) {
+  setStatus('Lendo Arquivo02...');
+  const model = await parsePdfFile(file);
+  const simId = state.simulations.indexOf(sim) + 1;
+
+  let snapshot = null;
+
+  if (sim.tipododebito === 'TCFA_ACUMULADO') {
+    const parsed = parseTcfaAcumuladoFromPdfModel(model);
+    snapshot = {
+      kind: 'TCFA_ACUMULADO',
+      dataConsolidacao: parsed.dataConsolidacao || '',
+      rows: Array.isArray(parsed.rows) ? parsed.rows : [],
+    };
+  } else {
+    const parsed = parseAiOrTcfaSimplesFromPdfModel(model, sim.tipododebito, { requirePositiveSaldo: false });
+    snapshot = {
+      kind: sim.tipododebito,
+      dataConsolidacao: parsed.dataConsolidacao || '',
+      pctMulta: Number(parsed.pctMulta || 0),
+      pctJuros: Number(parsed.pctJuros || 0),
+      pctSelic: Number(parsed.pctSelic || 0),
+      pctEncargos: Number(parsed.pctEncargos || 0),
+      saldoAtualizado: Number(parsed.saldoAtualizado || 0),
+      valorConsolidado: Number(parsed.valorConsolidado || 0),
+      trimestreAno: String(parsed.trimestreAno || '').trim(),
+    };
+  }
+
+  if (snapshot.dataConsolidacao) {
+    snapshot.dataConsolidacao = normalizeDateDdMmYyyy(snapshot.dataConsolidacao || '');
+    if (snapshot.dataConsolidacao && isDateStrFuture(snapshot.dataConsolidacao)) {
+      snapshot.dataConsolidacao = '';
+    }
+  }
+
+  const dataDepositoAtual = normalizeDateDdMmYyyy(sim.datadodeposito || document.getElementById(`datadodeposito_${simId}`)?.value || '');
+  if (snapshot.dataConsolidacao && dataDepositoAtual && compareDateStrDdMmYyyy(snapshot.dataConsolidacao, dataDepositoAtual) < 0) {
+    throw new Error('Falha: a Memória de Cálculo possui data anterior à data do depósito/ pagamento.');
+  }
+
+  sim._arquivo02ReserveData = cloneConsolidacaoSnapshot(snapshot);
+  if (sim.tipododebito !== 'TCFA_ACUMULADO') {
+    sim._saldoFinalArquivo02 = Number(snapshot.saldoAtualizado || 0);
+    sim._consolidadoFinalArquivo02 = Number(snapshot.valorConsolidado || 0);
+    if (sim.tipododebito === 'TCFA_SIMPLES') {
+      const trimestreAno = String(snapshot.trimestreAno || '').trim();
+      sim._trimestreAnoArquivo02 = trimestreAno;
+      if (sim === state.simulations[0]) {
+        state.tcfaSimplesTrimestreAno = trimestreAno;
+      }
+    }
+  }
+
+  if (sim._consolidacaoMode !== 'arquivo01') {
+    applyConsolidacaoSnapshotToTitular(simId, snapshot, 'arquivo02');
+  }
+
+  setStatus('Arquivo02 lido com sucesso.');
+}
+
+/* ==========================
+   EXECUÇÃO DO CÁLCULO E PDF
+========================== */
+async function calcularSimulacao(simId) {
+  const sim = state.simulations[simId - 1];
+
+  // Depósitos >= 02: garantir herança atualizada mesmo se o depósito anterior foi calculado depois da criação deste bloco
+  if (simId >= 2) {
+    const prev = state.simulations[simId - 2];
+    if (prev) {
+      const saldoIn = document.getElementById(`saldoatualizadonadatadeposito_${simId}`);
+      const consIn  = document.getElementById(`valorconsolidadonadatadeposito_${simId}`);
+      const dataIn  = document.getElementById(`datadodeposito_${simId}`);
+
+      const needSaldo = !saldoIn || moedaParaNumero(saldoIn.value) <= 0;
+      const needCons  = !consIn  || moedaParaNumero(consIn.value)  <= 0;
+      const needData  = !dataIn  || !normalizeDateDdMmYyyy(dataIn.value);
+
+      const carry = getCarryoverDataFromPrevious(prev);
+      const inheritedSaldo = carry.saldo;
+      const inheritedCons  = carry.consolidado;
+      const inheritedData  = carry.data;
+
+      if (needSaldo && inheritedSaldo > 0 && saldoIn) setValueSilent(saldoIn, numeroParaMoeda(inheritedSaldo));
+      sim.saldoatualizadonadatadeposito = inheritedSaldo;
+
+      if (!sim._arquivo01ManualLoaded) {
+        if (needCons  && inheritedCons  > 0 && consIn)  setValueSilent(consIn,  numeroParaMoeda(inheritedCons));
+        if (needData  && inheritedData && dataIn) setValueSilent(dataIn, inheritedData);
+        sim.valorconsolidadonadatadeposito = inheritedCons;
+        if (inheritedData) sim.datadodeposito = inheritedData;
+      } else {
+        applyUploadedDepositMemoryOverride(simId);
+      }
+    }
+  }
+  const tipo = state.tipoDebito;
+  if (!tipo) {
+    showAlert(`Depósito/ pagamento ${String(simId).padStart(2,'0')}: selecione o tipo do débito antes de calcular.`, 'error');
+    return;
+  }
+
+  // capturar inputs
+  const dataDep = document.getElementById(`datadodeposito_${simId}`).value.trim();
+  const valDepInput = document.getElementById(`valordodeposito_${simId}`);
+  const valDepRaw = (valDepInput ? valDepInput.value : '').trim();
+  const valDep = moedaParaNumero(valDepRaw);
+
+  sim.datadodeposito = normalizeDateDdMmYyyy(dataDep);
+  sim.valordodeposito = valDep;
+
+  if (!sim.datadodeposito) {
+    showAlert(`Depósito/ pagamento ${String(simId).padStart(2,'0')}: data do depósito/ pagamento inválida. Use dd/mm/aaaa.`, 'error');
+    return;
+  }
+  let zeroDepositAlreadyPrompted = false;
+  if (valDepRaw === '' || Number.isNaN(sim.valordodeposito) || sim.valordodeposito < 0) {
+    if (simId >= 2 && valDepInput) {
+      valDepInput.value = '0,00';
+      sim.valordodeposito = 0;
+      const proceedWithZero = await promptZeroDepositDecision(simId);
+      zeroDepositAlreadyPrompted = true;
+      if (!proceedWithZero) {
+        focusDepositValueField(simId);
+        return;
+      }
+    } else {
+      showAlert(`Depósito/ pagamento ${String(simId).padStart(2,'0')}: valor do depósito/ pagamento inválido.`, 'error');
+      return;
+    }
+  }
+  if (sim.valordodeposito === 0 && !zeroDepositAlreadyPrompted) {
+    const proceedWithZero = await promptZeroDepositDecision(simId);
+    if (!proceedWithZero) {
+      focusDepositValueField(simId);
+      return;
+    }
+  }
+
+  // sincronizar inputs de saldo/valor consolidado (podem ter sido preenchidos manualmente)
+  sim.saldoatualizadonadatadeposito = moedaParaNumero(document.getElementById(`saldoatualizadonadatadeposito_${simId}`).value);
+  sim.valorconsolidadonadatadeposito = moedaParaNumero(document.getElementById(`valorconsolidadonadatadeposito_${simId}`).value);
+
+  // validações básicas
+  if (!(sim.saldoatualizadonadatadeposito > 0) || !(sim.valorconsolidadonadatadeposito > 0)) {
+    showAlert(`Depósito/ pagamento ${String(simId).padStart(2,'0')}: preencha o Saldo Atualizado e o Valor Consolidado na data do depósito/ pagamento (manual ou via Arquivo01).`, 'error');
+    return;
+  }
+
+  // Data de consolidação pode vir do Arquivo02 ou ser preenchida manualmente
+  const dataConsInput = document.getElementById(`datadeconsolidacao_${simId}`);
+  sim.datadeconsolidacao = normalizeDateDdMmYyyy((dataConsInput ? dataConsInput.value : '').trim());
+
+  // Para TCFA acumulado, é necessário haver uma fonte ativa de dados da consolidação
+  if (tipo === 'TCFA_ACUMULADO' && !(Array.isArray(sim._rowsArquivo02Tabela) && sim._rowsArquivo02Tabela.length)) {
+    showAlert('Para TCFA acumulado, é necessário definir os dados da data de consolidação.', 'error');
+    return;
+  }
+
+  // Atualizar percentuais a partir dos campos editáveis (se o usuário alterou manualmente)
+  sim._pctMultaArquivo02 = parsePercentInputToFraction(document.getElementById(`pctMulta_${simId}`).value);
+  sim._pctJurosArquivo02 = parsePercentInputToFraction(document.getElementById(`pctJuros_${simId}`).value);
+  sim._pctSelicArquivo02 = parsePercentInputToFraction(document.getElementById(`pctSelic_${simId}`).value);
+  sim._pctEncargosArquivo02 = parsePercentInputToFraction(document.getElementById(`pctEncargos_${simId}`).value);
+
+  if (!sim.datadeconsolidacao) {
+    showAlert('Preencha a Data de consolidação (manual ou via Arquivo02).', 'error');
+    return;
+  }
+
+  // Parte 01
+  try {
+    calcularParte01(sim);
+  } catch (e) {
+    showAlert(String(e.message || e), 'error');
+    return;
+  }
+
+  // Atualizar campos parte 01
+  document.getElementById(`fatordeimputacao_${simId}`).value = String((sim.fatordeimputacao || 0).toFixed(9)).replace('.', ',');
+  document.getElementById(`valorrealdt1_${simId}`).value = numeroParaMoeda(sim.valorrealdt1 || 0);
+  document.getElementById(`saldoposdeposito_${simId}`).value = numeroParaMoeda(sim.saldoposdepositodt01 || 0);
+
+  if (tipo === 'TCFA_ACUMULADO') {
+    document.getElementById(`valorquefaltou_${simId}`).value = numeroParaMoeda(sim.valorquefaltou || 0);
+    document.getElementById(`somadebitosnaoquitados_${simId}`).value = numeroParaMoeda(sim.somadebitosnaoquitadosdt1 || 0);
+    document.getElementById(`numerodebitox_${simId}`).value = sim.numerodebitox || '';
+    document.getElementById(`saldodebitox_${simId}`).value = numeroParaMoeda(sim.saldodebitoxdt1 || 0);
+    document.getElementById(`valorquitado_${simId}`).value = numeroParaMoeda(sim.valorquitadodt1 || 0);
+    document.getElementById(`valoraindanaocontabilizado_${simId}`).value = numeroParaMoeda(sim.valoraindanaocontabilizado || 0);
+    document.getElementById(`consolidadodebitox_${simId}`).value = numeroParaMoeda(sim.consolidadodebitoxdt1 || 0);
+    document.getElementById(`saldodebitoxdt1_${simId}`).value = numeroParaMoeda(sim.saldodebitoxdt1 || 0);
+  }
+
+  // Parte 02
+  try {
+    calcularParte02(sim);
+
+  // TCFA acumulado: preencher os percentuais exibidos (somente leitura) com base no débito parcial do Arquivo02
+  if (tipo === 'TCFA_ACUMULADO' && sim._tcfaPct) {
+    const setPct = (id, pct) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.value = formatPercentDisplay((Number(pct || 0) / 100));
+    };
+    setPct(`pctMulta_${simId}`, sim._tcfaPct.multa);
+    setPct(`pctJuros_${simId}`, sim._tcfaPct.juros);
+    setPct(`pctSelic_${simId}`, sim._tcfaPct.selic);
+    setPct(`pctEncargos_${simId}`, sim._tcfaPct.encargos);
+  }
+
+  } catch (e) {
+    showAlert(String(e.message || e), 'error');
+    return;
+  }
+
+  // Render resultado
+  const out = document.getElementById(`resultado_${simId}`);
+  if (tipo !== 'TCFA_ACUMULADO') {
+    out.textContent =
+      `Data de consolidação: ${sim.datadeconsolidacao}\n` +
+      `Saldo atualizado (base) na data final: R$ ${numeroParaMoeda(sim.saldoFinalBase || 0)}\n` +
+      `Multa: R$ ${numeroParaMoeda(sim.multaFinal || 0)}\n` +
+      `Juros: R$ ${numeroParaMoeda(sim.jurosFinal || 0)}\n` +
+      `Selic: R$ ${numeroParaMoeda(sim.selicFinal || 0)}\n` +
+      `Encargos: R$ ${numeroParaMoeda(sim.encargosFinal || 0)}\n` +
+      `Valor consolidado final: R$ ${numeroParaMoeda(sim.valorConsolidadoFinal || 0)}`;
+  } else {
+    // tabela (TCFA acumulado) - formato semelhante à aba "Memória de Cálculo"
+    const rows = sim.tcfaTabelaDetalhada || [];
+    let html = `<div class="small">Débito consolidado: ${(() => { const h=getPdfHeaderData(); return h.numerododebito || 'Não identificado'; })()}</div>` +
+               `<div class="small">Data de consolidação: ${sim.datadeconsolidacao}</div>` +
+               `<div class="small">Débitos não afetados pelo pagamento permanecem inalterados.</div>`;
+    html += `<div style="overflow-x:auto;">`;
+    html += `<table><thead><tr>
+      <th>Débito</th>
+      <th>Trimestre/Ano</th>
+      <th>Saldo Atualizado</th>
+      <th>% Multa</th><th>Valor Multa</th>
+      <th>% Juros</th><th>Valor Juros</th>
+      <th>% Selic</th><th>Valor Selic</th>
+      <th>% Encargos</th><th>Valor Encargos</th>
+      <th>Valor Consolidado</th>
+    </tr></thead><tbody>`;
+
+    for (const r of rows) {
+      html += `<tr>
+        <td>${String(r.debito ?? '')}</td>
+        <td>${String(r.trimestreAno ?? '')}</td>
+        <td>R$ ${numeroParaMoeda(r.saldoAtualizado ?? 0)}</td>
+        <td>${numeroParaMoeda(r.multaPct ?? 0)}%</td>
+        <td>R$ ${numeroParaMoeda(r.multaVal ?? 0)}</td>
+        <td>${numeroParaMoeda(r.jurosPct ?? 0)}%</td>
+        <td>R$ ${numeroParaMoeda(r.jurosVal ?? 0)}</td>
+        <td>${numeroParaMoeda(r.selicPct ?? 0)}%</td>
+        <td>R$ ${numeroParaMoeda(r.selicVal ?? 0)}</td>
+        <td>${numeroParaMoeda(r.encargosPct ?? 0)}%</td>
+        <td>R$ ${numeroParaMoeda(r.encargosVal ?? 0)}</td>
+        <td>R$ ${numeroParaMoeda(r.consolidado ?? 0)}</td>
+      </tr>`;
+    }
+
+    
+    // Totais (linha final)
+    let totSaldo = 0, totMulta = 0, totJuros = 0, totSelic = 0, totEnc = 0, totCons = 0;
+    for (const r of rows) {
+      totSaldo = sumMoneyValues(totSaldo, r.saldoAtualizado || 0);
+      totMulta = sumMoneyValues(totMulta, r.multaVal || 0);
+      totJuros = sumMoneyValues(totJuros, r.jurosVal || 0);
+      totSelic = sumMoneyValues(totSelic, r.selicVal || 0);
+      totEnc = sumMoneyValues(totEnc, r.encargosVal || 0);
+      totCons = sumMoneyValues(totCons, r.consolidado || 0);
+    }
+    html += `<tr>
+      <td><b>TOTAIS</b></td>
+      <td></td>
+      <td><b>R$ ${numeroParaMoeda(totSaldo)}</b></td>
+      <td></td><td><b>R$ ${numeroParaMoeda(totMulta)}</b></td>
+      <td></td><td><b>R$ ${numeroParaMoeda(totJuros)}</b></td>
+      <td></td><td><b>R$ ${numeroParaMoeda(totSelic)}</b></td>
+      <td></td><td><b>R$ ${numeroParaMoeda(totEnc)}</b></td>
+      <td><b>R$ ${numeroParaMoeda(totCons)}</b></td>
+    </tr>`;
+html += `</tbody></table></div>`;
+    out.innerHTML = html;
+  }
+
+  // Gerar PDF (preview + botão manual)
+  const _pdfHdr = getPdfHeaderData();
+  sim.cnpj = _pdfHdr.cnpj;
+  sim.numerododebito = _pdfHdr.numerododebito;
+  sim.tipododebitoLabel = _pdfHdr.tipododebitoLabel;
+  _pdfHdrGlobal = _pdfHdr;
+  const blob = pdfReportFromSimulation(sim);
+  sim._pdfBlob = blob;
+  const url = URL.createObjectURL(blob);
+  sim._pdfUrl = url;
+
+  document.getElementById(`pdfPreview_${simId}`).src = url;
+
+  sim._calculated = true;
+  sim._dirty = false;
+  setDepositHeaderComputed(simId, true);
+  propagateToNextDeposit(simId);
+  showAlert(`Depósito/ pagamento ${String(simId).padStart(2,'0')}: PDF gerado. Visualize no preview e clique em "Baixar PDF" se desejar.`, 'success');
+}
+
+/* ==========================
+   DOWNLOAD PDF (manual)
+========================== */
+function downloadSimPdf(simId) {
+  const sim = state.simulations[simId - 1];
+  if (!sim || !sim._pdfBlob) {
+    showAlert('Nenhum PDF foi gerado ainda para esta simulação.', 'error');
+    return;
+  }
+  const a = document.createElement('a');
+  const nome = `simulacao_${String(simId).padStart(2,'0')}.pdf`;
+  a.href = sim._pdfUrl || URL.createObjectURL(sim._pdfBlob);
+  a.download = nome;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+/* ==========================
+   PDF CONSOLIDADO (MÚLTIPLAS PÁGINAS)
+   Estratégia: reconstruir um PDF único gerando uma página por simulação.
+========================== */
+
+function gerarPdfConsolidadoTcfaAcumulado(sims) {
+  const pdf = new MiniPdf();
+  const W = 841.89, H = 595.28;
+  let page = pdf.addPage({width: W, height: H});
+  let y = H - 40;
+
+  const pdfMeasureCanvas = document.createElement('canvas');
+  const pdfMeasureCtx = pdfMeasureCanvas.getContext ? pdfMeasureCanvas.getContext('2d') : null;
+  function measurePdfTextW(s, fontSize) {
+    if (!pdfMeasureCtx) return String(s ?? '').length * fontSize * 0.50;
+    const px = fontSize * (96 / 72);
+    pdfMeasureCtx.font = `${px}px Helvetica, Arial, sans-serif`;
+    return pdfMeasureCtx.measureText(String(s ?? '')).width * (72 / 96);
+  }
+  function fitTextToWidth(text, width, fontSize) {
+    let fs = fontSize;
+    while (fs > 6 && measurePdfTextW(text, fs) > (width - 4)) fs -= 1;
+    if (measurePdfTextW(text, fs) <= (width - 4)) return {text, fontSize: fs};
+    const t = String(text ?? '');
+    let cut = t.length;
+    while (cut > 1 && measurePdfTextW(t.slice(0, cut) + '…', fs) > (width - 8)) cut -= 1;
+    return {text: (cut < t.length ? t.slice(0, cut) + '…' : t), fontSize: fs};
+  }
+  function drawCellText(x, yBase, w, text, fontSize, bold=false) {
+    const r = fitTextToWidth(String(text ?? ''), w, fontSize);
+    pdf.text(page, x + 2, yBase + 4, r.text, r.fontSize);
+    if (bold) pdf.text(page, x + 2.35, yBase + 4, r.text, r.fontSize);
+  }
+  function wrapLinesFooter(text, maxWidth, fontSize) {
+    const words = String(text || '').replace(/\s+/g, ' ').trim().split(' ');
+    const lines = [];
+    let line = '';
+    const usableWidth = Math.max(20, maxWidth - 2);
+    for (const w of words) {
+      const test = line ? (line + ' ' + w) : w;
+      if (measurePdfTextW(test, fontSize) <= usableWidth) {
+        line = test;
+      } else {
+        if (line) lines.push(line);
+        line = w;
+      }
+    }
+    if (line) lines.push(line);
+    return lines;
+  }
+
+  pdf.fillColor(page, 0.121,0.306,0.475);
+  pdf.rect(page, 40, y, W-80, 22, 1, 1);
+  pdf.fillColor(page, 1,1,1);
+  const titulo = 'Simulação de amortização';
+  const titleW = measurePdfTextW(titulo, 12);
+  pdf.text(page, 40 + Math.max(0, ((W - 80) - titleW) / 2), y+7, titulo, 12);
+  pdf.fillColor(page, 0,0,0);
+  y -= 34;
+
+  const hdr = getPdfHeaderData();
+  const cnpjShow = hdr.cnpj || '00.000.000/0000-00';
+  const debShow = (hdr.numerododebito && hdr.numerododebito.trim()) ? hdr.numerododebito.trim() : 'Não identificado';
+  const tipoShow = hdr.tipododebitoLabel || 'TCFA acumulado';
+  const info = [
+    `CPF/CNPJ: ${cnpjShow}`,
+    `Débito acumulado: ${debShow}`,
+    `Tipo do débito: ${tipoShow}`
+  ];
+  for (const line of info) { pdf.text(page, 40, y, line, 10); y -= 14; }
+  y -= 8;
+  pdf.line(page, 40, y, W-40, y);
+  y -= 18;
+
+  const cols = ['Débito','Trimestre/Ano','Saldo Atual.','% Multa','Valor Multa','% Juros','Valor Juros','% Selic','Valor Selic','% Encargos','Valor Encargos','Valor Consolidado'];
+  const x0 = 40;
+  const tableW = W - 80;
+  let colWs = [62,78,68,42,56,42,56,42,56,42,56,72];
+  const sumW = colWs.reduce((a,b)=>a+b,0);
+  const k = tableW / sumW;
+  colWs = colWs.map(w => w * k);
+  const sum2 = colWs.reduce((a,b)=>a+b,0);
+  colWs[colWs.length - 1] += (tableW - sum2);
+  const rowH = 16;
+  const fmtPct = (p) => (Number(p||0).toFixed(2).replace('.', ',') + '%');
+
+  function newTablePage() {
+    page = pdf.addPage({width: W, height: H});
+    y = H - 50;
+    pdf.fillColor(page, 0.121,0.306,0.475);
+    pdf.rect(page, x0, y, colWs.reduce((a,b)=>a+b,0), rowH, 1, 1);
+    pdf.fillColor(page, 1,1,1);
+    let cx = x0;
+    for (let i=0;i<cols.length;i++) { drawCellText(cx, y, colWs[i], cols[i], 8); cx += colWs[i]; }
+    y -= rowH;
+    pdf.fillColor(page, 0,0,0);
+  }
+  function drawTableHeaderCurrentPage() {
+    if (y < 60 + rowH) newTablePage();
+    pdf.fillColor(page, 0.121,0.306,0.475);
+    pdf.rect(page, x0, y, colWs.reduce((a,b)=>a+b,0), rowH, 1, 1);
+    pdf.fillColor(page, 1,1,1);
+    let cx = x0;
+    for (let i=0;i<cols.length;i++) { drawCellText(cx, y, colWs[i], cols[i], 8); cx += colWs[i]; }
+    y -= rowH;
+    pdf.fillColor(page, 0,0,0);
+  }
+  function drawRow(vals, shade=true, fontSize=8, boldRow=false) {
+    if (y < 40 + rowH) newTablePage();
+    if (shade) {
+      pdf.fillColor(page, 0.92,0.92,0.92);
+      pdf.rect(page, x0, y, colWs.reduce((a,b)=>a+b,0), rowH, 1, 1);
+      pdf.fillColor(page, 0,0,0);
+    } else {
+      pdf.fillColor(page, 1,1,1);
+      pdf.rect(page, x0, y, colWs.reduce((a,b)=>a+b,0), rowH, 1, 1);
+      pdf.fillColor(page, 0,0,0);
+    }
+    let cx2 = x0;
+    for (let i=0;i<vals.length;i++) {
+      drawCellText(cx2, y, colWs[i], vals[i], fontSize, boldRow);
+      cx2 += colWs[i];
+    }
+    y -= rowH;
+  }
+  function ensureSectionIntroSpace() {
+    if (y < 130) {
+      page = pdf.addPage({width: W, height: H});
+      y = H - 50;
+    }
+  }
+
+  sims.forEach((sim, idx) => {
+    ensureSectionIntroSpace();
+    const depNum = String(idx + 1).padStart(2, '0');
+    const zeroDepositUpdateMode = isZeroDepositUpdateMode(sim);
+    if (!zeroDepositUpdateMode) {
+      pdf.text(page, 40, y, `Data do depósito ou pagamento ${depNum}: ${sim.datadodeposito || ''}`, 10); y -= 14;
+      pdf.text(page, 40, y, `Valor do depósito ou pagamento ${depNum}: R$ ${numeroParaMoeda(sim.valordodeposito || 0)}`, 10); y -= 14;
+    }
+
+    const items = sim.tcfaTabelaDetalhada || [];
+    let totSaldo = 0, totMulta = 0, totJuros = 0, totSelic = 0, totEnc = 0, totCons = 0;
+    for (const it of items) {
+      totSaldo = sumMoneyValues(totSaldo, it.saldoAtualizado || 0);
+      totMulta = sumMoneyValues(totMulta, it.multaVal || 0);
+      totJuros = sumMoneyValues(totJuros, it.jurosVal || 0);
+      totSelic = sumMoneyValues(totSelic, it.selicVal || 0);
+      totEnc = sumMoneyValues(totEnc, it.encargosVal || 0);
+      totCons = sumMoneyValues(totCons, it.consolidado || 0);
+    }
+    const saldoPreAmortizacaoTcfa = Number(sim.saldoatualizadonadatadeposito || 0);
+    const valorAmortizadoTcfa = roundMoneyValue(saldoPreAmortizacaoTcfa - totSaldo);
+    pdf.text(page, 40, y, `Memória de cálculo (consolidação em ${sim.datadeconsolidacao || ''})`, 10); y -= 14;
+    if (!zeroDepositUpdateMode) {
+      pdf.text(page, 40, y, `Saldo pré-amortização: R$ ${numeroParaMoeda(saldoPreAmortizacaoTcfa)}`, 10); y -= 14;
+      pdf.text(page, 40, y, `Valor amortizado: R$ ${numeroParaMoeda(valorAmortizadoTcfa)}`, 10); y -= 28;
+    } else {
+      y -= 14;
+    }
+
+    drawTableHeaderCurrentPage();
+
+    for (let idxIt = 0; idxIt < items.length; idxIt++) {
+      const it = items[idxIt];
+      const vals = [
+        String(it.debito ?? ''),
+        String(it.trimestreAno ?? ''),
+        'R$ ' + numeroParaMoeda(it.saldoAtualizado ?? 0),
+        fmtPct(it.multaPct), 'R$ ' + numeroParaMoeda(it.multaVal ?? 0),
+        fmtPct(it.jurosPct), 'R$ ' + numeroParaMoeda(it.jurosVal ?? 0),
+        fmtPct(it.selicPct), 'R$ ' + numeroParaMoeda(it.selicVal ?? 0),
+        fmtPct(it.encargosPct), 'R$ ' + numeroParaMoeda(it.encargosVal ?? 0),
+        'R$ ' + numeroParaMoeda(it.consolidado ?? 0)
+      ];
+      drawRow(vals, (idxIt % 2 === 0), 8);
+    }
+
+    const totalVals = [
+      'TOTAIS',
+      '',
+      'R$ ' + numeroParaMoeda(totSaldo),
+      '', 'R$ ' + numeroParaMoeda(totMulta),
+      '', 'R$ ' + numeroParaMoeda(totJuros),
+      '', 'R$ ' + numeroParaMoeda(totSelic),
+      '', 'R$ ' + numeroParaMoeda(totEnc),
+      'R$ ' + numeroParaMoeda(totCons)
+    ];
+    drawRow(totalVals, (items.length % 2 === 0), 8, true);
+    pdf.fillColor(page, 0,0,0);
+
+    if (idx < sims.length - 1) {
+      if (y < 70) {
+        page = pdf.addPage({width: W, height: H});
+        y = H - 50;
+      } else {
+        y -= 14;
+        pdf.line(page, 40, y, W-40, y);
+        y -= 18;
+      }
+    }
+  });
+
+  const explic = "O cálculo de débitos acumulados prioriza a quitação integral dos débitos mais antigos. Caso o depósito ou pagamento não amortize totalmente o débito seguinte, o valor residual é apropriado proporcionalmente*. Os débitos não afetados pelo depósito ou pagamento permanecem inalterados.\n*Cálculo proporcional: baseia-se na relação entre o valor depositado (ou pago) e o valor consolidado na data do depósito ou pagamento. Após aplicação dessa proporção sobre o saldo do débito, obtém-se o saldo remanescente, ao qual são aplicadas as taxas da data pretendida para determinar o valor consolidado correspondente.";
+  const footerX = x0 + 2;
+  const footerInnerW = tableW - 4;
+  const paragraphs = explic.split('\n');
+  const lines = [];
+  for (let i=0;i<paragraphs.length;i++) {
+    const seg = wrapLinesFooter(paragraphs[i], footerInnerW, 8);
+    for (const s of seg) lines.push(s);
+  }
+  const footerLineH = 12;
+  const footerGap = 8;
+  const footerLastLineY = 36;
+  const footerTopLineY = footerLastLineY + Math.max(0, (lines.length - 1) * footerLineH);
+  const singlePageFooterMode = (pdf.pages.length === 1) && (y >= (footerTopLineY + footerGap));
+
+  if (singlePageFooterMode) {
+    y = footerTopLineY;
+  } else {
+    const neededH = (lines.length * footerLineH) + 10;
+    if (y - neededH < 30) {
+      page = pdf.addPage({width: W, height: H});
+      y = H - 50;
+    } else {
+      y -= footerGap;
+    }
+  }
+
+  for (const line of lines) {
+    if (!line) { y -= footerLineH; continue; }
+    const lineW = measurePdfTextW(line, 8);
+    const lineX = footerX + Math.max(0, (footerInnerW - lineW) / 2);
+    pdf.text(page, lineX, y, line, 8);
+    y -= footerLineH;
+  }
+
+  const blob = pdf.build();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'PDF_consolidado.pdf';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  showAlert('PDF consolidado gerado.', 'success');
+}
+
+function gerarPdfConsolidado() {
+  _pdfHdrGlobal = getPdfHeaderData();
+  const sims = state.simulations.filter(s => s && s._calculated);
+  if (sims.length === 0) {
+    showAlert('PDF consolidado: gere pelo menos uma simulação (Calcular e gerar PDF) antes de consolidar.', 'error');
+    return;
+  }
+
+  if ((sims[0]?.tipododebito || '') === 'TCFA_ACUMULADO') {
+    gerarPdfConsolidadoTcfaAcumulado(sims);
+    return;
+  }
+
+  const pdf = new MiniPdf();
+  let page = pdf.addPage();
+  const W = 595.28, H = 841.89;
+  let y = H - 40;
+
+  const explicSimples = "*Cálculo proporcional: baseia-se na relação entre o valor depositado (ou pago) e o valor consolidado na data do depósito ou pagamento. Após aplicação dessa proporção sobre o saldo do débito, obtém-se o saldo remanescente, ao qual são aplicadas as taxas da data pretendida para determinar o valor consolidado correspondente.";
+  const pdfMeasureCanvas = document.createElement('canvas');
+  const pdfMeasureCtx = pdfMeasureCanvas.getContext ? pdfMeasureCanvas.getContext('2d') : null;
+  function measurePdfTextW(s, fontSize) {
+    if (!pdfMeasureCtx) return String(s ?? '').length * fontSize * 0.50;
+    const px = fontSize * (96 / 72);
+    pdfMeasureCtx.font = `${px}px Helvetica, Arial, sans-serif`;
+    return pdfMeasureCtx.measureText(String(s ?? '')).width * (72 / 96);
+  }
+  function wrapLinesFooter(text, maxWidth, fontSize) {
+    const words = String(text || '').replace(/\s+/g, ' ').trim().split(' ');
+    const lines = [];
+    let line = '';
+    const usableWidth = Math.max(20, maxWidth - 2);
+    for (const w of words) {
+      const test = line ? (line + ' ' + w) : w;
+      if (measurePdfTextW(test, fontSize) <= usableWidth) {
+        line = test;
+      } else {
+        if (line) lines.push(line);
+        line = w;
+      }
+    }
+    if (line) lines.push(line);
+    return lines;
+  }
+
+  // Barra de título
+  pdf.fillColor(page, 0.121,0.306,0.475);
+  pdf.rect(page, 40, y, W-80, 22, 1, 1);
+  pdf.fillColor(page, 1,1,1);
+  const titulo = 'Simulação de amortização';
+  const titleX = 40 + (W-80)/2 - (titulo.length * 5.2)/2;
+  pdf.text(page, Math.max(45, titleX), y+7, titulo, 12);
+  pdf.fillColor(page, 0,0,0);
+
+  y -= 38;
+
+  // Identificação (sempre ler dos campos visíveis no momento da geração)
+  const hdr = getPdfHeaderData();
+  const idLines = [
+    `CPF/CNPJ: ${hdr.cnpj || ''}`,
+    `Número do débito: ${hdr.numerododebito || ''}`
+  ];
+  if ((hdr.tipododebito || '') === 'TCFA_SIMPLES') {
+    idLines.push(`Trimestre/Ano: ${getTcfaSimplesTrimestreAno()}`);
+  }
+  idLines.push(`Tipo do débito: ${hdr.tipododebitoLabel || ''}`);
+  for (const line of idLines) {
+    pdf.text(page, 40, y, line, 10);
+    y -= 14;
+  }
+
+  let lastDividerY = null;
+  y -= 6;
+  pdf.line(page, 40, y, W-40, y, 1);
+  lastDividerY = y;
+  y -= 14;
+
+  const footerX = 42;
+  const footerInnerW = (W - 80) - 4;
+  const footerLineH = 12;
+  const footerGap = 8;
+  const footerLastLineY = 36;
+  const footerLines = wrapLinesFooter(explicSimples, footerInnerW, 8);
+  const footerReservedH = (footerLines.length * footerLineH) + footerGap;
+  const rowH = 15;
+  const headerH = 16;
+  const pageTopY = H - 48;
+  const depositSlotsPerPage = 3;
+  const dividerToDepositGap = 12;
+  const noDepositDataTableTopGap = 18;
+  const noDepositDataTableBottomGap = 4;
+  const bottomLimitNoFooter = 48;
+
+  function startNewPage() {
+    page = pdf.addPage();
+    y = pageTopY;
+    lastDividerY = null;
+    pdf.fillColor(page, 0,0,0);
+  }
+
+  function getDepositRows(sim) {
+    const zeroDepositUpdateMode = isZeroDepositUpdateMode(sim);
+    const pctMulta = sim._pctMultaArquivo02 || 0;
+    const pctJuros = sim._pctJurosArquivo02 || 0;
+    const pctSelic = sim._pctSelicArquivo02 || 0;
+    const pctEnc = sim._pctEncargosArquivo02 || 0;
+    const rows = [];
+    if (!zeroDepositUpdateMode) {
+      rows.push(['(=) Saldo pré-amortização', '', `R$ ${numeroParaMoeda(sim.saldoatualizadonadatadeposito || 0)}`]);
+      rows.push(['(-) Valor amortizado', '', `R$ ${numeroParaMoeda(sim.valorrealdt1 || 0)}`]);
+    }
+    rows.push(
+      ['(=) Saldo pós-amortização', '', `R$ ${numeroParaMoeda(sim.saldoFinalBase || 0)}`],
+      ['(+)Multa', formatPercentPdfDisplay(pctMulta), `R$ ${numeroParaMoeda(sim.multaFinal || 0)}`],
+      ['(+)Juros', formatPercentPdfDisplay(pctJuros), `R$ ${numeroParaMoeda(sim.jurosFinal || 0)}`],
+      ['(+)Selic', formatPercentPdfDisplay(pctSelic), `R$ ${numeroParaMoeda(sim.selicFinal || 0)}`],
+      ['(=)Total Parcial', '', `R$ ${numeroParaMoeda(sim.totalParcialFinal || 0)}`],
+      ['(+)Encargos Legais', formatPercentPdfDisplay(pctEnc), `R$ ${numeroParaMoeda(sim.encargosFinal || 0)}`],
+      ['(=)Valor Consolidado', '', `R$ ${numeroParaMoeda(sim.valorConsolidadoFinal || 0)}`],
+    );
+    return rows;
+  }
+
+  function measureDepositBlock(sim) {
+    const zeroDepositUpdateMode = isZeroDepositUpdateMode(sim);
+    const introLines = zeroDepositUpdateMode ? 0 : 2;
+    const preTableGap = zeroDepositUpdateMode ? noDepositDataTableTopGap : 20;
+    const preDepositGap = zeroDepositUpdateMode ? 0 : dividerToDepositGap;
+    const postTableGap = zeroDepositUpdateMode ? (noDepositDataTableBottomGap + 1 + 12) : (4 + 1 + 12);
+    const rows = getDepositRows(sim);
+    return preDepositGap + (introLines * 12) + preTableGap + headerH + (rows.length * rowH) + postTableGap;
+  }
+
+  function drawMemoriaTable(sim) {
+    const rows = getDepositRows(sim);
+    pdf.fillColor(page, 0.121,0.306,0.475);
+    pdf.rect(page, 40, y, W-80, headerH, 1, 1);
+    pdf.fillColor(page, 1,1,1);
+    const t = `Memória de cálculo (consolidação em ${sim.datadeconsolidacao || ''})`;
+    pdf.text(page, 46, y+4, t, 10);
+    pdf.fillColor(page, 0,0,0);
+    y -= headerH;
+
+    for (const r of rows) {
+      pdf.fillColor(page, 0.878,0.878,0.878);
+      pdf.rect(page, 40, y, W-80, rowH, 1, 1);
+      pdf.fillColor(page, 0,0,0);
+      pdf.text(page, 46, y+4, r[0], 9);
+      pdf.text(page, 310, y+4, r[1], 9);
+      pdf.text(page, 410, y+4, r[2], 9);
+      y -= rowH;
+    }
+
+    const zeroDepositUpdateMode = isZeroDepositUpdateMode(sim);
+    y -= zeroDepositUpdateMode ? noDepositDataTableBottomGap : 4;
+    pdf.line(page, 40, y, W-40, y, 1);
+    lastDividerY = y;
+    y -= 12;
+  }
+
+  sims.forEach((sim, idx) => {
+    const currentPageIndex = Math.floor(idx / depositSlotsPerPage);
+    const slotIndex = idx % depositSlotsPerPage;
+
+    if (idx > 0 && slotIndex === 0) {
+      startNewPage();
+    }
+
+    const blockH = measureDepositBlock(sim);
+    const reserveBottom = (currentPageIndex === Math.floor((sims.length - 1) / depositSlotsPerPage) && slotIndex === ((sims.length - 1) % depositSlotsPerPage))
+      ? footerReservedH + 12
+      : bottomLimitNoFooter;
+
+    if (slotIndex === 0 && y - blockH < reserveBottom) {
+      startNewPage();
+    }
+
+    const zeroDepositUpdateMode = isZeroDepositUpdateMode(sim);
+    if (!zeroDepositUpdateMode) {
+      y -= dividerToDepositGap;
+      pdf.text(page, 40, y, `Data do depósito ou pagamento ${String(idx+1).padStart(2,'0')}: ${sim.datadodeposito || ''}`, 10);
+      y -= 12;
+      pdf.text(page, 40, y, `Valor do depósito ou pagamento ${String(idx+1).padStart(2,'0')}: R$ ${numeroParaMoeda(sim.valordodeposito || 0)}`, 10);
+      y -= 12;
+      y -= 20;
+    } else {
+      if (lastDividerY !== null) {
+        y = lastDividerY - noDepositDataTableTopGap - headerH;
+      } else {
+        y -= (noDepositDataTableTopGap + headerH);
+      }
+    }
+
+    drawMemoriaTable(sim);
+  });
+
+  const footerTopLineY = footerLastLineY + Math.max(0, (footerLines.length - 1) * footerLineH);
+  const singlePageFooterMode = (pdf.pages.length === 1) && (y >= (footerTopLineY + footerGap));
+
+  if (singlePageFooterMode) {
+    y = footerTopLineY;
+  } else {
+    const neededFooterH = (footerLines.length * footerLineH) + 10;
+    if (y - neededFooterH < 30) {
+      page = pdf.addPage();
+      y = H - 60;
+    } else {
+      y -= footerGap;
+    }
+  }
+
+  for (const line of footerLines) {
+    if (!line) { y -= footerLineH; continue; }
+    const lineW = measurePdfTextW(line, 8);
+    const lineX = footerX + Math.max(0, (footerInnerW - lineW) / 2);
+    pdf.text(page, lineX, y, line, 8);
+    y -= footerLineH;
+  }
+
+  const blob = pdf.build();
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'PDF_consolidado.pdf';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  showAlert('PDF consolidado gerado.', 'success');
+}
+
+
+/* ==========================
+   HERANÇA DE SIMULAÇÃO ANTERIOR (NOVO DEPÓSITO)
+========================== */
+function inheritFromPrevious(prevSim, newSim) {
+  // Regra: para a nova simulação, os dados equivalentes ao Arquivo01 vêm do final da anterior.
+  // Data do novo depósito: deve ser a data de consolidação anterior.
+  // Valor do depósito: usuário informa.
+  // Arquivo02: usuário envia.
+  const carry = getCarryoverDataFromPrevious(prevSim);
+  newSim.saldoatualizadonadatadeposito = carry.saldo;
+  newSim.valorconsolidadonadatadeposito = carry.consolidado;
+  newSim.datadodeposito = carry.data;
+}
+
+
+function propagateToNextDeposit(prevId) {
+  const nextId = prevId + 1;
+  if (nextId > state.simulations.length) return;
+
+  const prev = state.simulations[prevId - 1];
+  const next = state.simulations[nextId - 1];
+  if (!prev || !next) return;
+
+  const carry = getCarryoverDataFromPrevious(prev);
+  const inheritedSaldo = carry.saldo;
+  const inheritedCons  = carry.consolidado;
+  const inheritedData  = carry.data;
+
+  const saldoIn = document.getElementById(`saldoatualizadonadatadeposito_${nextId}`);
+  const consIn  = document.getElementById(`valorconsolidadonadatadeposito_${nextId}`);
+  const dataIn  = document.getElementById(`datadodeposito_${nextId}`);
+
+  if (saldoIn && inheritedSaldo > 0) setValueSilent(saldoIn, numeroParaMoeda(inheritedSaldo));
+  if (!next._arquivo01ManualLoaded && consIn  && inheritedCons  > 0) setValueSilent(consIn,  numeroParaMoeda(inheritedCons));
+  if (!next._arquivo01ManualLoaded && dataIn  && inheritedData) setValueSilent(dataIn, inheritedData);
+
+  next.saldoatualizadonadatadeposito = inheritedSaldo;
+  if (!next._arquivo01ManualLoaded) {
+    next.valorconsolidadonadatadeposito = inheritedCons;
+    if (inheritedData) next.datadodeposito = inheritedData;
+  }
+
+  // O próximo depósito passa a herdar a nova base e qualquer cálculo anterior dele deixa de valer.
+  clearSimulationComputedState(nextId);
+
+  if (next._arquivo01ManualLoaded) applyUploadedDepositMemoryOverride(nextId);
+  else refreshArquivo01Status(nextId);
+}
+
+
+/* ==========================
+   INICIALIZAÇÃO
+========================== */
+function addSimulation(opts = {}) {
+  const { force = false, silent = false, focusNewDeposit = false } = opts;
+
+  const tipoSelecionado = getTipoSelecionado();
+  if (!tipoSelecionado && !force) {
+    if (!silent) showAlert('Dados do débito: selecione o tipo do débito antes de adicionar uma simulação.', 'error');
+    return;
+  }
+
+  const tipo = tipoSelecionado || null;
+
+  const simId = state.simulations.length + 1;
+  const sim = {
+    ...getCommonHeaderData(),
+    _simId: simId,
+    tipododebito: tipo,
+    // variáveis do guia (padrão depósitoXX)
+    datadodeposito: '',
+    valordodeposito: 0,
+    saldoatualizadonadatadeposito: 0,
+    valorconsolidadonadatadeposito: 0,
+    valorquefaltou: 0,
+    numerodebitox: '',
+    somadebitosnaoquitadosdt1: 0,
+    consolidadodebitoxdt1: 0,
+    saldodebitoxdt1: 0,
+    valorquitadodt1: 0,
+    valoraindanaocontabilizado: 0,
+    fatordeimputacao: 0,
+    valorrealdt1: 0,
+    saldoposdepositodt01: 0,
+
+    datadeconsolidacao: '',
+    _arquivo01Carregado: false,
+    _arquivo01ManualLoaded: false,
+    _arquivo01ParsedData: null,
+    _arquivo01ConsolidacaoData: null,
+    _rowsArquivo01TabelaOverride: null,
+    _arquivo02Carregado: false,
+    _arquivo02ReserveData: null,
+    _consolidacaoMode: 'arquivo02',
+    _pdfBlob: null,
+    _pdfUrl: null,
+  };
+
+  // Se já existe simulação anterior, herdar regras do encadeamento
+  if (state.simulations.length > 0) {
+    const prev = state.simulations[state.simulations.length - 1];
+    inheritFromPrevious(prev, sim);
+  }
+
+  state.simulations.push(sim);
+
+  const block = createSimulationBlock(simId - 1);
+  document.getElementById('simulationsRoot').appendChild(block);
+
+
+  // Toggle do depósito (seta no cabeçalho)
+  const depHeader = document.getElementById(`depositHeader_${simId}`);
+  const depBody = document.getElementById(`depositBody_${simId}`);
+  const depArrow = document.getElementById(`depositArrow_${simId}`);
+  if (depHeader && depBody && depArrow) {
+    depHeader.addEventListener('click', () => {
+      const isHidden = depBody.style.display === 'none';
+      depBody.style.display = isHidden ? 'block' : 'none';
+      depArrow.textContent = isHidden ? '▼' : '▲';
+    });
+  }
+
+  // Campo de data do depósito preenchido pela memória e bloqueado para edição manual
+  const dtDep = document.getElementById(`datadodeposito_${simId}`);
+  if (dtDep) { dtDep.readOnly = true; dtDep.classList.add('input-readonly'); }
+
+  // A partir do depósito 02: manter Arquivo01 visível e bloquear edição direta dos dados herdados
+  if (simId >= 2) {
+    const saldoDep = document.getElementById(`saldoatualizadonadatadeposito_${simId}`);
+    const consDep = document.getElementById(`valorconsolidadonadatadeposito_${simId}`);
+    if (saldoDep) { saldoDep.readOnly = true; saldoDep.classList.add('input-readonly'); }
+    if (consDep) { consDep.readOnly = true; consDep.classList.add('input-readonly'); }
+  }
+
+  // binds (máscaras e formatação em tempo real)
+  const dataInput = document.getElementById(`datadodeposito_${simId}`);
+  const valInput = document.getElementById(`valordodeposito_${simId}`);
+  bindRealtimeDateInput(dataInput);
+  bindRealtimeDateInput(document.getElementById(`datadeconsolidacao_${simId}`));
+  bindRealtimeMoneyInput(valInput);
+  if (simId < 2) bindRealtimeMoneyInput(document.getElementById(`saldoatualizadonadatadeposito_${simId}`));
+  bindRealtimeMoneyInput(document.getElementById(`valorconsolidadonadatadeposito_${simId}`));
+  const saldoInput = document.getElementById(`saldoatualizadonadatadeposito_${simId}`);
+  const vcInput = document.getElementById(`valorconsolidadonadatadeposito_${simId}`);
+  const dtConsInput = document.getElementById(`datadeconsolidacao_${simId}`);
+  const pctMultaInput = document.getElementById(`pctMulta_${simId}`);
+  const pctJurosInput = document.getElementById(`pctJuros_${simId}`);
+  const pctSelicInput = document.getElementById(`pctSelic_${simId}`);
+  const pctEncInput = document.getElementById(`pctEncargos_${simId}`);
+
+  // Marcar depósito como alterado quando o usuário muda dados manualmente
+  dataInput?.addEventListener('input', () => { markDepositDirty(simId); updateUploadButtonsState(simId); });
+  valInput?.addEventListener('input', () => { markDepositDirty(simId); recomputeCalculosSim(simId); updateUploadButtonsState(simId); });
+  dtConsInput?.addEventListener('input', () => { markDepositDirty(simId); });
+  pctMultaInput?.addEventListener('input', () => { markDepositDirty(simId); });
+  pctJurosInput?.addEventListener('input', () => { markDepositDirty(simId); });
+  pctSelicInput?.addEventListener('input', () => { markDepositDirty(simId); });
+  pctEncInput?.addEventListener('input', () => { markDepositDirty(simId); });
+
+  // Se o usuário editar manualmente campos provenientes do Arquivo01, limpar o status "CARREGADO" do Arquivo01
+  const clear01OnManual = () => {
+    if (saldoInput?.dataset.silentSet === '1' || vcInput?.dataset.silentSet === '1') return;
+    clearUploadOk(`statusUpload01_${simId}`);
+    markDepositDirty(simId);
+    recomputeCalculosSim(simId);
+  };
+  saldoInput?.addEventListener('input', clear01OnManual);
+  vcInput?.addEventListener('input', clear01OnManual);
+
+  // Se o usuário editar manualmente campos provenientes do Arquivo02, limpar o status "CARREGADO" do Arquivo02
+  const clear02OnManual = () => {
+    if (dtConsInput?.dataset.silentSet === '1' ||
+        pctMultaInput?.dataset.silentSet === '1' ||
+        pctJurosInput?.dataset.silentSet === '1' ||
+        pctSelicInput?.dataset.silentSet === '1' ||
+        pctEncInput?.dataset.silentSet === '1') return;
+    if (sim._consolidacaoMode === 'arquivo01') updateArquivo02StatusForMode(simId);
+    else clearUploadOk(`statusUpload02_${simId}`);
+  };
+  dtConsInput?.addEventListener('input', clear02OnManual);
+  pctMultaInput?.addEventListener('input', clear02OnManual);
+  pctJurosInput?.addEventListener('input', clear02OnManual);
+  pctSelicInput?.addEventListener('input', clear02OnManual);
+  pctEncInput?.addEventListener('input', clear02OnManual);
+
+
+  // preload inherited
+  if (sim.datadodeposito) dataInput.value = sim.datadodeposito;
+  if (sim.saldoatualizadonadatadeposito) document.getElementById(`saldoatualizadonadatadeposito_${simId}`).value = numeroParaMoeda(sim.saldoatualizadonadatadeposito);
+  if (sim.valorconsolidadonadatadeposito) document.getElementById(`valorconsolidadonadatadeposito_${simId}`).value = numeroParaMoeda(sim.valorconsolidadonadatadeposito);
+
+  refreshArquivo01Status(simId);
+
+  // Upload 01
+  document.getElementById(`btnUpload01_${simId}`).onclick = () => {
+    updateUploadButtonsState(simId);
+    if (getTipoSelecionado() === 'TCFA_ACUMULADO' && Number(simId) === 1) {
+      const valorDepRaw = document.getElementById(`valordodeposito_${simId}`)?.value.trim() || '';
+      const valorDep = moedaParaNumero(valorDepRaw || '');
+      const valorOk = valorDepRaw !== '' && valorDep >= 0;
+      if (!valorOk) {
+        showAlert('Preencha o valor do depósito/ pagamento antes de carregar o arquivo', 'error');
+        return;
+      }
+    }
+    document.getElementById(`file01_${simId}`).click();
+  };
+  document.getElementById(`file01_${simId}`).addEventListener('change', async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    try {
+      await handleUploadArquivo01(sim, f);
+      invalidateCascadeFrom(simId);
+      sim._arquivo01Carregado = true;
+      setValueSilent(dataInput, sim.datadodeposito || '');
+      setValueSilent(saldoInput, numeroParaMoeda(sim.saldoatualizadonadatadeposito || 0));
+      setValueSilent(vcInput, numeroParaMoeda(sim.valorconsolidadonadatadeposito || 0));
+      if (simId >= 2 && sim._arquivo01ManualLoaded) {
+        applyUploadedDepositMemoryOverride(simId);
+      } else {
+        setUploadOk(`statusUpload01_${simId}`);
+        recomputeCalculosSim(simId);
+      }
+      selectConsolidacaoSource(simId, 'arquivo01');
+      updateUploadButtonsState(simId);
+      showAlert('Arquivo01 processado. Campos preenchidos.', 'success');
+    } catch (err) {
+      if (simId >= 2) refreshArquivo01Status(simId);
+      else clearUploadOk(`statusUpload01_${simId}`);
+      syncConsolidacaoSourceUi(simId);
+      showAlert(String(err.message || err), 'error');
+    }
+    e.target.value = '';
+  });
+
+  // Upload 02
+  document.getElementById(`btnUpload02_${simId}`).onclick = () => {
+    updateUploadButtonsState(simId);
+    if (getTipoSelecionado() === 'TCFA_ACUMULADO' && Number(simId) === 1 && !sim._arquivo01Carregado) {
+      showAlert('Carregue a memória de cálculo da data do depósito/ pagamento primeiro', 'error');
+      return;
+    }
+    document.getElementById(`file02_${simId}`).click();
+  };
+  document.getElementById(`file02_${simId}`).addEventListener('change', async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    try {
+      await handleUploadArquivo02(sim, f);
+      invalidateCascadeFrom(simId);
+      sim._arquivo02Carregado = true;
+      if (sim._consolidacaoMode !== 'arquivo01') {
+        setValueSilent(dtConsInput, sim.datadeconsolidacao || '');
+        setValueSilent(pctMultaInput, formatPercentDisplay(sim._pctMultaArquivo02));
+        setValueSilent(pctJurosInput, formatPercentDisplay(sim._pctJurosArquivo02));
+        setValueSilent(pctSelicInput, formatPercentDisplay(sim._pctSelicArquivo02));
+        setValueSilent(pctEncInput, formatPercentDisplay(sim._pctEncargosArquivo02));
+      }
+      updateArquivo02StatusForMode(simId);
+      showAlert('Arquivo02 processado.', 'success');
+    } catch (err) {
+      clearUploadOk(`statusUpload02_${simId}`);
+      showAlert(String(err.message || err), 'error');
+    }
+    e.target.value = '';
+  });
+
+  const chkUseDepositData = document.getElementById(`chkUseDepositData_${simId}`);
+  const chkUseNewArquivo02 = document.getElementById(`chkUseNewArquivo02_${simId}`);
+  if (chkUseDepositData && chkUseNewArquivo02) {
+    chkUseDepositData.addEventListener('change', () => {
+      if (chkUseDepositData.disabled) {
+        chkUseDepositData.checked = false;
+        chkUseNewArquivo02.checked = true;
+        return;
+      }
+      if (!chkUseDepositData.checked) {
+        chkUseNewArquivo02.checked = true;
+        selectConsolidacaoSource(simId, 'arquivo02');
+        return;
+      }
+      chkUseNewArquivo02.checked = false;
+      selectConsolidacaoSource(simId, 'arquivo01');
+    });
+    chkUseNewArquivo02.addEventListener('change', () => {
+      if (!chkUseNewArquivo02.checked) {
+        if (!chkUseDepositData.disabled) chkUseDepositData.checked = true;
+        else chkUseNewArquivo02.checked = true;
+        return;
+      }
+      chkUseDepositData.checked = false;
+      selectConsolidacaoSource(simId, 'arquivo02');
+    });
+  }
+
+  // Calcular
+  document.getElementById(`btnCalcular_${simId}`).onclick = async () => {
+    try {
+      await calcularSimulacao(simId);
+    } catch (err) {
+      showAlert(String(err.message || err), 'error');
+    }
+  };
+
+  // Download PDF
+  document.getElementById(`btnDownloadPdf_${simId}`).onclick = () => downloadSimPdf(simId);
+
+  
+  // Toggle CÁLCULOS (recolhido por padrão)
+  const toggleEl = document.getElementById(`toggleCalculos_${simId}`);
+  const containerEl = document.getElementById(`calculosContainer_${simId}`);
+  const arrowEl = document.getElementById(`arrowCalculos_${simId}`);
+  if (toggleEl && containerEl && arrowEl) {
+    containerEl.style.display = 'none';
+    arrowEl.textContent = '▼';
+    toggleEl.onclick = () => {
+      const isHidden = (containerEl.style.display === 'none' || containerEl.style.display === '');
+      containerEl.style.display = isHidden ? 'block' : 'none';
+      arrowEl.textContent = isHidden ? '▲' : '▼';
+    };
+  }
+
+  // Toggle DADOS (Data da consolidação) (recolhido por padrão)
+  const toggleDados = document.getElementById(`toggleDadosConsol_${simId}`);
+  const contDados = document.getElementById(`dadosConsolContainer_${simId}`);
+  const arrowDados = document.getElementById(`arrowDadosConsol_${simId}`);
+  if (toggleDados && contDados && arrowDados) {
+    contDados.style.display = 'none';
+    arrowDados.textContent = '▼';
+    toggleDados.onclick = () => {
+      const isHidden = (contDados.style.display === 'none' || contDados.style.display === '');
+      contDados.style.display = isHidden ? 'block' : 'none';
+      arrowDados.textContent = isHidden ? '▲' : '▼';
+    };
+  }
+
+  // Recalcular automaticamente os campos do bloco CÁLCULOS quando houver alteração
+  const saldoInp = document.getElementById(`saldoatualizadonadatadeposito_${simId}`);
+  const consInp = document.getElementById(`valorconsolidadonadatadeposito_${simId}`);
+  const valDepInp = document.getElementById(`valordodeposito_${simId}`);
+  if (saldoInp) saldoInp.addEventListener('input', () => recomputeCalculosSim(simId));
+  if (consInp) consInp.addEventListener('input', () => recomputeCalculosSim(simId));
+  if (valDepInp) valDepInp.addEventListener('input', () => recomputeCalculosSim(simId));
+
+  // Percentuais (Arquivo02) são editáveis: atualizar variáveis internas ao sair do campo
+  const pctM = document.getElementById(`pctMulta_${simId}`);
+  const pctJ = document.getElementById(`pctJuros_${simId}`);
+  const pctS = document.getElementById(`pctSelic_${simId}`);
+  const pctE = document.getElementById(`pctEncargos_${simId}`);
+  if (pctM) bindPercentInput(pctM, (frac) => { sim._pctMultaArquivo02 = frac; });
+  if (pctJ) bindPercentInput(pctJ, (frac) => { sim._pctJurosArquivo02 = frac; });
+  if (pctS) bindPercentInput(pctS, (frac) => { sim._pctSelicArquivo02 = frac; });
+  if (pctE) bindPercentInput(pctE, (frac) => { sim._pctEncargosArquivo02 = frac; });
+
+
+  toggleBlocksByTipo();
+  updateUploadButtonsState(simId);
+  updateRemoveButtonState();
+
+  if (focusNewDeposit) {
+    requestAnimationFrame(() => {
+      const top = Math.max(0, block.getBoundingClientRect().top + window.scrollY - 20);
+      window.scrollTo({ top, behavior: 'smooth' });
+      const target = document.getElementById(`valordodeposito_${simId}`);
+      if (target) {
+        target.focus();
+        try {
+          const len = target.value.length;
+          target.setSelectionRange(len, len);
+        } catch (_) {}
+      }
+    });
+  }
+}
+
+document.getElementById('cnpj').addEventListener('input', (e) => {
+  const digits = onlyDigits(e.target.value);
+  const formatted = formatCpfCnpj(digits);
+  e.target.value = formatted;
+});
+
+document.querySelectorAll('input[name="tipo"]').forEach(r => {
+  r.addEventListener('change', () => {
+    updateNumeroDebitoLabel();
+    toggleBlocksByTipo();
+    // Ao trocar tipo, reinicializa simulações para evitar mistura de regras
+    state.simulations = [];
+    document.getElementById('simulationsRoot').innerHTML = '';
+    addSimulation();
+  });
+});
+
+document.getElementById('btnAddSimulation').onclick = () => addSimulation({ focusNewDeposit: true });
+document.getElementById('btnRemoveSimulation').onclick = () => removeLastSimulation();
+document.getElementById('btnConsolidatedPdf').onclick = () => gerarPdfConsolidado();
+
+
+// ENTER deve se comportar como TAB: vai para o próximo campo (ordem do DOM)
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return;
+
+  const t = e.target;
+  if (!t || !(t instanceof HTMLElement)) return;
+
+  const tag = t.tagName.toLowerCase();
+  if (tag !== 'input' && tag !== 'select' && tag !== 'textarea') return;
+
+  const type = (t.getAttribute('type') || '').toLowerCase();
+  if (type === 'button' || type === 'submit' || type === 'file') return;
+
+  e.preventDefault();
+
+  // Lista global de campos focáveis (sem botões e sem file), na ordem do DOM
+  const focusables = Array.from(document.querySelectorAll('input, select, textarea'))
+    .filter(el => {
+      const ty = (el.getAttribute('type') || '').toLowerCase();
+      if (ty === 'file') return false;
+      if (el.hasAttribute('disabled')) return false;
+      // não pula campos ocultos
+      if (el.offsetParent === null) return false;
+      return true;
+    });
+
+  const idx = focusables.indexOf(t);
+  if (idx < 0) return;
+
+  const next = focusables[idx + 1];
+  if (next) {
+    next.focus();
+    if (next.setSelectionRange && typeof next.value === 'string') {
+      const len = next.value.length;
+      next.setSelectionRange(len, len);
+    }
+  } else {
+    // último campo: apenas remove foco
+    t.blur();
+  }
+});
+
+
+// Inicial: não cria depósito automaticamente. O Depósito 01 é criado quando o usuário selecionar o tipo do débito.
+updateNumeroDebitoLabel();
+toggleBlocksByTipo();
+</script>
+
+</body>
+</html>
