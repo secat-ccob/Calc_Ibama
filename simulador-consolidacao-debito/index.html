@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Página em Construção - CALC-IBAMA</title>
+
+  <!-- Versão: pagina_construcao_simulador_consolidacao_debito_v_2 -->
+
+  <style>
+    :root {
+      --cor-primaria: #1f6f54;
+      --cor-primaria-escura: #15513d;
+      --cor-secundaria: #0f4c81;
+      --cor-fundo: #f4f7f6;
+      --cor-superficie: #ffffff;
+      --cor-texto: #1f2933;
+      --cor-texto-suave: #5b6770;
+      --cor-borda: #d9e2dd;
+      --sombra-suave: 0 10px 30px rgba(15, 76, 81, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--cor-texto);
+      background:
+        radial-gradient(circle at center, rgba(31, 111, 84, 0.07) 0, rgba(31, 111, 84, 0.03) 28%, transparent 55%),
+        linear-gradient(180deg, #ffffff 0%, var(--cor-fundo) 100%);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .cabecalho {
+      flex: 0 0 auto;
+      width: 100%;
+      background: var(--cor-superficie);
+      border-bottom: 1px solid var(--cor-borda);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+      z-index: 10;
+    }
+
+    .cabecalho-conteudo {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0;
+    }
+
+    .marca-topo {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding: 12px 24px;
+      background: #1f4e79;
+      box-shadow: 0 0 0 100vmax #1f4e79;
+      clip-path: inset(0 -100vmax);
+      box-sizing: border-box;
+    }
+
+    .marca-topo strong {
+      font-size: 1.15rem;
+      letter-spacing: 0.08em;
+      color: #ffffff;
+    }
+
+    .marca-topo span {
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.82);
+    }
+
+    .menu-principal {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      padding: 0 24px 10px;
+      box-sizing: border-box;
+    }
+
+    .menu-principal a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 8px 12px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: var(--cor-texto);
+      font-size: 0.92rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+    }
+
+    .menu-principal a:hover,
+    .menu-principal a:focus {
+      background: rgba(31, 111, 84, 0.08);
+      border-color: rgba(31, 111, 84, 0.22);
+      color: var(--cor-primaria-escura);
+      outline: none;
+    }
+
+    .menu-principal a.ativo {
+      background: var(--cor-primaria);
+      color: #ffffff;
+      border-color: var(--cor-primaria);
+    }
+
+    main {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 56px 24px;
+      overflow-y: auto;
+    }
+
+    .painel-construcao {
+      width: min(760px, 100%);
+      min-height: 260px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .painel-construcao::before {
+      content: "";
+      position: absolute;
+      width: min(420px, 70vw);
+      height: min(420px, 70vw);
+      border-radius: 50%;
+      background: rgba(31, 111, 84, 0.045);
+      filter: blur(1px);
+      z-index: 0;
+    }
+
+    .aviso-construcao {
+      position: relative;
+      z-index: 1;
+      width: min(620px, 100%);
+      text-align: center;
+      padding: 42px 48px;
+      border: 1px solid rgba(217, 226, 221, 0.85);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: var(--sombra-suave);
+      backdrop-filter: blur(4px);
+    }
+
+    .aviso-construcao h1 {
+      margin: 0;
+      font-size: clamp(2.2rem, 6vw, 4.2rem);
+      line-height: 1.05;
+      letter-spacing: 0.03em;
+      color: var(--cor-primaria-escura);
+      font-weight: 800;
+    }
+
+    .aviso-construcao p {
+      margin: 14px auto 0;
+      font-size: clamp(0.9rem, 2vw, 1.08rem);
+      letter-spacing: 0.05em;
+      color: var(--cor-secundaria);
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .rodape {
+      flex: 0 0 auto;
+      width: 100%;
+      padding: 12px 24px;
+      border-top: 1px solid var(--cor-borda);
+      background: rgba(255, 255, 255, 0.88);
+      color: var(--cor-texto-suave);
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 600;
+      z-index: 10;
+    }
+
+    @media (max-width: 720px) {
+      .cabecalho-conteudo {
+        padding: 0;
+      }
+
+      .marca-topo {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        padding: 12px 16px;
+      }
+
+      .menu-principal {
+        gap: 5px;
+        padding: 0 16px 10px;
+      }
+
+      .menu-principal a {
+        font-size: 0.86rem;
+        padding: 7px 10px;
+      }
+
+      main {
+        padding: 42px 16px;
+      }
+
+      .aviso-construcao {
+        padding: 34px 24px;
+        border-radius: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="cabecalho">
+    <div class="cabecalho-conteudo">
+      <div class="marca-topo">
+        <strong>CALC-IBAMA</strong>
+        <span>Ferramentas de apoio administrativo</span>
+      </div>
+
+      <nav class="menu-principal" aria-label="Menu principal">
+        <a href="../">Início</a>
+        <a href="../simulador-amortizacao/">Simulador de amortização</a>
+        <a class="ativo" href="../simulador-consolidacao-debito/">Simulador de consolidação do débito</a>
+        <a href="../calculadora-selic/">Calculadora Selic</a>
+        <a href="../calculadora-restituicao/">Calculadora de Restituição</a>
+        <a href="../manuais/">Manuais</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="painel-construcao" aria-label="Página em construção">
+      <div class="aviso-construcao">
+        <h1>Página em Construção!</h1>
+        <p>Esta ferramenta será disponibilizada em breve.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="rodape">
+    CALC-IBAMA · SECAT/CCOB
+  </footer>
+</body>
+</html>
