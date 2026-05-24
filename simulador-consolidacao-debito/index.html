@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Página em Construção - CALC-IBAMA</title>
+  <title>Simulador de consolidação - CALC-IBAMA</title>
+  <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: pagina_construcao_simulador_consolidacao_debito_v_2 -->
+  <!-- Versão: simulador_consolidacao_debito_v_5 -->
 
   <style>
     :root {
@@ -120,62 +121,165 @@
     main {
       flex: 1 1 auto;
       min-height: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 56px 24px;
+      padding: 24px;
       overflow-y: auto;
     }
 
-    .painel-construcao {
-      width: min(760px, 100%);
-      min-height: 260px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
+    .ferramenta-consolidacao {
+      width: min(1000px, 100%);
+      margin: 0 auto;
+      background-color: #ffffff;
+      border: 1px solid #ccc;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
 
-    .painel-construcao::before {
-      content: "";
-      position: absolute;
-      width: min(420px, 70vw);
-      height: min(420px, 70vw);
-      border-radius: 50%;
-      background: rgba(31, 111, 84, 0.045);
-      filter: blur(1px);
-      z-index: 0;
-    }
-
-    .aviso-construcao {
-      position: relative;
-      z-index: 1;
-      width: min(620px, 100%);
+    .titulo-ferramenta {
+      background-color: #1f4e79;
+      color: #ffffff;
       text-align: center;
-      padding: 42px 48px;
-      border: 1px solid rgba(217, 226, 221, 0.85);
-      border-radius: 24px;
-      background: rgba(255, 255, 255, 0.72);
-      box-shadow: var(--sombra-suave);
-      backdrop-filter: blur(4px);
-    }
-
-    .aviso-construcao h1 {
+      padding: 12px;
+      font-size: 16px;
+      font-weight: bold;
       margin: 0;
-      font-size: clamp(2.2rem, 6vw, 4.2rem);
-      line-height: 1.05;
-      letter-spacing: 0.03em;
-      color: var(--cor-primaria-escura);
-      font-weight: 800;
     }
 
-    .aviso-construcao p {
-      margin: 14px auto 0;
-      font-size: clamp(0.9rem, 2vw, 1.08rem);
-      letter-spacing: 0.05em;
-      color: var(--cor-secundaria);
-      font-weight: 600;
+    .status-info {
+      background-color: #e2e3e5;
+      border: 1px solid #d6d8db;
+      color: #383d41;
+      padding: 8px 10px;
+      margin: 10px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .alerta {
+      display: none;
+      background-color: #fff3cd;
+      border: 1px solid #ffeaa7;
+      color: #856404;
+      padding: 10px;
+      margin: 10px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+
+    .alerta.erro {
+      display: block;
+      background-color: #f8d7da;
+      border-color: #f5c6cb;
+      color: #721c24;
+    }
+
+    .conteudo-ferramenta {
+      padding: 12px;
+    }
+
+    .tabela-consolidacao {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0;
+      table-layout: fixed;
+    }
+
+    .tabela-consolidacao col.col-descricao {
+      width: 35%;
+    }
+
+    .tabela-consolidacao col.col-percentual {
+      width: 35%;
+    }
+
+    .tabela-consolidacao col.col-valores {
+      width: 30%;
+    }
+
+    .tabela-consolidacao th,
+    .tabela-consolidacao td {
+      border: 1px solid #333;
+      padding: 5px 6px;
+      font-size: 12px;
+      vertical-align: middle;
+    }
+
+    .tabela-consolidacao th {
+      background-color: #d9d9d9;
+      color: #000000;
+      font-weight: bold;
+      text-align: left;
+    }
+
+    .tabela-consolidacao .linha-topo th {
+      background-color: #d9d9d9;
+      font-size: 12px;
+    }
+
+    .tabela-consolidacao .rotulo {
+      width: 35%;
+      font-weight: bold;
+      background-color: #f7f7f7;
+      text-align: left;
+    }
+
+    .tabela-consolidacao .percentual {
+      width: 35%;
+      background-color: #ffffff;
       text-align: center;
+    }
+
+    .tabela-consolidacao .valor {
+      width: 30%;
+      background-color: #ffffff;
+      text-align: right;
+    }
+
+    .tabela-consolidacao th.percentual,
+    .tabela-consolidacao th.valor {
+      background-color: #f7f7f7;
+    }
+
+    .tabela-consolidacao .valor-calculado,
+    .tabela-consolidacao .percentual-vazio {
+      background-color: #e0e0e0;
+    }
+
+    .campo-tabela {
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: #000000;
+      font: inherit;
+      padding: 2px 3px;
+      outline: none;
+      text-align: right;
+    }
+
+    .campo-tabela:focus {
+      outline: 2px solid #4CAF50;
+      outline-offset: 0;
+      background: #ffffff;
+    }
+
+    .campo-tabela[readonly] {
+      cursor: default;
+      font-weight: bold;
+    }
+
+    .campo-numero,
+    .campo-data {
+      text-align: left;
+      font-weight: normal;
+    }
+
+    .campo-percentual {
+      text-align: center;
+    }
+
+    .linha-total .rotulo,
+    .linha-total .valor {
+      background-color: #e0e0e0;
+      font-weight: bold;
     }
 
     .rodape {
@@ -214,12 +318,41 @@
       }
 
       main {
-        padding: 42px 16px;
+        padding: 18px 14px;
       }
 
-      .aviso-construcao {
-        padding: 34px 24px;
-        border-radius: 20px;
+      .tabela-consolidacao {
+        table-layout: auto;
+      }
+
+      .tabela-consolidacao th,
+      .tabela-consolidacao td {
+        font-size: 11px;
+        padding: 5px 4px;
+      }
+
+      .tabela-consolidacao col.col-descricao {
+        width: 44%;
+      }
+
+      .tabela-consolidacao col.col-percentual {
+        width: 24%;
+      }
+
+      .tabela-consolidacao col.col-valores {
+        width: 32%;
+      }
+
+      .tabela-consolidacao .rotulo {
+        width: 44%;
+      }
+
+      .tabela-consolidacao .percentual {
+        width: 24%;
+      }
+
+      .tabela-consolidacao .valor {
+        width: 32%;
       }
     }
   </style>
@@ -235,7 +368,7 @@
       <nav class="menu-principal" aria-label="Menu principal">
         <a href="../">Início</a>
         <a href="../simulador-amortizacao/">Simulador de amortização</a>
-        <a class="ativo" href="../simulador-consolidacao-debito/">Simulador de consolidação do débito</a>
+        <a class="ativo" href="../simulador-consolidacao-debito/">Simulador de consolidação</a>
         <a href="../calculadora-selic/">Calculadora Selic</a>
         <a href="../calculadora-restituicao/">Calculadora de Restituição</a>
         <a href="../manuais/">Manuais</a>
@@ -244,10 +377,103 @@
   </header>
 
   <main>
-    <section class="painel-construcao" aria-label="Página em construção">
-      <div class="aviso-construcao">
-        <h1>Página em Construção!</h1>
-        <p>Esta ferramenta será disponibilizada em breve.</p>
+    <section class="ferramenta-consolidacao" aria-label="Simulador de consolidação">
+      <h1 class="titulo-ferramenta">Simulador de consolidação</h1>
+
+      <div id="alerta" class="alerta"></div>
+      <div class="conteudo-ferramenta">
+        <table class="tabela-consolidacao" aria-label="Tabela de consolidação do débito">
+          <colgroup>
+            <col class="col-descricao" />
+            <col class="col-percentual" />
+            <col class="col-valores" />
+          </colgroup>
+          <tbody>
+            <tr class="linha-topo">
+              <th>Nº do débito:</th>
+              <td class="valor" colspan="2">
+                <input id="numeroDebito" class="campo-tabela campo-numero" type="text" inputmode="numeric" placeholder="opcional" autocomplete="off" />
+              </td>
+            </tr>
+            <tr class="linha-topo">
+              <th>Consolidação do débito em (data):</th>
+              <td class="valor" colspan="2">
+                <input id="dataConsolidacao" class="campo-tabela campo-data" type="text" inputmode="numeric" placeholder="opcional" maxlength="10" autocomplete="off" />
+              </td>
+            </tr>
+            <tr>
+              <th class="rotulo">Descrição</th>
+              <th class="percentual">Percentual</th>
+              <th class="valor">Valores</th>
+            </tr>
+            <tr>
+              <td class="rotulo">Valor Principal</td>
+              <td class="percentual percentual-vazio"></td>
+              <td class="valor"><input id="valorPrincipal" class="campo-tabela campo-moeda" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
+            </tr>
+            <tr>
+              <td class="rotulo">(-)Somatório da amortização</td>
+              <td class="percentual percentual-vazio"></td>
+              <td class="valor"><input id="somatorioAmortizacao" class="campo-tabela campo-moeda" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
+            </tr>
+            <tr>
+              <td class="rotulo">(-)Desconto</td>
+              <td class="percentual"><input id="percentualDesconto" class="campo-tabela campo-percentual" type="text" inputmode="decimal" value="0,00%" autocomplete="off" /></td>
+              <td class="valor valor-calculado"><input id="valorDesconto" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+            </tr>
+            <tr>
+              <td class="rotulo">(-)Compensação Estadual</td>
+              <td class="percentual percentual-vazio"></td>
+              <td class="valor"><input id="compensacaoEstadual" class="campo-tabela campo-moeda" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
+            </tr>
+            <tr class="linha-total">
+              <td class="rotulo">(=)Saldo Parcial</td>
+              <td class="percentual percentual-vazio"></td>
+              <td class="valor valor-calculado"><input id="saldoParcial" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+            </tr>
+            <tr>
+              <td class="rotulo">(+)Correção Monetária</td>
+              <td class="percentual percentual-vazio"></td>
+              <td class="valor"><input id="correcaoMonetaria" class="campo-tabela campo-moeda" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
+            </tr>
+            <tr class="linha-total">
+              <td class="rotulo">(=)Saldo Atualizado</td>
+              <td class="percentual percentual-vazio"></td>
+              <td class="valor valor-calculado"><input id="saldoAtualizado" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+            </tr>
+            <tr>
+              <td class="rotulo">(+)Multa</td>
+              <td class="percentual"><input id="percentualMulta" class="campo-tabela campo-percentual" type="text" inputmode="decimal" value="0,00%" autocomplete="off" /></td>
+              <td class="valor valor-calculado"><input id="valorMulta" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+            </tr>
+            <tr>
+              <td class="rotulo">(+)Juros</td>
+              <td class="percentual"><input id="percentualJuros" class="campo-tabela campo-percentual" type="text" inputmode="decimal" value="0,00%" autocomplete="off" /></td>
+              <td class="valor valor-calculado"><input id="valorJuros" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+            </tr>
+            <tr>
+              <td class="rotulo">(+)SELIC</td>
+              <td class="percentual"><input id="percentualSelic" class="campo-tabela campo-percentual" type="text" inputmode="decimal" value="0,00%" autocomplete="off" /></td>
+              <td class="valor valor-calculado"><input id="valorSelic" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+            </tr>
+            <tr class="linha-total">
+              <td class="rotulo">(=)Total Parcial</td>
+              <td class="percentual percentual-vazio"></td>
+              <td class="valor valor-calculado"><input id="totalParcial" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+            </tr>
+            <tr>
+              <td class="rotulo">(+)Encargos Legais</td>
+              <td class="percentual"><input id="percentualEncargos" class="campo-tabela campo-percentual" type="text" inputmode="decimal" value="0,00%" autocomplete="off" /></td>
+              <td class="valor valor-calculado"><input id="valorEncargos" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+            </tr>
+            <tr class="linha-total">
+              <td class="rotulo">(=)Valor Consolidado</td>
+              <td class="percentual percentual-vazio"></td>
+              <td class="valor valor-calculado"><input id="valorConsolidado" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+            </tr>
+          </tbody>
+        </table>
+
       </div>
     </section>
   </main>
@@ -255,5 +481,283 @@
   <footer class="rodape">
     CALC-IBAMA · SECAT/CCOB
   </footer>
+
+  <script>
+    function showAlert(msg, type = 'erro') {
+      const el = document.getElementById('alerta');
+      if (!el) return;
+      el.textContent = msg;
+      el.className = 'alerta ' + (type === 'erro' ? 'erro' : '');
+      el.style.display = msg ? 'block' : 'none';
+    }
+
+    function clearAlert() {
+      const el = document.getElementById('alerta');
+      if (!el) return;
+      el.textContent = '';
+      el.className = 'alerta';
+      el.style.display = 'none';
+    }
+
+    function onlyDigits(s) {
+      return String(s || '').replace(/\D/g, '');
+    }
+
+    function roundMoneyValue(n) {
+      const v = Number(n || 0);
+      if (!Number.isFinite(v)) return 0;
+      return Math.round((v + Number.EPSILON) * 100) / 100;
+    }
+
+    function moedaParaNumero(valorMoeda) {
+      if (!valorMoeda) return 0;
+      const s = String(valorMoeda).replace(/\s/g, '').replace('R$', '').replace(/\./g, '').replace(',', '.');
+      const n = parseFloat(s);
+      return isNaN(n) ? 0 : n;
+    }
+
+    function numeroParaMoeda(n) {
+      if (typeof n !== 'number' || isNaN(n)) n = 0;
+      const sinal = n < 0 ? '-' : '';
+      const abs = Math.abs(roundMoneyValue(n));
+      return sinal + abs.toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+    }
+
+    function formatMoneyDigitsString(digits) {
+      const only = String(digits || '').replace(/\D/g, '');
+      if (!only) return '';
+      const cents = only.padStart(3, '0');
+      const intPart = cents.slice(0, -2).replace(/^0+(?=\d)/, '') || '0';
+      const decPart = cents.slice(-2);
+      const intFmt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      return `${intFmt},${decPart}`;
+    }
+
+    function bindRealtimeMoneyInput(input) {
+      if (!input || input.dataset.moneyBound === '1') return;
+      input.dataset.moneyBound = '1';
+
+      const apply = () => {
+        const digits = input.value.replace(/\D/g, '');
+        input.value = digits ? formatMoneyDigitsString(digits) : '';
+        try {
+          const len = input.value.length;
+          input.setSelectionRange(len, len);
+        } catch (_) {}
+        atualizarCalculos();
+      };
+
+      input.addEventListener('focus', () => {
+        setTimeout(() => input.select(), 0);
+      });
+      input.addEventListener('input', apply);
+      input.addEventListener('blur', () => {
+        const digits = input.value.replace(/\D/g, '');
+        input.value = digits ? formatMoneyDigitsString(digits) : '0,00';
+        atualizarCalculos();
+      });
+    }
+
+    function parseNumeroFlexivel(valor) {
+      const raw = String(valor || '').replace('%', '').trim();
+      if (!raw) return 0;
+
+      let s = raw.replace(/\s/g, '');
+      const temVirgula = s.includes(',');
+      const temPonto = s.includes('.');
+
+      if (temVirgula && temPonto) {
+        s = s.replace(/\./g, '').replace(',', '.');
+      } else if (temVirgula) {
+        s = s.replace(',', '.');
+      }
+
+      s = s.replace(/[^0-9.-]/g, '');
+      const n = parseFloat(s);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function percentualParaFracao(valor) {
+      return parseNumeroFlexivel(valor) / 100;
+    }
+
+    function numeroParaPercentual(n) {
+      if (typeof n !== 'number' || isNaN(n)) n = 0;
+      return n.toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '%';
+    }
+
+    function bindPercentInput(input) {
+      if (!input || input.dataset.percentBound === '1') return;
+      input.dataset.percentBound = '1';
+
+      input.addEventListener('focus', () => {
+        setTimeout(() => input.select(), 0);
+      });
+
+      input.addEventListener('input', () => {
+        input.value = input.value.replace(/[^0-9,.%]/g, '');
+        atualizarCalculos();
+      });
+
+      input.addEventListener('blur', () => {
+        const valor = parseNumeroFlexivel(input.value);
+        input.value = numeroParaPercentual(valor);
+        atualizarCalculos();
+      });
+    }
+
+    function maskDateDdMmYyyyRealtime(input) {
+      if (!input) return;
+      let digits = String(input.value || '').replace(/[^\d/]/g, '').replace(/\//g, '').slice(0, 8);
+      let out = '';
+      if (digits.length <= 2) out = digits;
+      else if (digits.length <= 4) out = digits.slice(0, 2) + '/' + digits.slice(2);
+      else out = digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4);
+      input.value = out;
+      try {
+        const len = input.value.length;
+        input.setSelectionRange(len, len);
+      } catch (_) {}
+    }
+
+    function ensureInputDate(input) {
+      const raw = (input.value || '').trim();
+      if (!raw) return;
+
+      let tmp = raw.replace(/[^\d/]/g, '');
+      const parts = tmp.split('/').filter(Boolean);
+
+      if (parts.length === 3 && parts[2].length === 2) {
+        parts[2] = '20' + parts[2];
+        tmp = `${parts[0]}/${parts[1]}/${parts[2]}`;
+      } else if (/^\d{6}$/.test(tmp.replace(/\//g, ''))) {
+        const d = tmp.replace(/\//g, '');
+        tmp = `${d.slice(0, 2)}/${d.slice(2, 4)}/20${d.slice(4, 6)}`;
+      }
+
+      const m = tmp.match(/^(\d{2})\/(\d{2})\/(\d{2}|\d{4})$/);
+      if (!m) {
+        input.value = '';
+        showAlert('Data inválida. Use dd/mm/aaaa.', 'erro');
+        return;
+      }
+
+      let dia = Number(m[1]);
+      let mes = Number(m[2]);
+      let ano = Number(m[3]);
+      if (String(m[3]).length === 2) ano = 2000 + ano;
+
+      const dt = new Date(ano, mes - 1, dia);
+      const dataValida =
+        ano >= 1900 && ano <= 2999 &&
+        mes >= 1 && mes <= 12 &&
+        dia >= 1 && dia <= 31 &&
+        dt.getFullYear() === ano &&
+        dt.getMonth() === mes - 1 &&
+        dt.getDate() === dia;
+
+      if (!dataValida) {
+        input.value = '';
+        showAlert('Data inválida. Use dd/mm/aaaa.', 'erro');
+        return;
+      }
+
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      dt.setHours(0, 0, 0, 0);
+      if (dt.getTime() > hoje.getTime()) {
+        input.value = '';
+        showAlert('Data não pode ser futura.', 'erro');
+        return;
+      }
+
+      input.value = `${String(dia).padStart(2, '0')}/${String(mes).padStart(2, '0')}/${String(ano).padStart(4, '0')}`;
+      clearAlert();
+    }
+
+    function bindDateInput(input) {
+      if (!input || input.dataset.dateBound === '1') return;
+      input.dataset.dateBound = '1';
+      input.addEventListener('input', () => maskDateDdMmYyyyRealtime(input));
+      input.addEventListener('blur', () => ensureInputDate(input));
+    }
+
+    function setValor(id, valor) {
+      const el = document.getElementById(id);
+      if (el) el.value = numeroParaMoeda(roundMoneyValue(valor));
+    }
+
+    function atualizarCalculos() {
+      const valorPrincipal = moedaParaNumero(document.getElementById('valorPrincipal').value);
+      const somatorioAmortizacao = moedaParaNumero(document.getElementById('somatorioAmortizacao').value);
+      const pctDesconto = percentualParaFracao(document.getElementById('percentualDesconto').value);
+      const compensacaoEstadual = moedaParaNumero(document.getElementById('compensacaoEstadual').value);
+      const correcaoMonetaria = moedaParaNumero(document.getElementById('correcaoMonetaria').value);
+      const pctMulta = percentualParaFracao(document.getElementById('percentualMulta').value);
+      const pctJuros = percentualParaFracao(document.getElementById('percentualJuros').value);
+      const pctSelic = percentualParaFracao(document.getElementById('percentualSelic').value);
+      const pctEncargos = percentualParaFracao(document.getElementById('percentualEncargos').value);
+
+      const valorDesconto = roundMoneyValue(valorPrincipal * pctDesconto);
+      const saldoParcial = roundMoneyValue(valorPrincipal - somatorioAmortizacao - valorDesconto - compensacaoEstadual);
+      const saldoAtualizado = roundMoneyValue(saldoParcial + correcaoMonetaria);
+      const valorMulta = roundMoneyValue(saldoAtualizado * pctMulta);
+      const valorJuros = roundMoneyValue(saldoAtualizado * pctJuros);
+      const valorSelic = roundMoneyValue(saldoAtualizado * pctSelic);
+      const totalParcial = roundMoneyValue(saldoAtualizado + valorMulta + valorJuros + valorSelic);
+      const valorEncargos = roundMoneyValue(totalParcial * pctEncargos);
+      const valorConsolidado = roundMoneyValue(totalParcial + valorEncargos);
+
+      setValor('valorDesconto', valorDesconto);
+      setValor('saldoParcial', saldoParcial);
+      setValor('saldoAtualizado', saldoAtualizado);
+      setValor('valorMulta', valorMulta);
+      setValor('valorJuros', valorJuros);
+      setValor('valorSelic', valorSelic);
+      setValor('totalParcial', totalParcial);
+      setValor('valorEncargos', valorEncargos);
+      setValor('valorConsolidado', valorConsolidado);
+    }
+
+    function focusNextField(current) {
+      const fields = Array.from(document.querySelectorAll('input:not([readonly]), button:not([disabled])'));
+      const idx = fields.indexOf(current);
+      if (idx >= 0 && idx < fields.length - 1) {
+        fields[idx + 1].focus();
+      }
+    }
+
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.campo-moeda').forEach(bindRealtimeMoneyInput);
+      document.querySelectorAll('.campo-percentual').forEach(bindPercentInput);
+      bindDateInput(document.getElementById('dataConsolidacao'));
+
+      const numeroDebito = document.getElementById('numeroDebito');
+      numeroDebito.addEventListener('input', () => {
+        numeroDebito.value = onlyDigits(numeroDebito.value);
+      });
+
+      document.querySelectorAll('input:not([readonly])').forEach((input) => {
+        input.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Enter') {
+            ev.preventDefault();
+            if (input.classList.contains('campo-percentual')) {
+              input.value = numeroParaPercentual(parseNumeroFlexivel(input.value));
+              atualizarCalculos();
+            }
+            if (input.id === 'dataConsolidacao') {
+              ensureInputDate(input);
+            }
+            focusNextField(input);
+          }
+        });
+      });
+
+
+      atualizarCalculos();
+    });
+  </script>
 </body>
 </html>
