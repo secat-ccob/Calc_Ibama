@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_6 -->
+  <!-- Versão: simulador_consolidacao_debito_v_11 -->
 
   <style>
     :root {
@@ -176,6 +176,38 @@
       padding: 12px;
     }
 
+
+    .acoes-pdf {
+      display: flex;
+      justify-content: center;
+      padding: 14px 0 2px;
+    }
+
+    .btn {
+      background-color: #e0e0e0;
+      color: #000000;
+      border: 1px solid #ccc;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .btn:hover {
+      background-color: #d0d0d0;
+    }
+
+    .btn-primary {
+      background-color: #1f4e79;
+      color: #ffffff;
+      border-color: #1f4e79;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(0.95);
+    }
+
     .tabela-consolidacao {
       width: 100%;
       border-collapse: collapse;
@@ -239,9 +271,20 @@
       background-color: #f7f7f7;
     }
 
-    .tabela-consolidacao .valor-calculado,
-    .tabela-consolidacao .percentual-vazio {
+    .tabela-consolidacao tbody tr.linha-comum td {
+      background-color: #f7f7f7;
+    }
+
+    .tabela-consolidacao tbody tr.linha-destaque td {
       background-color: #e0e0e0;
+    }
+
+    .tabela-consolidacao .valor-nao-editavel .campo-tabela {
+      font-weight: bold;
+    }
+
+    .tabela-consolidacao .percentual-vazio {
+      text-align: center;
     }
 
     .campo-tabela {
@@ -276,9 +319,7 @@
       text-align: center;
     }
 
-    .linha-total .rotulo,
-    .linha-total .valor {
-      background-color: #e0e0e0;
+    .linha-destaque .rotulo {
       font-weight: bold;
     }
 
@@ -406,73 +447,78 @@
               <th class="percentual">Percentual</th>
               <th class="valor">Valores</th>
             </tr>
-            <tr>
+            <tr class="linha-destaque">
               <td class="rotulo">Valor Principal</td>
-              <td class="percentual percentual-vazio"></td>
+              <td class="percentual percentual-vazio">-</td>
               <td class="valor"><input id="valorPrincipal" class="campo-tabela campo-moeda" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
             </tr>
-            <tr>
+            <tr class="linha-comum">
               <td class="rotulo">(-)Somatório da amortização</td>
-              <td class="percentual percentual-vazio"></td>
+              <td class="percentual percentual-vazio">-</td>
               <td class="valor"><input id="somatorioAmortizacao" class="campo-tabela campo-moeda" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
             </tr>
-            <tr>
+            <tr class="linha-comum">
               <td class="rotulo">(-)Desconto</td>
               <td class="percentual"><input id="percentualDesconto" class="campo-tabela campo-percentual" type="text" inputmode="decimal" value="0,00%" autocomplete="off" /></td>
-              <td class="valor valor-calculado"><input id="valorDesconto" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+              <td class="valor valor-calculado valor-nao-editavel"><input id="valorDesconto" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
             </tr>
-            <tr>
+            <tr class="linha-comum">
               <td class="rotulo">(-)Compensação Estadual</td>
-              <td class="percentual percentual-vazio"></td>
+              <td class="percentual percentual-vazio">-</td>
               <td class="valor"><input id="compensacaoEstadual" class="campo-tabela campo-moeda" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
             </tr>
-            <tr class="linha-total">
+            <tr class="linha-destaque">
               <td class="rotulo">(=)Saldo Parcial</td>
-              <td class="percentual percentual-vazio"></td>
-              <td class="valor valor-calculado"><input id="saldoParcial" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+              <td class="percentual percentual-vazio">-</td>
+              <td class="valor valor-calculado"><input id="saldoParcial" class="campo-tabela campo-moeda campo-base-manual" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
             </tr>
-            <tr>
+            <tr class="linha-comum">
               <td class="rotulo">(+)Correção Monetária</td>
-              <td class="percentual percentual-vazio"></td>
+              <td class="percentual percentual-vazio">-</td>
               <td class="valor"><input id="correcaoMonetaria" class="campo-tabela campo-moeda" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
             </tr>
-            <tr class="linha-total">
+            <tr class="linha-destaque">
               <td class="rotulo">(=)Saldo Atualizado</td>
-              <td class="percentual percentual-vazio"></td>
-              <td class="valor valor-calculado"><input id="saldoAtualizado" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+              <td class="percentual percentual-vazio">-</td>
+              <td class="valor valor-calculado"><input id="saldoAtualizado" class="campo-tabela campo-moeda campo-base-manual" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
             </tr>
-            <tr>
+            <tr class="linha-comum">
               <td class="rotulo">(+)Multa</td>
               <td class="percentual"><input id="percentualMulta" class="campo-tabela campo-percentual" type="text" inputmode="decimal" value="0,00%" autocomplete="off" /></td>
-              <td class="valor valor-calculado"><input id="valorMulta" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+              <td class="valor valor-calculado valor-nao-editavel"><input id="valorMulta" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
             </tr>
-            <tr>
+            <tr class="linha-comum">
               <td class="rotulo">(+)Juros</td>
               <td class="percentual"><input id="percentualJuros" class="campo-tabela campo-percentual" type="text" inputmode="decimal" value="0,00%" autocomplete="off" /></td>
-              <td class="valor valor-calculado"><input id="valorJuros" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+              <td class="valor valor-calculado valor-nao-editavel"><input id="valorJuros" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
             </tr>
-            <tr>
+            <tr class="linha-comum">
               <td class="rotulo">(+)SELIC</td>
               <td class="percentual"><input id="percentualSelic" class="campo-tabela campo-percentual" type="text" inputmode="decimal" value="0,00%" autocomplete="off" /></td>
-              <td class="valor valor-calculado"><input id="valorSelic" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+              <td class="valor valor-calculado valor-nao-editavel"><input id="valorSelic" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
             </tr>
-            <tr class="linha-total">
+            <tr class="linha-destaque">
               <td class="rotulo">(=)Total Parcial</td>
-              <td class="percentual percentual-vazio"></td>
-              <td class="valor valor-calculado"><input id="totalParcial" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+              <td class="percentual percentual-vazio">-</td>
+              <td class="valor valor-calculado valor-nao-editavel"><input id="totalParcial" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
             </tr>
-            <tr>
+            <tr class="linha-comum">
               <td class="rotulo">(+)Encargos Legais</td>
               <td class="percentual"><input id="percentualEncargos" class="campo-tabela campo-percentual" type="text" inputmode="decimal" value="0,00%" autocomplete="off" /></td>
-              <td class="valor valor-calculado"><input id="valorEncargos" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+              <td class="valor valor-calculado valor-nao-editavel"><input id="valorEncargos" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
             </tr>
-            <tr class="linha-total">
+            <tr class="linha-destaque">
               <td class="rotulo">(=)Valor Consolidado</td>
-              <td class="percentual percentual-vazio"></td>
-              <td class="valor valor-calculado"><input id="valorConsolidado" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+              <td class="percentual percentual-vazio">-</td>
+              <td class="valor valor-calculado valor-nao-editavel"><input id="valorConsolidado" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
             </tr>
           </tbody>
         </table>
+
+        <div class="acoes-pdf no-print">
+          <button type="button" class="btn btn-primary" id="btnGerarPdf">Gerar PDF</button>
+        </div>
+
 
       </div>
     </section>
@@ -483,6 +529,39 @@
   </footer>
 
   <script>
+    let modoPreenchimentoBase = null;
+
+    function registrarEdicaoCampo(input) {
+      if (!input) return;
+      const id = input.id;
+
+      if (id === 'saldoParcial') {
+        modoPreenchimentoBase = 'saldoParcial';
+        return;
+      }
+
+      if (id === 'saldoAtualizado') {
+        modoPreenchimentoBase = 'saldoAtualizado';
+        return;
+      }
+
+      const camposAcimaSaldoParcial = [
+        'valorPrincipal',
+        'somatorioAmortizacao',
+        'percentualDesconto',
+        'compensacaoEstadual'
+      ];
+
+      if (camposAcimaSaldoParcial.includes(id)) {
+        modoPreenchimentoBase = null;
+        return;
+      }
+
+      if (id === 'correcaoMonetaria' && modoPreenchimentoBase === 'saldoAtualizado') {
+        modoPreenchimentoBase = null;
+      }
+    }
+
     function showAlert(msg, type = 'erro') {
       const el = document.getElementById('alerta');
       if (!el) return;
@@ -544,6 +623,7 @@
           const len = input.value.length;
           input.setSelectionRange(len, len);
         } catch (_) {}
+        registrarEdicaoCampo(input);
         atualizarCalculos();
       };
 
@@ -554,6 +634,7 @@
       input.addEventListener('blur', () => {
         const digits = input.value.replace(/\D/g, '');
         input.value = digits ? formatMoneyDigitsString(digits) : '0,00';
+        registrarEdicaoCampo(input);
         atualizarCalculos();
       });
     }
@@ -596,12 +677,14 @@
 
       input.addEventListener('input', () => {
         input.value = input.value.replace(/[^0-9,.%]/g, '');
+        registrarEdicaoCampo(input);
         atualizarCalculos();
       });
 
       input.addEventListener('blur', () => {
         const valor = parseNumeroFlexivel(input.value);
         input.value = numeroParaPercentual(valor);
+        registrarEdicaoCampo(input);
         atualizarCalculos();
       });
     }
@@ -622,7 +705,7 @@
 
     function ensureInputDate(input) {
       const raw = (input.value || '').trim();
-      if (!raw) return;
+      if (!raw) return true;
 
       let tmp = raw.replace(/[^\d/]/g, '');
       const parts = tmp.split('/').filter(Boolean);
@@ -639,7 +722,7 @@
       if (!m) {
         input.value = '';
         showAlert('Data inválida. Use dd/mm/aaaa.', 'erro');
-        return;
+        return false;
       }
 
       let dia = Number(m[1]);
@@ -659,7 +742,7 @@
       if (!dataValida) {
         input.value = '';
         showAlert('Data inválida. Use dd/mm/aaaa.', 'erro');
-        return;
+        return false;
       }
 
       const hoje = new Date();
@@ -668,11 +751,12 @@
       if (dt.getTime() > hoje.getTime()) {
         input.value = '';
         showAlert('Data não pode ser futura.', 'erro');
-        return;
+        return false;
       }
 
       input.value = `${String(dia).padStart(2, '0')}/${String(mes).padStart(2, '0')}/${String(ano).padStart(4, '0')}`;
       clearAlert();
+      return true;
     }
 
     function bindDateInput(input) {
@@ -688,7 +772,7 @@
     }
 
     function atualizarCalculos() {
-      const valorPrincipal = moedaParaNumero(document.getElementById('valorPrincipal').value);
+      let valorPrincipal = moedaParaNumero(document.getElementById('valorPrincipal').value);
       const somatorioAmortizacao = moedaParaNumero(document.getElementById('somatorioAmortizacao').value);
       const pctDesconto = percentualParaFracao(document.getElementById('percentualDesconto').value);
       const compensacaoEstadual = moedaParaNumero(document.getElementById('compensacaoEstadual').value);
@@ -698,9 +782,24 @@
       const pctSelic = percentualParaFracao(document.getElementById('percentualSelic').value);
       const pctEncargos = percentualParaFracao(document.getElementById('percentualEncargos').value);
 
-      const valorDesconto = roundMoneyValue(valorPrincipal * pctDesconto);
-      const saldoParcial = roundMoneyValue(valorPrincipal - somatorioAmortizacao - valorDesconto - compensacaoEstadual);
-      const saldoAtualizado = roundMoneyValue(saldoParcial + correcaoMonetaria);
+      let valorDesconto = roundMoneyValue(valorPrincipal * pctDesconto);
+      let saldoParcial = roundMoneyValue(valorPrincipal - somatorioAmortizacao - valorDesconto - compensacaoEstadual);
+      let saldoAtualizado = roundMoneyValue(saldoParcial + correcaoMonetaria);
+
+      if (modoPreenchimentoBase === 'saldoParcial') {
+        saldoParcial = moedaParaNumero(document.getElementById('saldoParcial').value);
+        valorPrincipal = saldoParcial;
+        valorDesconto = roundMoneyValue(valorPrincipal * pctDesconto);
+        saldoAtualizado = roundMoneyValue(saldoParcial + correcaoMonetaria);
+      }
+
+      if (modoPreenchimentoBase === 'saldoAtualizado') {
+        saldoAtualizado = moedaParaNumero(document.getElementById('saldoAtualizado').value);
+        saldoParcial = saldoAtualizado;
+        valorPrincipal = saldoAtualizado;
+        valorDesconto = roundMoneyValue(valorPrincipal * pctDesconto);
+      }
+
       const valorMulta = roundMoneyValue(saldoAtualizado * pctMulta);
       const valorJuros = roundMoneyValue(saldoAtualizado * pctJuros);
       const valorSelic = roundMoneyValue(saldoAtualizado * pctSelic);
@@ -708,6 +807,7 @@
       const valorEncargos = roundMoneyValue(totalParcial * pctEncargos);
       const valorConsolidado = roundMoneyValue(totalParcial + valorEncargos);
 
+      setValor('valorPrincipal', valorPrincipal);
       setValor('valorDesconto', valorDesconto);
       setValor('saldoParcial', saldoParcial);
       setValor('saldoAtualizado', saldoAtualizado);
@@ -717,6 +817,257 @@
       setValor('totalParcial', totalParcial);
       setValor('valorEncargos', valorEncargos);
       setValor('valorConsolidado', valorConsolidado);
+    }
+
+
+    function valorCampo(id) {
+      const el = document.getElementById(id);
+      return el ? String(el.value || '').trim() : '';
+    }
+
+    function coletarDadosPdf() {
+      atualizarCalculos();
+
+      return {
+        numeroDebito: valorCampo('numeroDebito'),
+        dataConsolidacao: valorCampo('dataConsolidacao'),
+        linhas: [
+          { descricao: 'Valor Principal', percentual: '-', valor: valorCampo('valorPrincipal'), destaque: true, valorNegrito: false },
+          { descricao: '(-)Somatório da amortização', percentual: '-', valor: valorCampo('somatorioAmortizacao'), destaque: false, valorNegrito: false },
+          { descricao: '(-)Desconto', percentual: valorCampo('percentualDesconto'), valor: valorCampo('valorDesconto'), destaque: false, valorNegrito: true },
+          { descricao: '(-)Compensação Estadual', percentual: '-', valor: valorCampo('compensacaoEstadual'), destaque: false, valorNegrito: false },
+          { descricao: '(=)Saldo Parcial', percentual: '-', valor: valorCampo('saldoParcial'), destaque: true, valorNegrito: false },
+          { descricao: '(+)Correção Monetária', percentual: '-', valor: valorCampo('correcaoMonetaria'), destaque: false, valorNegrito: false },
+          { descricao: '(=)Saldo Atualizado', percentual: '-', valor: valorCampo('saldoAtualizado'), destaque: true, valorNegrito: false },
+          { descricao: '(+)Multa', percentual: valorCampo('percentualMulta'), valor: valorCampo('valorMulta'), destaque: false, valorNegrito: true },
+          { descricao: '(+)Juros', percentual: valorCampo('percentualJuros'), valor: valorCampo('valorJuros'), destaque: false, valorNegrito: true },
+          { descricao: '(+)SELIC', percentual: valorCampo('percentualSelic'), valor: valorCampo('valorSelic'), destaque: false, valorNegrito: true },
+          { descricao: '(=)Total Parcial', percentual: '-', valor: valorCampo('totalParcial'), destaque: true, valorNegrito: true },
+          { descricao: '(+)Encargos Legais', percentual: valorCampo('percentualEncargos'), valor: valorCampo('valorEncargos'), destaque: false, valorNegrito: true },
+          { descricao: '(=)Valor Consolidado', percentual: '-', valor: valorCampo('valorConsolidado'), destaque: true, valorNegrito: true }
+        ]
+      };
+    }
+
+    function criarAsciiBytes(texto) {
+      const bytes = [];
+      for (let i = 0; i < texto.length; i++) {
+        bytes.push(texto.charCodeAt(i) & 0xff);
+      }
+      return bytes;
+    }
+
+    function caractereParaWinAnsi(c) {
+      const codigo = c.charCodeAt(0);
+      const mapa = {
+        0x20ac: 0x80,
+        0x201a: 0x82,
+        0x0192: 0x83,
+        0x201e: 0x84,
+        0x2026: 0x85,
+        0x2020: 0x86,
+        0x2021: 0x87,
+        0x02c6: 0x88,
+        0x2030: 0x89,
+        0x0160: 0x8a,
+        0x2039: 0x8b,
+        0x0152: 0x8c,
+        0x017d: 0x8e,
+        0x2018: 0x91,
+        0x2019: 0x92,
+        0x201c: 0x93,
+        0x201d: 0x94,
+        0x2022: 0x95,
+        0x2013: 0x96,
+        0x2014: 0x97,
+        0x02dc: 0x98,
+        0x2122: 0x99,
+        0x0161: 0x9a,
+        0x203a: 0x9b,
+        0x0153: 0x9c,
+        0x017e: 0x9e,
+        0x0178: 0x9f
+      };
+      if (codigo in mapa) return mapa[codigo];
+      if (codigo <= 0xff) return codigo;
+      return 0x3f;
+    }
+
+    function criarPdfStringBytes(texto) {
+      const bytes = [0x28];
+      const s = String(texto || '');
+      for (let i = 0; i < s.length; i++) {
+        const b = caractereParaWinAnsi(s[i]);
+        if (b === 0x28 || b === 0x29 || b === 0x5c) {
+          bytes.push(0x5c, b);
+        } else if (b < 0x20) {
+          const octal = b.toString(8).padStart(3, '0');
+          bytes.push(0x5c, octal.charCodeAt(0), octal.charCodeAt(1), octal.charCodeAt(2));
+        } else {
+          bytes.push(b);
+        }
+      }
+      bytes.push(0x29);
+      return bytes;
+    }
+
+    function estimarLarguraTexto(texto, tamanho) {
+      const s = String(texto || '');
+      let peso = 0;
+      for (const c of s) {
+        if ('ilI.,:;|!'.includes(c)) peso += 0.28;
+        else if ('MW@#%'.includes(c)) peso += 0.82;
+        else if (c === ' ') peso += 0.25;
+        else peso += 0.52;
+      }
+      return peso * tamanho;
+    }
+
+    function construirPdfConsolidacao(dados) {
+      const larguraPagina = 595.28;
+      const alturaPagina = 841.89;
+      const margemX = 42;
+      const tabelaLargura = larguraPagina - (margemX * 2);
+      const colunas = [tabelaLargura * 0.40, tabelaLargura * 0.27, tabelaLargura * 0.33];
+      const alturaLinha = 18;
+      const x0 = margemX;
+      let yTopo = 775;
+      const conteudo = [];
+
+      function cmd(s) {
+        conteudo.push(...criarAsciiBytes(s));
+      }
+
+      function textoPdf(texto, x, y, tamanho = 8, negrito = false, alinhamento = 'left', larguraCelula = 0) {
+        let xTexto = x;
+        if (alinhamento === 'center') {
+          xTexto = x + ((larguraCelula - estimarLarguraTexto(texto, tamanho)) / 2);
+        } else if (alinhamento === 'right') {
+          xTexto = x + larguraCelula - estimarLarguraTexto(texto, tamanho);
+        }
+        cmd(`BT /${negrito ? 'F2' : 'F1'} ${tamanho} Tf 1 0 0 1 ${xTexto.toFixed(2)} ${y.toFixed(2)} Tm `);
+        conteudo.push(...criarPdfStringBytes(texto));
+        cmd(' Tj ET\n');
+      }
+
+      function preencherRetangulo(x, y, w, h, cinza) {
+        cmd(`q ${cinza} g ${x.toFixed(2)} ${y.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f Q\n`);
+      }
+
+      function contornarRetangulo(x, y, w, h) {
+        cmd(`q 0 G 0.55 w ${x.toFixed(2)} ${y.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re S Q\n`);
+      }
+
+      function celula(x, yTop, w, h, cinza, texto, opcoes = {}) {
+        const y = yTop - h;
+        preencherRetangulo(x, y, w, h, cinza);
+        contornarRetangulo(x, y, w, h);
+        if (texto !== undefined && texto !== null && texto !== '') {
+          const tamanho = opcoes.tamanho || 8;
+          const baseline = y + ((h - tamanho) / 2) + 2.4;
+          const padding = opcoes.padding || 5;
+          let xTexto = x + padding;
+          let larguraTexto = w - (padding * 2);
+          textoPdf(texto, xTexto, baseline, tamanho, !!opcoes.negrito, opcoes.alinhamento || 'left', larguraTexto);
+        }
+      }
+
+      textoPdf('Simulador de consolidação do débito', margemX, 805, 13, true, 'center', tabelaLargura);
+
+      if (dados.numeroDebito) {
+        celula(x0, yTopo, colunas[0], alturaLinha, '0.85', 'Nº do débito:', { negrito: true });
+        celula(x0 + colunas[0], yTopo, colunas[1] + colunas[2], alturaLinha, '1', dados.numeroDebito, { alinhamento: 'left' });
+        yTopo -= alturaLinha;
+      }
+
+      const rotuloData = dados.dataConsolidacao ? 'Consolidação do débito em:' : 'Consolidação do débito:';
+      celula(x0, yTopo, colunas[0], alturaLinha, '0.85', rotuloData, { negrito: true });
+      celula(x0 + colunas[0], yTopo, colunas[1] + colunas[2], alturaLinha, '1', dados.dataConsolidacao || '', { alinhamento: 'left' });
+      yTopo -= alturaLinha;
+
+      celula(x0, yTopo, colunas[0], alturaLinha, '0.97', 'Descrição', { negrito: true });
+      celula(x0 + colunas[0], yTopo, colunas[1], alturaLinha, '0.97', 'Percentual', { negrito: true, alinhamento: 'center' });
+      celula(x0 + colunas[0] + colunas[1], yTopo, colunas[2], alturaLinha, '0.97', 'Valores', { negrito: true, alinhamento: 'right' });
+      yTopo -= alturaLinha;
+
+      dados.linhas.forEach((linha) => {
+        const cinza = linha.destaque ? '0.88' : '0.97';
+        celula(x0, yTopo, colunas[0], alturaLinha, cinza, linha.descricao, { negrito: linha.destaque });
+        celula(x0 + colunas[0], yTopo, colunas[1], alturaLinha, cinza, linha.percentual, { alinhamento: 'center' });
+        celula(x0 + colunas[0] + colunas[1], yTopo, colunas[2], alturaLinha, cinza, linha.valor, { alinhamento: 'right', negrito: linha.valorNegrito });
+        yTopo -= alturaLinha;
+      });
+
+      const stream = new Uint8Array(conteudo);
+      const partes = [];
+      let tamanhoTotal = 0;
+      const offsets = [0];
+
+      function adicionarBytes(bytes) {
+        const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+        partes.push(arr);
+        tamanhoTotal += arr.length;
+      }
+
+      function adicionarAscii(s) {
+        adicionarBytes(criarAsciiBytes(s));
+      }
+
+      function adicionarObjeto(numero, bytesObjeto) {
+        offsets[numero] = tamanhoTotal;
+        adicionarAscii(`${numero} 0 obj\n`);
+        adicionarBytes(bytesObjeto);
+        adicionarAscii('\nendobj\n');
+      }
+
+      adicionarAscii('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+      adicionarObjeto(1, criarAsciiBytes('<< /Type /Catalog /Pages 2 0 R >>'));
+      adicionarObjeto(2, criarAsciiBytes('<< /Type /Pages /Kids [3 0 R] /Count 1 >>'));
+      adicionarObjeto(3, criarAsciiBytes(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${larguraPagina} ${alturaPagina}] /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> /Contents 4 0 R >>`));
+      const objStream = [];
+      objStream.push(...criarAsciiBytes(`<< /Length ${stream.length} >>\nstream\n`));
+      objStream.push(...stream);
+      objStream.push(...criarAsciiBytes('\nendstream'));
+      adicionarObjeto(4, objStream);
+      adicionarObjeto(5, criarAsciiBytes('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>'));
+      adicionarObjeto(6, criarAsciiBytes('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>'));
+
+      const inicioXref = tamanhoTotal;
+      adicionarAscii('xref\n0 7\n');
+      adicionarAscii('0000000000 65535 f \n');
+      for (let i = 1; i <= 6; i++) {
+        adicionarAscii(String(offsets[i]).padStart(10, '0') + ' 00000 n \n');
+      }
+      adicionarAscii(`trailer\n<< /Size 7 /Root 1 0 R >>\nstartxref\n${inicioXref}\n%%EOF`);
+
+      const pdf = new Uint8Array(tamanhoTotal);
+      let pos = 0;
+      partes.forEach((parte) => {
+        pdf.set(parte, pos);
+        pos += parte.length;
+      });
+      return pdf;
+    }
+
+    function gerarPdfConsolidacao() {
+      const dataInput = document.getElementById('dataConsolidacao');
+      if (dataInput && dataInput.value.trim() && !ensureInputDate(dataInput)) {
+        return;
+      }
+
+      atualizarCalculos();
+      const dados = coletarDadosPdf();
+      const pdf = construirPdfConsolidacao(dados);
+      const blob = new Blob([pdf], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const numero = onlyDigits(dados.numeroDebito);
+      link.href = url;
+      link.download = numero ? `consolidacao_debito_${numero}.pdf` : 'consolidacao_debito.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
     function focusNextField(current) {
@@ -745,6 +1096,7 @@
             ev.preventDefault();
             if (input.classList.contains('campo-percentual')) {
               input.value = numeroParaPercentual(parseNumeroFlexivel(input.value));
+              registrarEdicaoCampo(input);
               atualizarCalculos();
             }
             if (input.id === 'dataConsolidacao') {
@@ -755,6 +1107,11 @@
         });
       });
 
+
+      const btnGerarPdf = document.getElementById('btnGerarPdf');
+      if (btnGerarPdf) {
+        btnGerarPdf.addEventListener('click', gerarPdfConsolidacao);
+      }
 
       atualizarCalculos();
     });
