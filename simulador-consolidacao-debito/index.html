@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_11 -->
+  <!-- Versão: simulador_consolidacao_debito_v_12 -->
 
   <style>
     :root {
@@ -473,6 +473,11 @@
               <td class="valor valor-calculado"><input id="saldoParcial" class="campo-tabela campo-moeda campo-base-manual" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
             </tr>
             <tr class="linha-comum">
+              <td class="rotulo">(-)Somatório da amortização Sapiens Dívida</td>
+              <td class="percentual percentual-vazio">-</td>
+              <td class="valor"><input id="somatorioAmortizacaoSapiensDivida" class="campo-tabela campo-moeda" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
+            </tr>
+            <tr class="linha-comum">
               <td class="rotulo">(+)Correção Monetária</td>
               <td class="percentual percentual-vazio">-</td>
               <td class="valor"><input id="correcaoMonetaria" class="campo-tabela campo-moeda" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
@@ -557,7 +562,12 @@
         return;
       }
 
-      if (id === 'correcaoMonetaria' && modoPreenchimentoBase === 'saldoAtualizado') {
+      const camposAcimaSaldoAtualizado = [
+        'somatorioAmortizacaoSapiensDivida',
+        'correcaoMonetaria'
+      ];
+
+      if (camposAcimaSaldoAtualizado.includes(id) && modoPreenchimentoBase === 'saldoAtualizado') {
         modoPreenchimentoBase = null;
       }
     }
@@ -776,6 +786,7 @@
       const somatorioAmortizacao = moedaParaNumero(document.getElementById('somatorioAmortizacao').value);
       const pctDesconto = percentualParaFracao(document.getElementById('percentualDesconto').value);
       const compensacaoEstadual = moedaParaNumero(document.getElementById('compensacaoEstadual').value);
+      const somatorioAmortizacaoSapiensDivida = moedaParaNumero(document.getElementById('somatorioAmortizacaoSapiensDivida').value);
       const correcaoMonetaria = moedaParaNumero(document.getElementById('correcaoMonetaria').value);
       const pctMulta = percentualParaFracao(document.getElementById('percentualMulta').value);
       const pctJuros = percentualParaFracao(document.getElementById('percentualJuros').value);
@@ -784,13 +795,13 @@
 
       let valorDesconto = roundMoneyValue(valorPrincipal * pctDesconto);
       let saldoParcial = roundMoneyValue(valorPrincipal - somatorioAmortizacao - valorDesconto - compensacaoEstadual);
-      let saldoAtualizado = roundMoneyValue(saldoParcial + correcaoMonetaria);
+      let saldoAtualizado = roundMoneyValue(saldoParcial - somatorioAmortizacaoSapiensDivida + correcaoMonetaria);
 
       if (modoPreenchimentoBase === 'saldoParcial') {
         saldoParcial = moedaParaNumero(document.getElementById('saldoParcial').value);
         valorPrincipal = saldoParcial;
         valorDesconto = roundMoneyValue(valorPrincipal * pctDesconto);
-        saldoAtualizado = roundMoneyValue(saldoParcial + correcaoMonetaria);
+        saldoAtualizado = roundMoneyValue(saldoParcial - somatorioAmortizacaoSapiensDivida + correcaoMonetaria);
       }
 
       if (modoPreenchimentoBase === 'saldoAtualizado') {
@@ -837,6 +848,7 @@
           { descricao: '(-)Desconto', percentual: valorCampo('percentualDesconto'), valor: valorCampo('valorDesconto'), destaque: false, valorNegrito: true },
           { descricao: '(-)Compensação Estadual', percentual: '-', valor: valorCampo('compensacaoEstadual'), destaque: false, valorNegrito: false },
           { descricao: '(=)Saldo Parcial', percentual: '-', valor: valorCampo('saldoParcial'), destaque: true, valorNegrito: false },
+          { descricao: '(-)Somatório da amortização Sapiens Dívida', percentual: '-', valor: valorCampo('somatorioAmortizacaoSapiensDivida'), destaque: false, valorNegrito: false },
           { descricao: '(+)Correção Monetária', percentual: '-', valor: valorCampo('correcaoMonetaria'), destaque: false, valorNegrito: false },
           { descricao: '(=)Saldo Atualizado', percentual: '-', valor: valorCampo('saldoAtualizado'), destaque: true, valorNegrito: false },
           { descricao: '(+)Multa', percentual: valorCampo('percentualMulta'), valor: valorCampo('valorMulta'), destaque: false, valorNegrito: true },
