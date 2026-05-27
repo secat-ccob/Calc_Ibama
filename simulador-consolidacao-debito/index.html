@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_12 -->
+  <!-- Versão: simulador_consolidacao_debito_v_15 -->
 
   <style>
     :root {
@@ -470,7 +470,7 @@
             <tr class="linha-destaque">
               <td class="rotulo">(=)Saldo Parcial</td>
               <td class="percentual percentual-vazio">-</td>
-              <td class="valor valor-calculado"><input id="saldoParcial" class="campo-tabela campo-moeda campo-base-manual" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
+              <td class="valor valor-calculado"><input id="saldoParcial" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
             </tr>
             <tr class="linha-comum">
               <td class="rotulo">(-)Somatório da amortização Sapiens Dívida</td>
@@ -485,7 +485,7 @@
             <tr class="linha-destaque">
               <td class="rotulo">(=)Saldo Atualizado</td>
               <td class="percentual percentual-vazio">-</td>
-              <td class="valor valor-calculado"><input id="saldoAtualizado" class="campo-tabela campo-moeda campo-base-manual" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
+              <td class="valor valor-calculado"><input id="saldoAtualizado" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
             </tr>
             <tr class="linha-comum">
               <td class="rotulo">(+)Multa</td>
@@ -534,42 +534,13 @@
   </footer>
 
   <script>
-    let modoPreenchimentoBase = null;
+    function ehCampoBaseManual(input) {
+      return false;
+    }
 
     function registrarEdicaoCampo(input) {
-      if (!input) return;
-      const id = input.id;
-
-      if (id === 'saldoParcial') {
-        modoPreenchimentoBase = 'saldoParcial';
-        return;
-      }
-
-      if (id === 'saldoAtualizado') {
-        modoPreenchimentoBase = 'saldoAtualizado';
-        return;
-      }
-
-      const camposAcimaSaldoParcial = [
-        'valorPrincipal',
-        'somatorioAmortizacao',
-        'percentualDesconto',
-        'compensacaoEstadual'
-      ];
-
-      if (camposAcimaSaldoParcial.includes(id)) {
-        modoPreenchimentoBase = null;
-        return;
-      }
-
-      const camposAcimaSaldoAtualizado = [
-        'somatorioAmortizacaoSapiensDivida',
-        'correcaoMonetaria'
-      ];
-
-      if (camposAcimaSaldoAtualizado.includes(id) && modoPreenchimentoBase === 'saldoAtualizado') {
-        modoPreenchimentoBase = null;
-      }
+      // Vinculação manual entre Valor Principal, Saldo Parcial e Saldo Atualizado cancelada.
+      // Saldo Parcial e Saldo Atualizado voltaram a ser campos calculados/readOnly.
     }
 
     function showAlert(msg, type = 'erro') {
@@ -633,8 +604,14 @@
           const len = input.value.length;
           input.setSelectionRange(len, len);
         } catch (_) {}
-        registrarEdicaoCampo(input);
-        atualizarCalculos();
+
+        // Nos campos-base manuais, o recálculo é aplicado apenas ao sair do campo
+        // ou ao avançar com Enter/Tab. Isso evita que o próprio cálculo sobrescreva
+        // o valor enquanto o usuário ainda está digitando ou apagando.
+        if (!ehCampoBaseManual(input)) {
+          registrarEdicaoCampo(input);
+          atualizarCalculos();
+        }
       };
 
       input.addEventListener('focus', () => {
@@ -797,19 +774,6 @@
       let saldoParcial = roundMoneyValue(valorPrincipal - somatorioAmortizacao - valorDesconto - compensacaoEstadual);
       let saldoAtualizado = roundMoneyValue(saldoParcial - somatorioAmortizacaoSapiensDivida + correcaoMonetaria);
 
-      if (modoPreenchimentoBase === 'saldoParcial') {
-        saldoParcial = moedaParaNumero(document.getElementById('saldoParcial').value);
-        valorPrincipal = saldoParcial;
-        valorDesconto = roundMoneyValue(valorPrincipal * pctDesconto);
-        saldoAtualizado = roundMoneyValue(saldoParcial - somatorioAmortizacaoSapiensDivida + correcaoMonetaria);
-      }
-
-      if (modoPreenchimentoBase === 'saldoAtualizado') {
-        saldoAtualizado = moedaParaNumero(document.getElementById('saldoAtualizado').value);
-        saldoParcial = saldoAtualizado;
-        valorPrincipal = saldoAtualizado;
-        valorDesconto = roundMoneyValue(valorPrincipal * pctDesconto);
-      }
 
       const valorMulta = roundMoneyValue(saldoAtualizado * pctMulta);
       const valorJuros = roundMoneyValue(saldoAtualizado * pctJuros);
