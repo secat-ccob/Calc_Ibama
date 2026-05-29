@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_6 -->
+    <!-- Versão: calculadora_selic_portal_v_7 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -469,6 +469,7 @@
                     <td>Valor original (R$)</td>
                     <td>Vencimento (mm/aaaa)</td>
                     <td>Taxa SELIC acumulada (%)</td>
+                    <td>Valor SELIC acumulada (R$)</td>
                     <td>Valor atualizado (R$)</td>
                 </tr>
                 
@@ -483,6 +484,9 @@
                         <input type="text" class="taxa-selic" readonly>
                     </td>
                     <td class="gray-cell">
+                        <input type="text" class="valor-selic-acumulada" readonly>
+                    </td>
+                    <td class="gray-cell">
                         <input type="text" class="valor-atualizado" readonly>
                     </td>
                 </tr>
@@ -490,7 +494,7 @@
                 <tr class="empty-row"><td colspan="4"></td></tr>
                 
                 <tr class="data-row total-row">
-                    <td colspan="2" style="border: none;"></td>
+                    <td colspan="3" style="border: none;"></td>
                     <td class="green-footer">Total atualizado:</td>
                     <td class="green-footer">
                         <input type="text" id="valorTotal" readonly>
@@ -802,6 +806,7 @@
             const regexData = /^(0[1-9]|1[0-2])\/\d{4}$/;
             if (!regexData.test(dataPagamento) || !regexData.test(mesReferencia)) {
                 taxaSelicInput.value = 'Data inválida';
+                valorSelicAcumuladaInput.value = '';
                 valorAtualizadoInput.value = '';
                 calcularTotal();
                 return;
@@ -829,6 +834,7 @@
             } catch (error) {
                 taxaSelicInput.value = error.message && error.message.startsWith('Dados ausentes') ? 'Dados ausentes' : 'Erro';
                 taxaSelicInput.classList.remove('loading');
+                valorSelicAcumuladaInput.value = '';
                 valorAtualizadoInput.value = '';
                 mostrarAlerta(error.message && error.message.startsWith('Dados ausentes') ? error.message : 'Erro no cálculo.', 'error');
             }
@@ -871,6 +877,9 @@
                 </td>
                 <td class="gray-cell">
                     <input type="text" class="taxa-selic" readonly>
+                </td>
+                <td class="gray-cell">
+                    <input type="text" class="valor-selic-acumulada" readonly>
                 </td>
                 <td class="gray-cell">
                     <input type="text" class="valor-atualizado" readonly>
