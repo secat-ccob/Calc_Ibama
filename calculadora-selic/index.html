@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_13 -->
+    <!-- Versão: calculadora_selic_portal_v_15 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -520,7 +520,7 @@
         <div class="buttons">
             <button class="btn" onclick="adicionarLinha()">+ Adicionar Linha</button>
             <button class="btn" onclick="removerLinha()">- Remover Linha</button>
-            <button class="btn" onclick="imprimirPagina()">🖨️ Imprimir</button>
+            <button class="btn" onclick="gerarPDFDireto()">Gerar PDF</button>
             <button class="btn" onclick="buscarDadosOnline()">🔄 Atualizar Base</button>
         </div>
     </main>
@@ -596,43 +596,247 @@
             }
         }
         
-        function imprimirPagina() {
-            mostrarAlerta('📄 Preparando PDF com borda inteligente...', 'success');
-            
-            const elementosParaOcultar = ['#alertas', '#statusInfo', '.buttons'];
-            const elementosOcultos = [];
-            
-            elementosParaOcultar.forEach(seletor => {
-                const elemento = document.querySelector(seletor);
-                if (elemento && elemento.style.display !== 'none') {
-                    elementosOcultos.push({elemento, displayOriginal: elemento.style.display});
-                    elemento.style.display = 'none';
+        function criarTextoPDF(texto) {
+            const mapaWinAnsi = {
+                '€': 128, '‚': 130, 'ƒ': 131, '„': 132, '…': 133, '†': 134, '‡': 135,
+                'ˆ': 136, '‰': 137, 'Š': 138, '‹': 139, 'Œ': 140, 'Ž': 142,
+                '‘': 145, '’': 146, '“': 147, '”': 148, '•': 149, '–': 150, '—': 151,
+                '˜': 152, '™': 153, 'š': 154, '›': 155, 'œ': 156, 'ž': 158, 'Ÿ': 159
+            };
+
+            function byteParaPDF(byte) {
+                if (byte === 40 || byte === 41 || byte === 92) {
+                    return '\' + String.fromCharCode(byte);
                 }
+                if (byte >= 32 && byte <= 126) {
+                    return String.fromCharCode(byte);
+                }
+                return '\' + byte.toString(8).padStart(3, '0');
+            }
+
+            let resultado = '(';
+            const conteudo = String(texto || '');
+
+            for (let i = 0; i < conteudo.length; i++) {
+                const caractere = conteudo[i];
+                const codigo = caractere.charCodeAt(0);
+
+                if (mapaWinAnsi[caractere] !== undefined) {
+                    resultado += byteParaPDF(mapaWinAnsi[caractere]);
+                } else if (codigo <= 255) {
+                    resultado += byteParaPDF(codigo);
+                } else {
+                    resultado += ' ';
+                }
+            }
+
+            resultado += ')';
+            return resultado;
+        }
+
+        function escaparComandoPDF(texto) {
+            return criarTextoPDF(String(texto || ''));
+        }
+
+        function adicionarTextoPDF(comandos, texto, x, y, tamanho = 10, alinhamento = 'left', largura = 0, negrito = false) {
+            const fonte = negrito ? 'F2' : 'F1';
+            let textoX = x;
+            const textoEstimado = String(texto || '').length * tamanho * 0.48;
+
+            if (alinhamento === 'center') {
+                textoX = x + (largura - textoEstimado) / 2;
+            } else if (alinhamento === 'right') {
+                textoX = x + largura - textoEstimado - 3;
+            }
+
+            comandos.push(`BT /${fonte} ${tamanho} Tf ${textoX.toFixed(2)} ${y.toFixed(2)} Td ${escaparComandoPDF(texto)} Tj ET`);
+        }
+
+        function desenharCelulaPDF(comandos, x, y, largura, altura, texto, opcoes = {}) {
+            const {
+                preenchimento = null,
+                corTexto = [0, 0, 0],
+                tamanho = 9,
+                alinhamento = 'center',
+                negrito = false
+            } = opcoes;
+
+            if (preenchimento) {
+                comandos.push(`${preenchimento[0]} ${preenchimento[1]} ${preenchimento[2]} rg`);
+                comandos.push(`${x.toFixed(2)} ${y.toFixed(2)} ${largura.toFixed(2)} ${altura.toFixed(2)} re f`);
+            }
+
+            comandos.push('0.72 w 0.78 0.78 0.78 RG');
+            comandos.push(`${x.toFixed(2)} ${y.toFixed(2)} ${largura.toFixed(2)} ${altura.toFixed(2)} re S`);
+            comandos.push(`${corTexto[0]} ${corTexto[1]} ${corTexto[2]} rg`);
+
+            const linhas = String(texto || '').split('\n');
+            const alturaLinha = tamanho + 2;
+            const yInicial = y + (altura / 2) + ((linhas.length - 1) * alturaLinha / 2) - (tamanho / 2);
+
+            linhas.forEach((linha, indice) => {
+                adicionarTextoPDF(comandos, linha, x + 4, yInicial - indice * alturaLinha, tamanho, alinhamento, largura - 8, negrito);
+            });
+        }
+
+        function obterDadosParaPDF() {
+            const linhas = Array.from(document.querySelectorAll('.data-row[data-linha]')).map(linha => {
+                return {
+                    valorOriginal: linha.querySelector('.valor-pagamento')?.value || '',
+                    vencimento: linha.querySelector('.data-pagamento')?.value || '',
+                    taxaSelic: linha.querySelector('.taxa-selic')?.value || '',
+                    valorSelic: linha.querySelector('.valor-selic')?.value || '',
+                    valorAtualizado: linha.querySelector('.valor-atualizado')?.value || ''
+                };
+            }).filter(linha => linha.valorOriginal || linha.vencimento || linha.taxaSelic || linha.valorSelic || linha.valorAtualizado);
+
+            return {
+                mesReferencia: document.getElementById('mesReferencia')?.value || '',
+                linhas,
+                totalOriginal: document.getElementById('valorTotalOriginal')?.value || '',
+                totalSelic: document.getElementById('valorTotalSelic')?.value || '',
+                totalAtualizado: document.getElementById('valorTotal')?.value || ''
+            };
+        }
+
+        function montarPDFSimples(dados) {
+            const larguraPagina = 842;
+            const alturaPagina = 595;
+            const margem = 36;
+            const comandos = [];
+
+            comandos.push('1 1 1 rg');
+            comandos.push(`0 0 ${larguraPagina} ${alturaPagina} re f`);
+
+            // Título
+            comandos.push('0.12 0.31 0.47 rg');
+            comandos.push(`${margem} ${alturaPagina - 72} ${larguraPagina - 2 * margem} 38 re f`);
+            comandos.push('1 1 1 rg');
+            adicionarTextoPDF(comandos, 'Calculadora de Taxa Selic Acumulada', margem, alturaPagina - 50, 14, 'center', larguraPagina - 2 * margem, true);
+
+            // Mês de atualização
+            comandos.push('0 0 0 rg');
+            adicionarTextoPDF(comandos, `Mês de atualização (mm/aaaa): ${dados.mesReferencia}`, margem, alturaPagina - 95, 11, 'left', 0, true);
+
+            const inicioY = alturaPagina - 135;
+            const alturaCabecalho = 34;
+            const alturaLinha = 28;
+            const larguras = [150, 125, 150, 170, 175];
+            const cabecalhos = [
+                'Valor original (R$)',
+                'Vencimento\n(mm/aaaa)',
+                'Taxa Selic\nacumulada (%)',
+                'Valor Selic acumulada\n(R$)',
+                'Valor atualizado\n(R$)'
+            ];
+
+            let x = margem;
+            cabecalhos.forEach((cabecalho, indice) => {
+                desenharCelulaPDF(comandos, x, inicioY, larguras[indice], alturaCabecalho, cabecalho, {
+                    preenchimento: [0.12, 0.31, 0.47],
+                    corTexto: [1, 1, 1],
+                    tamanho: 9,
+                    alinhamento: 'center',
+                    negrito: true
+                });
+                x += larguras[indice];
             });
 
-            const quantidadeLinhasCalculo = document.querySelectorAll('.data-row[data-linha]').length;
-            if (quantidadeLinhasCalculo < 2) {
-                document.querySelectorAll('.total-original-row, .total-selic-row, .total-atualizado-row').forEach(elemento => {
-                    if (elemento && elemento.style.display !== 'none') {
-                        elementosOcultos.push({elemento, displayOriginal: elemento.style.display});
-                        elemento.style.display = 'none';
-                    }
+            let y = inicioY - alturaLinha;
+            dados.linhas.forEach(linha => {
+                x = margem;
+                const valores = [linha.valorOriginal, linha.vencimento, linha.taxaSelic, linha.valorSelic, linha.valorAtualizado];
+                valores.forEach((valor, indice) => {
+                    const preenchimento = indice >= 2 ? [0.88, 0.88, 0.88] : null;
+                    desenharCelulaPDF(comandos, x, y, larguras[indice], alturaLinha, valor, {
+                        preenchimento,
+                        tamanho: 9,
+                        alinhamento: 'center'
+                    });
+                    x += larguras[indice];
+                });
+                y -= alturaLinha;
+            });
+
+            if (dados.linhas.length >= 2) {
+                y -= 24;
+                const xLabel = margem + larguras[0] + larguras[1] + larguras[2];
+                const larguraLabel = larguras[3];
+                const larguraValor = larguras[4];
+                const totais = [
+                    ['Total original:', dados.totalOriginal],
+                    ['Total Selic:', dados.totalSelic],
+                    ['Total atualizado:', dados.totalAtualizado]
+                ];
+
+                totais.forEach(([rotulo, valor]) => {
+                    desenharCelulaPDF(comandos, xLabel, y, larguraLabel, alturaLinha, rotulo, {
+                        preenchimento: [0.88, 0.88, 0.88],
+                        tamanho: 10,
+                        alinhamento: 'center',
+                        negrito: true
+                    });
+                    desenharCelulaPDF(comandos, xLabel + larguraLabel, y, larguraValor, alturaLinha, valor, {
+                        preenchimento: [0.88, 0.88, 0.88],
+                        tamanho: 10,
+                        alinhamento: 'center',
+                        negrito: true
+                    });
+                    y -= alturaLinha;
                 });
             }
-            
-            setTimeout(() => {
-                window.print();
-                
-                setTimeout(() => {
-                    elementosOcultos.forEach(({elemento, displayOriginal}) => {
-                        elemento.style.display = displayOriginal;
-                    });
-                    
-                    mostrarAlerta('✅ Para PDF: Escolha "Salvar como PDF" na janela de impressão.', 'success');
-                }, 1000);
-            }, 500);
+
+            const conteudo = comandos.join('\n');
+            const objetos = [];
+
+            objetos.push('<< /Type /Catalog /Pages 2 0 R >>');
+            objetos.push('<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+            objetos.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${larguraPagina} ${alturaPagina}] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>`);
+            objetos.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+            objetos.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+            objetos.push(`<< /Length ${conteudo.length} >>\nstream\n${conteudo}\nendstream`);
+
+            let pdf = '%PDF-1.4\n';
+            const offsets = [0];
+            objetos.forEach((objeto, indice) => {
+                offsets.push(pdf.length);
+                pdf += `${indice + 1} 0 obj\n${objeto}\nendobj\n`;
+            });
+
+            const inicioXref = pdf.length;
+            pdf += `xref\n0 ${objetos.length + 1}\n`;
+            pdf += '0000000000 65535 f \n';
+            for (let i = 1; i < offsets.length; i++) {
+                pdf += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
+            }
+            pdf += `trailer\n<< /Size ${objetos.length + 1} /Root 1 0 R >>\nstartxref\n${inicioXref}\n%%EOF`;
+
+            return pdf;
         }
-        
+
+        function gerarPDFDireto() {
+            const dados = obterDadosParaPDF();
+            if (!dados.linhas.length) {
+                mostrarAlerta('Preencha ao menos uma linha antes de gerar o PDF.', 'error');
+                return;
+            }
+
+            const pdf = montarPDFSimples(dados);
+            const blob = new Blob([pdf], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            const data = new Date().toISOString().slice(0, 10);
+
+            link.href = url;
+            link.download = `calculadora-selic-${data}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            mostrarAlerta('✅ PDF gerado com sucesso.', 'success');
+        }
+
         async function buscarDadosOnline() {
             atualizarStatus('🔄 Carregando base automática da Selic...', true);
 
