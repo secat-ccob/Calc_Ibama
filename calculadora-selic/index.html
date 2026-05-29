@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_7 -->
+    <!-- Versão: calculadora_selic_portal_v_8 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -484,7 +484,7 @@
                         <input type="text" class="taxa-selic" readonly>
                     </td>
                     <td class="gray-cell">
-                        <input type="text" class="valor-selic-acumulada" readonly>
+                        <input type="text" class="valor-selic" readonly>
                     </td>
                     <td class="gray-cell">
                         <input type="text" class="valor-atualizado" readonly>
@@ -792,12 +792,14 @@
             const valorPagamento = linha.querySelector('.valor-pagamento').value;
             const dataPagamento = linha.querySelector('.data-pagamento').value;
             const taxaSelicInput = linha.querySelector('.taxa-selic');
+            const valorSelicInput = linha.querySelector('.valor-selic');
             const valorAtualizadoInput = linha.querySelector('.valor-atualizado');
             
             const mesReferencia = document.getElementById('mesReferencia').value;
             
             if (!valorPagamento || !dataPagamento || !mesReferencia) {
                 taxaSelicInput.value = '';
+                valorSelicInput.value = '';
                 valorAtualizadoInput.value = '';
                 calcularTotal();
                 return;
@@ -806,7 +808,7 @@
             const regexData = /^(0[1-9]|1[0-2])\/\d{4}$/;
             if (!regexData.test(dataPagamento) || !regexData.test(mesReferencia)) {
                 taxaSelicInput.value = 'Data inválida';
-                valorSelicAcumuladaInput.value = '';
+                valorSelicInput.value = '';
                 valorAtualizadoInput.value = '';
                 calcularTotal();
                 return;
@@ -824,8 +826,10 @@
                 taxaSelicInput.classList.remove('loading');
                 
                 const valorNumerico = moedaParaNumero(valorPagamento);
-                const valorAtualizado = valorNumerico * (1 + taxaSelic / 100);
+                const valorSelic = valorNumerico * (taxaSelic / 100);
+                const valorAtualizado = valorNumerico + valorSelic;
                 
+                valorSelicInput.value = numeroParaMoeda(valorSelic);
                 valorAtualizadoInput.value = numeroParaMoeda(valorAtualizado);
                 
                 const fonte = statusConexao === 'online' ? '🌐' : '💾';
@@ -834,7 +838,7 @@
             } catch (error) {
                 taxaSelicInput.value = error.message && error.message.startsWith('Dados ausentes') ? 'Dados ausentes' : 'Erro';
                 taxaSelicInput.classList.remove('loading');
-                valorSelicAcumuladaInput.value = '';
+                valorSelicInput.value = '';
                 valorAtualizadoInput.value = '';
                 mostrarAlerta(error.message && error.message.startsWith('Dados ausentes') ? error.message : 'Erro no cálculo.', 'error');
             }
@@ -879,7 +883,7 @@
                     <input type="text" class="taxa-selic" readonly>
                 </td>
                 <td class="gray-cell">
-                    <input type="text" class="valor-selic-acumulada" readonly>
+                    <input type="text" class="valor-selic" readonly>
                 </td>
                 <td class="gray-cell">
                     <input type="text" class="valor-atualizado" readonly>
