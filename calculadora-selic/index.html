@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_15 -->
+    <!-- Versão: calculadora_selic_portal_v_17 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -606,12 +606,12 @@
 
             function byteParaPDF(byte) {
                 if (byte === 40 || byte === 41 || byte === 92) {
-                    return '\' + String.fromCharCode(byte);
+                    return '\\' + String.fromCharCode(byte);
                 }
                 if (byte >= 32 && byte <= 126) {
                     return String.fromCharCode(byte);
                 }
-                return '\' + byte.toString(8).padStart(3, '0');
+                return '\\' + byte.toString(8).padStart(3, '0');
             }
 
             let resultado = '(';
@@ -828,7 +828,7 @@
             const data = new Date().toISOString().slice(0, 10);
 
             link.href = url;
-            link.download = `calculadora-selic-${data}.pdf`;
+            link.download = 'atualização_Selic.pdf';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
