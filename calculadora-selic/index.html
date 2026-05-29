@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_12 -->
+    <!-- Versão: calculadora_selic_portal_v_13 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -625,7 +625,7 @@
                 
                 setTimeout(() => {
                     elementosOcultos.forEach(({elemento, displayOriginal}) => {
-                        elemento.style.display = displayOriginal || 'block';
+                        elemento.style.display = displayOriginal;
                     });
                     
                     mostrarAlerta('✅ Para PDF: Escolha "Salvar como PDF" na janela de impressão.', 'success');
