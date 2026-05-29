@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Calculadora de taxa SELIC acumulada">
+    <meta name="description" content="Calculadora de taxa Selic acumulada">
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_8 -->
+    <!-- Versão: calculadora_selic_portal_v_10 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -461,15 +461,15 @@
         </div>
         
         <div id="alertas" class="alert"></div>
-        <div id="statusInfo" class="status-info">🔄 Carregando base automática da SELIC...</div>
+        <div id="statusInfo" class="status-info">🔄 Carregando base automática da Selic...</div>
         
         <table id="tabelaSelic">
             <tbody>
                 <tr class="header-row">
                     <td>Valor original (R$)</td>
                     <td>Vencimento (mm/aaaa)</td>
-                    <td>Taxa SELIC acumulada (%)</td>
-                    <td>Valor SELIC acumulada (R$)</td>
+                    <td>Taxa Selic acumulada (%)</td>
+                    <td>Valor Selic acumulada (R$)</td>
                     <td>Valor atualizado (R$)</td>
                 </tr>
                 
@@ -493,6 +493,13 @@
                 
                 <tr class="empty-row"><td colspan="4"></td></tr>
                 
+                <tr class="data-row total-row">
+                    <td colspan="3" style="border: none;"></td>
+                    <td class="green-footer">Total Selic:</td>
+                    <td class="green-footer">
+                        <input type="text" id="valorTotalSelic" readonly>
+                    </td>
+                </tr>
                 <tr class="data-row total-row">
                     <td colspan="3" style="border: none;"></td>
                     <td class="green-footer">Total atualizado:</td>
@@ -610,7 +617,7 @@
         }
         
         async function buscarDadosOnline() {
-            atualizarStatus('🔄 Carregando base automática da SELIC...', true);
+            atualizarStatus('🔄 Carregando base automática da Selic...', true);
 
             try {
                 const resposta = await fetch(`../dados/selic-rfb.json?v=${Date.now()}`, { cache: 'no-store' });
@@ -639,7 +646,7 @@
             } catch (error) {
                 console.error('Erro ao carregar base local:', error);
                 statusConexao = 'offline';
-                atualizarStatus('⚠️ Não foi possível carregar a base automática da SELIC', false);
+                atualizarStatus('⚠️ Não foi possível carregar a base automática da Selic', false);
                 mostrarAlerta('Não foi possível carregar o arquivo automático de taxas.', 'error');
             }
         }
@@ -847,12 +854,24 @@
         }
         
         function calcularTotal() {
+            let totalSelic = 0;
             let total = 0;
+
+            document.querySelectorAll('.valor-selic').forEach(input => {
+                const valor = moedaParaNumero(input.value);
+                if (valor > 0) totalSelic += valor;
+            });
+
             document.querySelectorAll('.valor-atualizado').forEach(input => {
                 const valor = moedaParaNumero(input.value);
                 if (valor > 0) total += valor;
             });
-            
+
+            const campoTotalSelic = document.getElementById('valorTotalSelic');
+            if (campoTotalSelic) {
+                campoTotalSelic.value = numeroParaMoeda(totalSelic);
+            }
+
             document.getElementById('valorTotal').value = numeroParaMoeda(total);
         }
         
@@ -1032,7 +1051,7 @@ function mostrarModalUltimaTaxa() {
 
         // **INICIALIZAÇÃO COM MÊS VIGENTE**
         window.onload = function() {
-            console.log('🚀 CALCULADORA SELIC inicializando...');
+            console.log('🚀 CALCULADORA Selic inicializando...');
             
             // Definir mês vigente antes de carregar dados
             definirMesVigente();
