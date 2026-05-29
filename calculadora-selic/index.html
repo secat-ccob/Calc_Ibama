@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_10 -->
+    <!-- Versão: calculadora_selic_portal_v_12 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -493,14 +493,21 @@
                 
                 <tr class="empty-row"><td colspan="4"></td></tr>
                 
-                <tr class="data-row total-row">
+                <tr class="data-row total-row total-original-row">
+                    <td colspan="3" style="border: none;"></td>
+                    <td class="green-footer">Total original:</td>
+                    <td class="green-footer">
+                        <input type="text" id="valorTotalOriginal" readonly>
+                    </td>
+                </tr>
+                <tr class="data-row total-row total-selic-row">
                     <td colspan="3" style="border: none;"></td>
                     <td class="green-footer">Total Selic:</td>
                     <td class="green-footer">
                         <input type="text" id="valorTotalSelic" readonly>
                     </td>
                 </tr>
-                <tr class="data-row total-row">
+                <tr class="data-row total-row total-atualizado-row">
                     <td colspan="3" style="border: none;"></td>
                     <td class="green-footer">Total atualizado:</td>
                     <td class="green-footer">
@@ -602,6 +609,16 @@
                     elemento.style.display = 'none';
                 }
             });
+
+            const quantidadeLinhasCalculo = document.querySelectorAll('.data-row[data-linha]').length;
+            if (quantidadeLinhasCalculo < 2) {
+                document.querySelectorAll('.total-original-row, .total-selic-row, .total-atualizado-row').forEach(elemento => {
+                    if (elemento && elemento.style.display !== 'none') {
+                        elementosOcultos.push({elemento, displayOriginal: elemento.style.display});
+                        elemento.style.display = 'none';
+                    }
+                });
+            }
             
             setTimeout(() => {
                 window.print();
@@ -854,8 +871,14 @@
         }
         
         function calcularTotal() {
+            let totalOriginal = 0;
             let totalSelic = 0;
             let total = 0;
+
+            document.querySelectorAll('.valor-pagamento').forEach(input => {
+                const valor = moedaParaNumero(input.value);
+                if (valor > 0) totalOriginal += valor;
+            });
 
             document.querySelectorAll('.valor-selic').forEach(input => {
                 const valor = moedaParaNumero(input.value);
@@ -866,6 +889,11 @@
                 const valor = moedaParaNumero(input.value);
                 if (valor > 0) total += valor;
             });
+
+            const campoTotalOriginal = document.getElementById('valorTotalOriginal');
+            if (campoTotalOriginal) {
+                campoTotalOriginal.value = numeroParaMoeda(totalOriginal);
+            }
 
             const campoTotalSelic = document.getElementById('valorTotalSelic');
             if (campoTotalSelic) {
