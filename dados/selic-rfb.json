@@ -1,7 +1,7 @@
 {
-  "ultimaCompetencia": "04/2026",
+  "ultimaCompetencia": "05/2026",
   "ultimaTaxa": 1.07,
-  "competenciaProvisoria": "05/2026",
+  "competenciaProvisoria": "06/2026",
   "taxaProvisoria": 1.0,
   "fonte": "Base inicial do repositório; atualizada automaticamente pelo GitHub Actions",
   "taxas": {
@@ -379,7 +379,8 @@
     "2026-01": 1.16,
     "2026-02": 1.0,
     "2026-03": 1.21,
-    "2026-04": 1.07,
-    "2026-05": 1.0
+    "2026-04": 1.09,
+    "2026-05": 1.07,
+    "2026-06": 1.0
   }
 }
