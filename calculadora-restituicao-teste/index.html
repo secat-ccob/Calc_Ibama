@@ -8,7 +8,7 @@
     <title>Calculadora de restituição</title>
     <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_restituicao_teste_v_12 -->
+    <!-- Versão: calculadora_restituicao_teste_v_13 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -840,6 +840,7 @@
                                     <option value="Pagamento indevido">Pagamento indevido</option>
                                     <option value="Pagamento a maior que o devido">Pagamento a maior que o devido</option>
                                     <option value="Pagamento em duplicidade">Pagamento em duplicidade</option>
+                                    <option value="Decisão Judicial">Decisão Judicial</option>
                                     <option value="Outro">Outro</option>
                                 </select>
                             </label>
@@ -1753,6 +1754,10 @@
             return el ? el.value : '';
         }
 
+        function temDocumentoSEIPreenchido(valor) {
+            return /\d/.test(String(valor || '').replace(/^\s*SEI\s*/i, ''));
+        }
+
         function criarTextoPDF(texto) {
             const mapaWinAnsi = {
                 '€': 128, '‚': 130, 'ƒ': 131, '„': 132, '…': 133, '†': 134, '‡': 135,
@@ -1948,9 +1953,9 @@
 
             if (grupos.dadosPedido) {
                 heading('DADOS DO PEDIDO');
-                linhaCampo('Requerimento de restituição', dados.seiRequerimento);
+                if (temDocumentoSEIPreenchido(dados.seiRequerimento)) linhaCampo('Requerimento de restituição', dados.seiRequerimento);
                 linhaCampo('Data do pedido', dados.dataPedido);
-                linhaCampo('Comprovação de pagamento', dados.seiComprovacao);
+                if (temDocumentoSEIPreenchido(dados.seiComprovacao)) linhaCampo('Comprovação de pagamento', dados.seiComprovacao);
                 linhaCampo('Pedido dentro do prazo de 5 anos', dados.prazoCincoAnos);
                 if (dados.periodosPrescritos) linhaCampo('Períodos/trimestres possivelmente prescritos', dados.periodosPrescritos);
             }
@@ -1958,9 +1963,9 @@
             if (grupos.representacaoMotivo) {
                 heading('REPRESENTAÇÃO E MOTIVO DA RESTITUIÇÃO');
                 linhaCampo('Representação', dados.tipoRepresentacao);
-                linhaCampo('Documento da representação', dados.seiRepresentacao);
+                if (temDocumentoSEIPreenchido(dados.seiRepresentacao)) linhaCampo('Documento da representação', dados.seiRepresentacao);
                 linhaCampo('Motivo da restituição', dados.motivoRestituicao);
-                linhaCampo('Decisão/análise relacionada', dados.seiDecisao);
+                if (temDocumentoSEIPreenchido(dados.seiDecisao)) linhaCampo('Decisão/análise relacionada', dados.seiDecisao);
                 if (dados.motivoRestituicao === 'Outro' && dados.descricaoMotivo) paragraph(`Descrição do motivo: ${dados.descricaoMotivo}`);
             }
 
@@ -2024,7 +2029,7 @@
             
             if (grupos.dadosBancarios) {
                 heading('DADOS BANCÁRIOS INFORMADOS');
-                linhaCampo('Dados bancários (SEI)', dados.seiDadosBancarios);
+                if (temDocumentoSEIPreenchido(dados.seiDadosBancarios)) linhaCampo('Dados bancários (SEI)', dados.seiDadosBancarios);
                 linhaCampo('Titular da conta', dados.titularConta);
                 linhaCampo('CPF/CNPJ do titular', dados.cpfCnpjTitular);
                 linhaCampo('Banco', `${dados.banco}${dados.codigoBanco ? ' / Código: ' + dados.codigoBanco : ''}`);
