@@ -8,7 +8,7 @@
     <title>Calculadora de restituição</title>
     <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_restituicao_teste_v_13 -->
+    <!-- Versão: calculadora_restituicao_teste_v_14 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -2021,7 +2021,7 @@
             if (grupos.repasseEstado) {
                 heading('REPASSE AO ESTADO');
                 if (moedaParaNumero(dados.totalRepasse) > 0) {
-                    paragraph('Foi identificado valor repassado ao estado em uma ou mais linhas do demonstrativo. Os valores repassados foram deduzidos da base de restituição pelo Ibama.', 124);
+                    paragraph(`Foi identificado valor repassado ao estado no total de R$ ${dados.totalRepasse || '0,00'}, conforme detalhado no demonstrativo de cálculo. Os valores repassados foram deduzidos da base de restituição pelo Ibama.`, 124);
                 } else {
                     paragraph('Não foi identificado valor repassado ao estado.', 124);
                 }
