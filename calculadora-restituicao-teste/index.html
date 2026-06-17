@@ -8,7 +8,7 @@
     <title>Calculadora de restituição</title>
     <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_restituicao_teste_v_10 -->
+    <!-- Versão: calculadora_restituicao_teste_v_11 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -1923,11 +1923,9 @@
 
             function linhaCampo(rotulo, valor) {
                 garantir(14);
-                const textoRotulo = `${rotulo}:`;
+                const textoRotulo = `${rotulo}: `;
                 const valorTexto = String(valor || 'Não informado');
-                addText(textoRotulo, margem, y, 9, 'left', 0, true);
-                const xValor = margem + estimarLarguraTextoPDF(textoRotulo + ' ', 9, true);
-                addText(valorTexto, xValor, y, 9, 'left', 0, false);
+                comandos.push(`BT /F2 9 Tf ${margem.toFixed(2)} ${y.toFixed(2)} Td ${textoPDF(textoRotulo)} Tj /F1 9 Tf ${textoPDF(valorTexto)} Tj ET`);
                 y -= 13;
             }
 
@@ -2020,7 +2018,7 @@
                 if (moedaParaNumero(dados.totalRepasse) > 0) {
                     paragraph('Foi identificado valor repassado ao estado em uma ou mais linhas do demonstrativo. Os valores repassados foram deduzidos da base de restituição pelo Ibama.', 124);
                 } else {
-                    paragraph('Não foi identificado valor repassado ao estado nas linhas preenchidas no demonstrativo de cálculo.', 124);
+                    paragraph('Não foi identificado valor repassado ao estado.', 124);
                 }
             }
             
@@ -2036,6 +2034,8 @@
             }
 
             if (grupos.conclusao) {
+                const linhasConclusao = wrap(dados.conclusaoAnalise || '', 124);
+                garantir(32 + (linhasConclusao.length * 12) + 8);
                 heading('CONCLUSÃO DA ANÁLISE');
                 paragraphJustificado(dados.conclusaoAnalise || '', 124);
             }
@@ -2155,11 +2155,9 @@
 
             function linhaCampo(rotulo, valor) {
                 garantir(14);
-                const textoRotulo = `${rotulo}:`;
+                const textoRotulo = `${rotulo}: `;
                 const valorTexto = String(valor || 'Não informado');
-                addText(textoRotulo, margem, y, 9, 'left', 0, true);
-                const xValor = margem + estimarLarguraTextoPDF(textoRotulo + ' ', 9, true);
-                addText(valorTexto, xValor, y, 9, 'left', 0, false);
+                comandos.push(`BT /F2 9 Tf ${margem.toFixed(2)} ${y.toFixed(2)} Td ${textoPDF(textoRotulo)} Tj /F1 9 Tf ${textoPDF(valorTexto)} Tj ET`);
                 y -= 13;
             }
 
