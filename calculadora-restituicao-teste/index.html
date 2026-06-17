@@ -1,0 +1,2180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="description" content="Calculadora de restituição">
+    <title>Calculadora de restituição</title>
+    <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
+
+    <!-- Versão: calculadora_restituicao_portal_v_6 -->
+    <style>
+        :root {
+            --cor-primaria: #1f6f54;
+            --cor-primaria-escura: #15513d;
+            --cor-secundaria: #0f4c81;
+            --cor-azul-portal: #1f4e79;
+            --cor-fundo: #f4f7f6;
+            --cor-superficie: #ffffff;
+            --cor-texto: #1f2933;
+            --cor-texto-suave: #5b6770;
+            --cor-borda: #d9e2dd;
+            --cor-cinza-celula: #e0e0e0;
+            --cor-alerta: #fff3cd;
+            --cor-sucesso: #d4edda;
+            --cor-erro: #f8d7da;
+        }
+
+        * { box-sizing: border-box; }
+
+        html,
+        body { height: 100%; }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            color: var(--cor-texto);
+            background:
+                radial-gradient(circle at center, rgba(31, 111, 84, 0.07) 0, rgba(31, 111, 84, 0.03) 28%, transparent 55%),
+                linear-gradient(180deg, #ffffff 0%, var(--cor-fundo) 100%);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 0;
+        }
+
+        .cabecalho {
+            flex: 0 0 auto;
+            width: 100%;
+            background: var(--cor-superficie);
+            border-bottom: 1px solid var(--cor-borda);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+            z-index: 10;
+        }
+
+        .cabecalho-conteudo {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 0 24px 10px;
+        }
+
+        .marca-topo {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding: 12px 0;
+            background: var(--cor-azul-portal);
+            box-shadow: 0 0 0 100vmax var(--cor-azul-portal);
+            clip-path: inset(0 -100vmax);
+        }
+
+        .marca-topo strong {
+            font-size: 1.15rem;
+            letter-spacing: 0.08em;
+            color: #ffffff;
+        }
+
+        .marca-topo span {
+            font-size: 0.82rem;
+            color: rgba(255, 255, 255, 0.82);
+        }
+
+        .menu-principal {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .menu-principal a {
+            display: inline-flex;
+            align-items: center;
+            min-height: 34px;
+            padding: 8px 12px;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            color: var(--cor-texto);
+            font-size: 0.92rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+        }
+
+        .menu-principal a:hover,
+        .menu-principal a:focus {
+            background: rgba(31, 111, 84, 0.08);
+            border-color: rgba(31, 111, 84, 0.22);
+            color: var(--cor-primaria-escura);
+            outline: none;
+        }
+
+        .menu-principal a.ativo {
+            background: var(--cor-primaria);
+            color: #ffffff;
+            border-color: var(--cor-primaria);
+        }
+
+        .conteudo-principal {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 32px 24px;
+            overflow-y: auto;
+        }
+
+        .conteudo-principal .container { width: 100%; }
+
+        .rodape {
+            flex: 0 0 auto;
+            width: 100%;
+            padding: 12px 24px;
+            border-top: 1px solid var(--cor-borda);
+            background: rgba(255, 255, 255, 0.88);
+            color: var(--cor-texto-suave);
+            text-align: center;
+            font-size: 0.82rem;
+            font-weight: 600;
+            z-index: 10;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .title {
+            background-color: var(--cor-azul-portal);
+            color: white;
+            text-align: center;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .subtitulo-ferramenta {
+            padding: 10px 18px;
+            background: #f7faf9;
+            border-bottom: 1px solid var(--cor-borda);
+            color: var(--cor-texto-suave);
+            font-size: 13px;
+            line-height: 1.4;
+            text-align: center;
+        }
+
+        .update-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background-color: var(--cor-azul-portal);
+            color: white;
+            padding: 8px 12px;
+            font-weight: bold;
+            flex-wrap: wrap;
+        }
+
+        .update-section input {
+            padding: 4px 8px;
+            border: 1px solid #ccc;
+            background-color: white;
+            width: 100px;
+            text-align: center;
+            font-weight: bold;
+            color: black;
+        }
+
+        .alert {
+            background-color: var(--cor-alerta);
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 10px;
+            margin: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .success {
+            background-color: var(--cor-sucesso);
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .error {
+            background-color: var(--cor-erro);
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
+        .status-info {
+            background-color: #e2e3e5;
+            border: 1px solid #d6d8db;
+            color: #383d41;
+            padding: 8px;
+            margin: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .form-area {
+            padding: 14px;
+            display: grid;
+            gap: 14px;
+            background: #ffffff;
+        }
+
+        .bloco {
+            border: 1px solid var(--cor-borda);
+            border-radius: 8px;
+            overflow: hidden;
+            background: #ffffff;
+        }
+
+        .bloco-titulo {
+            background: #eef3f1;
+            color: var(--cor-texto);
+            padding: 9px 12px;
+            font-weight: bold;
+            font-size: 14px;
+            border-bottom: 1px solid var(--cor-borda);
+        }
+
+        .bloco-conteudo {
+            padding: 12px;
+        }
+
+        .grade-2,
+        .grade-3,
+        .grade-4 {
+            display: grid;
+            gap: 10px;
+        }
+
+        .grade-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .grade-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .grade-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+        .grade-pedido-linha1 {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .grade-pedido-linha2 {
+            display: grid;
+            grid-template-columns: minmax(340px, 0.9fr) minmax(0, 1.1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .grade-bancarios-linha1 {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .grade-bancarios-linha2 {
+            display: grid;
+            grid-template-columns: 1.25fr 0.55fr 0.85fr 0.7fr 0.95fr 0.95fr;
+            gap: 10px;
+            margin-top: 10px;
+            align-items: stretch;
+        }
+
+        .grade-bancarios-linha2 label.campo {
+            justify-content: flex-end;
+        }
+
+        .grade-bancarios-linha2 input,
+        .grade-bancarios-linha2 select {
+            height: 34px;
+        }
+
+        label.campo {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--cor-texto);
+        }
+
+        label.campo span.observacao {
+            color: var(--cor-texto-suave);
+            font-size: 11px;
+            font-weight: normal;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            border: 1px solid #cfd8d3;
+            background: #ffffff;
+            border-radius: 4px;
+            padding: 7px 8px;
+            text-align: left;
+            font-size: 14px;
+            color: var(--cor-texto);
+            font-weight: normal;
+            font-family: Arial, sans-serif;
+        }
+
+        textarea {
+            min-height: 68px;
+            resize: vertical;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: 2px solid #4CAF50;
+            border-color: transparent;
+        }
+
+        input[readonly] {
+            cursor: default;
+            background: #f0f0f0;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .tabela-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+
+        .tabela-calculo {
+            min-width: 0;
+            table-layout: fixed;
+        }
+
+        .header-row {
+            background-color: var(--cor-azul-portal);
+            color: white;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .header-row td,
+        .data-row td,
+        .total-row td {
+            padding: 5px 4px;
+            border: 1px solid #ccc;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 11px;
+            line-height: 1.15;
+        }
+
+        .data-row input {
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: center;
+            font-size: 11px;
+            color: inherit;
+            font-weight: inherit;
+            padding: 3px 1px;
+        }
+
+        .data-row input:focus {
+            outline: 2px solid #4CAF50;
+            background: #ffffff;
+        }
+
+        .white-cell { background-color: white; }
+        .gray-cell { background-color: var(--cor-cinza-celula); }
+        .green-footer {
+            background-color: var(--cor-cinza-celula);
+            color: black;
+            font-weight: bold;
+            text-align: center;
+            border: 1px solid #ccc;
+        }
+
+        .linha-acoes {
+            white-space: nowrap;
+            width: 30px;
+        }
+
+        .btn-linha {
+            background: #f2f2f2;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 4px 7px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-excluir-linha {
+            width: 22px;
+            height: 22px;
+            min-width: 22px;
+            padding: 0;
+            border-radius: 4px;
+            border: 1px solid #9f1d1d;
+            background: #c62828;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 15px;
+            line-height: 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-excluir-linha:hover {
+            background: #a91f1f;
+        }
+
+        .buttons {
+            text-align: center;
+            padding: 15px;
+            background-color: white;
+            border-top: 1px solid var(--cor-borda);
+        }
+
+        .btn {
+            background-color: #e0e0e0;
+            color: black;
+            border: 1px solid #ccc;
+            padding: 8px 16px;
+            margin: 4px 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .btn:hover { background-color: #d0d0d0; }
+
+        .btn-primario {
+            background: var(--cor-primaria);
+            color: #ffffff;
+            border-color: var(--cor-primaria);
+        }
+
+        .btn-primario:hover { background: var(--cor-primaria-escura); }
+
+        .painel-resumo {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .resumo-card {
+            border: 1px solid var(--cor-borda);
+            border-radius: 6px;
+            padding: 9px;
+            background: #f7faf9;
+            text-align: center;
+        }
+
+        .resumo-card strong {
+            display: block;
+            font-size: 11px;
+            color: var(--cor-texto-suave);
+            margin-bottom: 5px;
+        }
+
+        .resumo-card span {
+            font-size: 15px;
+            font-weight: bold;
+            color: var(--cor-texto);
+        }
+
+        .repasse-status {
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--cor-borda);
+            background: #f7faf9;
+            font-size: 13px;
+            line-height: 1.35;
+        }
+
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+
+        .bloco-titulo {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .bloco-titulo::after {
+            content: "▾";
+            font-size: 12px;
+            color: var(--cor-texto-suave);
+        }
+
+        .bloco.recolhido .bloco-titulo::after {
+            content: "▸";
+        }
+
+        .bloco.recolhido .bloco-conteudo {
+            display: none;
+        }
+
+        .trimestre-ano {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .trimestre-ano select,
+        .trimestre-ano input {
+            border: none;
+            background: transparent;
+            text-align: center;
+            padding: 3px 1px;
+            font-size: 11px;
+        }
+
+        .trimestre-ano select { flex: 0 0 34px; }
+        .trimestre-ano input { flex: 1 1 auto; min-width: 26px; }
+
+        .repasse-toggle-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+        }
+
+        .repasse-toggle {
+            width: 14px !important;
+            height: 14px;
+            flex: 0 0 auto;
+            cursor: pointer;
+        }
+
+        .percentual-repasse-linha {
+            max-width: 40px;
+        }
+
+        .percentual-repasse-linha:disabled,
+        .valor-repasse.inativo {
+            opacity: 0.55;
+        }
+
+        .tabela-wrapper {
+            overflow-x: visible;
+        }
+
+        .tabela-calculo td,
+        .tabela-calculo input,
+        .tabela-calculo select {
+            min-width: 0;
+        }
+
+        .tabela-calculo .header-row td,
+        .tabela-calculo .data-row td,
+        .tabela-calculo .total-row td {
+            padding: 4px 2px;
+            font-size: 10.5px;
+        }
+
+        .tabela-calculo .data-row input,
+        .tabela-calculo .trimestre-ano select,
+        .tabela-calculo .trimestre-ano input {
+            font-size: 10.5px;
+        }
+
+        .tabela-calculo td:nth-child(1) { width: 8.5% !important; }
+        .tabela-calculo td:nth-child(2) { width: 8.0% !important; }
+        .tabela-calculo td:nth-child(3) { width: 8.5% !important; }
+        .tabela-calculo td:nth-child(4) { width: 8.7% !important; }
+        .tabela-calculo td:nth-child(5) { width: 9.0% !important; }
+        .tabela-calculo td:nth-child(6) { width: 9.8% !important; }
+        .tabela-calculo td:nth-child(7) { width: 9.8% !important; }
+        .tabela-calculo td:nth-child(8) { width: 7.0% !important; }
+        .tabela-calculo td:nth-child(9) { width: 8.7% !important; }
+        .tabela-calculo td:nth-child(10) { width: 9.8% !important; }
+        .tabela-calculo td:nth-child(11) { width: 4.2% !important; }
+
+        .campo-oculto {
+            display: none !important;
+        }
+
+        .trimestre-ano select:focus,
+        .trimestre-ano input:focus {
+            outline: 2px solid #4CAF50;
+            background: #ffffff;
+        }
+
+        .botoes-demonstrativo {
+            text-align: center;
+            padding: 12px 0 2px;
+        }
+
+
+        @media (max-width: 900px) {
+            .grade-2,
+            .grade-3,
+            .grade-4,
+            .grade-pedido-linha1,
+            .grade-pedido-linha2,
+            .grade-bancarios-linha1,
+            .grade-bancarios-linha2,
+            .painel-resumo { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 720px) {
+            .cabecalho-conteudo { padding: 0 16px 10px; }
+            .marca-topo {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 2px;
+            }
+            .menu-principal { gap: 5px; }
+            .menu-principal a {
+                font-size: 0.86rem;
+                padding: 7px 10px;
+            }
+            .conteudo-principal { padding: 24px 14px; }
+        }
+    </style>
+</head>
+<body>
+    <header class="cabecalho">
+        <div class="cabecalho-conteudo">
+            <div class="marca-topo">
+                <strong>CALC-IBAMA</strong>
+                <span>Ferramentas de apoio administrativo</span>
+            </div>
+
+            <nav class="menu-principal" aria-label="Menu principal">
+                <a href="../">Início</a>
+                <a href="../simulador-amortizacao/">Simulador de amortização</a>
+                <a href="../simulador-consolidacao-debito/">Simulador de consolidação</a>
+                <a href="../calculadora-selic/">Calculadora Selic</a>
+                <a class="ativo" href="./">Calculadora de restituição</a>
+                <a href="../manuais/">Manuais</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="conteudo-principal">
+        <div class="container">
+            <div class="title">Análise de Restituição</div>
+
+            <div class="update-section">
+                Mês de atualização/restituição (mm/aaaa):
+                <input type="text" id="mesReferencia" value="" maxlength="7" onblur="formatarDataMes(this); atualizarTodasLinhas()">
+            </div>
+
+            <div id="alertas" class="alert"></div>
+            <div id="statusInfo" class="status-info">🔄 Carregando base automática da Selic...</div>
+
+            <div class="form-area">
+                <section class="bloco">
+                    <div class="bloco-titulo">Identificação</div>
+                    <div class="bloco-conteudo grade-3">
+                        <label class="campo">Processo SEI
+                            <input type="text" id="processoSei" placeholder="00000.000000/0000-00" inputmode="numeric" oninput="aplicarMascaraProcessoSEI(this)">
+                        </label>
+                        <label class="campo">Interessado
+                            <input type="text" id="interessado" placeholder="Nome/Razão social" oninput="sincronizarDadosTitularPadrao()">
+                        </label>
+                        <label class="campo">CPF/CNPJ
+                            <input type="text" id="cpfCnpj" placeholder="CPF ou CNPJ" maxlength="18" inputmode="numeric" oninput="formatarCpfCnpj(this); sincronizarDadosTitularPadrao()">
+                        </label>
+                    </div>
+                </section>
+
+                <section class="bloco">
+                    <div class="bloco-titulo">Dados do pedido</div>
+                    <div class="bloco-conteudo">
+                        <div class="grade-pedido-linha1">
+                            <label class="campo">Requerimento de restituição (SEI)
+                                <input type="text" id="seiRequerimento" class="campo-sei" value="SEI ">
+                            </label>
+                            <label class="campo">Data do pedido
+                                <input type="text" id="dataPedido" maxlength="10" placeholder="DD/MM/AAAA" inputmode="numeric" oninput="aplicarMascaraDataCompletaTempoReal(this)" onblur="formatarDataCompleta(this); atualizarAnalisePrazo()">
+                            </label>
+                            <label class="campo">Comprovação de pagamento (SEI)
+                                <input type="text" id="seiComprovacao" class="campo-sei" value="SEI ">
+                            </label>
+                        </div>
+                        <div class="grade-pedido-linha2">
+                            <label class="campo">Pedido dentro do prazo de 5 anos?
+                                <input type="text" id="prazoCincoAnos" readonly value="A verificar">
+                            </label>
+                            <label class="campo">Períodos/trimestres possivelmente prescritos
+                                <input type="text" id="periodosPrescritos" readonly placeholder="Aguardando dados">
+                            </label>
+                        </div>
+                        <label class="campo campo-oculto">Indicação automática
+                            <input type="text" id="indicacaoPrazo" readonly value="Aguardando dados">
+                        </label>
+                    </div>
+                </section>
+
+                <section class="bloco">
+                    <div class="bloco-titulo">Representação e motivo da restituição</div>
+                    <div class="bloco-conteudo">
+                        <div class="grade-4">
+                            <label class="campo">Representação
+                                <select id="tipoRepresentacao">
+                                    <option value="Requerente próprio">Requerente próprio</option>
+                                    <option value="Representante legal">Representante legal</option>
+                                    <option value="Procurador">Procurador</option>
+                                    <option value="Não informado">Não informado</option>
+                                </select>
+                            </label>
+                            <label class="campo">Documento da representação (SEI)
+                                <input type="text" id="seiRepresentacao" class="campo-sei" value="SEI ">
+                            </label>
+                            <label class="campo">Motivo da restituição
+                                <select id="motivoRestituicao" oninput="atualizarDescricaoMotivo(); atualizarConclusao()">
+                                    <option value="Pagamento indevido">Pagamento indevido</option>
+                                    <option value="Pagamento a maior que o devido">Pagamento a maior que o devido</option>
+                                    <option value="Pagamento em duplicidade">Pagamento em duplicidade</option>
+                                    <option value="Outro">Outro</option>
+                                </select>
+                            </label>
+                            <label class="campo">Decisão/análise relacionada (SEI)
+                                <input type="text" id="seiDecisao" class="campo-sei" value="SEI ">
+                            </label>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <label class="campo">Descrição resumida do motivo
+                                <textarea id="descricaoMotivo" placeholder="Ativo apenas quando o motivo selecionado for Outro." disabled oninput="atualizarConclusao()"></textarea>
+                            </label>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="bloco">
+                    <div class="bloco-titulo">Demonstrativo de cálculo</div>
+                    <div class="bloco-conteudo">
+                        <div class="repasse-status" id="statusRepasse" style="margin-bottom: 10px;">Repasse estadual: aguardando preenchimento da tabela.</div>
+
+                        <div class="tabela-wrapper">
+                            <table id="tabelaRestituicao" class="tabela-calculo">
+                                <tbody>
+                                    <tr class="header-row">
+                                        <td style="width: 9.5%;">Trimestre/Ano</td>
+                                        <td style="width: 9%;">Nº do débito</td>
+                                        <td style="width: 9%;">Data do pagamento</td>
+                                        <td style="width: 9.5%;">Valor pago (R$)</td>
+                                        <td style="width: 10%;">Percentual de repasse ao estado (%)</td>
+                                        <td style="width: 10.5%;">Valor repassado ao estado (R$)</td>
+                                        <td style="width: 10.5%;">Valor que ficou no Ibama (R$)</td>
+                                        <td style="width: 8%;">Selic (%)</td>
+                                        <td style="width: 9.5%;">Valor da Selic (R$)</td>
+                                        <td style="width: 10.5%;">Valor a restituir (R$)</td>
+                                        <td style="width: 4%;">Ação</td>
+                                    </tr>
+
+                                    <tr class="data-row" data-linha="0">
+                                        <td class="white-cell">
+                                            <div class="trimestre-ano">
+                                                <select class="trimestre-select" onchange="atualizarAnalisePrazo(); atualizarRepasseEstado()">
+                                                    <option value=""></option>
+                                                    <option value="1º">1º</option>
+                                                    <option value="2º">2º</option>
+                                                    <option value="3º">3º</option>
+                                                    <option value="4º">4º</option>
+                                                </select>
+                                                <span>/</span>
+                                                <input type="text" class="ano-trimestre" maxlength="4" inputmode="numeric" placeholder="AAAA" oninput="formatarAno(this); atualizarAnalisePrazo(); atualizarRepasseEstado()">
+                                            </div>
+                                        </td>
+                                        <td class="white-cell"><input type="text" class="numero-debito" placeholder="0000000"></td>
+                                        <td class="white-cell"><input type="text" class="data-pagamento" placeholder="DD/MM/AAAA" maxlength="10" inputmode="numeric" oninput="aplicarMascaraDataCompletaTempoReal(this)" onblur="formatarDataCompleta(this); calcularLinha(0); atualizarAnalisePrazo()"></td>
+                                        <td class="white-cell"><input type="text" class="valor-pago" placeholder="0,00" inputmode="numeric" oninput="aplicarMascaraMoedaTempoReal(this); calcularLinha(0)"></td>
+                                        <td class="white-cell">
+                                            <div class="repasse-toggle-wrap">
+                                                <input type="checkbox" class="repasse-toggle" onchange="alternarRepasseLinha(this); calcularLinha(0)" title="Marcar quando houver repasse ao estado">
+                                                <input type="text" class="percentual-repasse-linha" placeholder="00%" inputmode="numeric" disabled onkeydown="tratarBackspacePercentualRepasse(event, this)" oninput="formatarPercentualRepasseLinha(this); calcularLinha(0)">
+                                            </div>
+                                        </td>
+                                        <td class="gray-cell"><input type="text" class="valor-repasse inativo" readonly></td>
+                                        <td class="gray-cell"><input type="text" class="valor-ibama" readonly></td>
+                                        <td class="gray-cell"><input type="text" class="taxa-selic" readonly></td>
+                                        <td class="gray-cell"><input type="text" class="valor-selic" readonly></td>
+                                        <td class="gray-cell"><input type="text" class="valor-restituir" readonly></td>
+                                        <td class="linha-acoes"><button type="button" class="btn-linha btn-excluir-linha" onclick="excluirOuLimparLinha(0)" title="Excluir linha">×</button></td>
+                                    </tr>
+
+                                    <tr class="data-row total-row">
+                                        <td colspan="3" style="border: none;"></td>
+                                        <td class="green-footer"><input type="text" id="totalPago" readonly></td>
+                                        <td class="green-footer">TOTAL</td>
+                                        <td class="green-footer"><input type="text" id="totalRepasse" readonly></td>
+                                        <td class="green-footer"><input type="text" id="totalIbama" readonly></td>
+                                        <td class="green-footer"></td>
+                                        <td class="green-footer"><input type="text" id="totalSelic" readonly></td>
+                                        <td class="green-footer"><input type="text" id="totalRestituir" readonly></td>
+                                        <td class="green-footer"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="painel-resumo">
+                            <div class="resumo-card"><strong>Total pago</strong><span id="resumoTotalPago">0,00</span></div>
+                            <div class="resumo-card"><strong>Total repassado ao estado</strong><span id="resumoTotalRepasse">0,00</span></div>
+                            <div class="resumo-card"><strong>Total que ficou no Ibama</strong><span id="resumoTotalIbama">0,00</span></div>
+                            <div class="resumo-card"><strong>Total Selic</strong><span id="resumoTotalSelic">0,00</span></div>
+                            <div class="resumo-card"><strong>Total a restituir</strong><span id="resumoTotalRestituir">0,00</span></div>
+                        </div>
+
+                        <div class="botoes-demonstrativo">
+                            <button class="btn" onclick="adicionarLinha()">+ Adicionar Linha</button>
+                            <button class="btn" onclick="removerLinha()">- Remover Linha</button>
+                            <button class="btn" onclick="gerarPDFCalculoDireto()">PDF do Cálculo</button>
+                            <button class="btn" onclick="buscarDadosOnline()">🔄 Atualizar Base</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="bloco">
+                    <div class="bloco-titulo">Dados bancários informados</div>
+                    <div class="bloco-conteudo">
+                        <div class="grade-bancarios-linha1">
+                            <label class="campo">Dados bancários (SEI)
+                                <input type="text" id="seiDadosBancarios" class="campo-sei" value="SEI ">
+                            </label>
+                            <label class="campo">Titular da conta
+                                <input type="text" id="titularConta" placeholder="Nome/Razão social">
+                            </label>
+                            <label class="campo">CPF/CNPJ do titular
+                                <input type="text" id="cpfCnpjTitular" placeholder="CPF ou CNPJ" maxlength="18" inputmode="numeric" oninput="formatarCpfCnpj(this)">
+                            </label>
+                        </div>
+                        <div class="grade-bancarios-linha2">
+                            <label class="campo">Banco
+                                <input type="text" id="banco" placeholder="Ex.: Banco do Brasil">
+                            </label>
+                            <label class="campo">Código do banco
+                                <input type="text" id="codigoBanco" placeholder="Ex.: 001" inputmode="numeric">
+                            </label>
+                            <label class="campo">Agência
+                                <input type="text" id="agencia" placeholder="Ex.: 1234">
+                            </label>
+                            <label class="campo">Dígito/código da agência
+                                <input type="text" id="digitoAgencia" placeholder="Opcional">
+                            </label>
+                            <label class="campo">Conta
+                                <input type="text" id="conta" placeholder="Número da conta">
+                            </label>
+                            <label class="campo">Tipo de conta
+                                <select id="tipoConta">
+                                    <option value="Conta corrente">Conta corrente</option>
+                                    <option value="Conta poupança">Conta poupança</option>
+                                    <option value="Conta pagamento">Conta pagamento</option>
+                                    <option value="Não informado">Não informado</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="bloco">
+                    <div class="bloco-titulo">Conclusão da análise</div>
+                    <div class="bloco-conteudo">
+                        <label class="campo">Conclusão gerada/editável
+                            <textarea id="conclusaoAnalise"></textarea>
+                        </label>
+                    </div>
+                </section>
+            </div>
+
+            <div class="buttons">
+                <button class="btn btn-primario" onclick="gerarPDFDireto()">Gerar PDF</button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="rodape">CALC-IBAMA · SECAT/CCOB</footer>
+
+    <script>
+        let contadorLinhas = 1;
+        let dadosPlanilha = {};
+        let statusConexao = 'carregando';
+        let metadadosSelic = { ultimaCompetencia: '', ultimaTaxa: null, competenciaProvisoria: '', taxaProvisoria: null, fonte: '' };
+
+        function obterMesVigente() {
+            const agora = new Date();
+            const mes = (agora.getMonth() + 1).toString().padStart(2, '0');
+            const ano = agora.getFullYear();
+            return `${mes}/${ano}`;
+        }
+
+        function definirMesVigente() {
+            const campoMesReferencia = document.getElementById('mesReferencia');
+            if (campoMesReferencia) campoMesReferencia.value = obterMesVigente();
+        }
+
+        function atualizarStatus(mensagem, sucesso = true) {
+            const statusDiv = document.getElementById('statusInfo');
+            if (statusDiv) {
+                statusDiv.innerHTML = mensagem;
+                statusDiv.style.color = sucesso ? '#155724' : '#721c24';
+            }
+        }
+
+        function mostrarAlerta(mensagem, tipo = 'info') {
+            const alertaDiv = document.getElementById('alertas');
+            if (alertaDiv) {
+                alertaDiv.innerHTML = mensagem;
+                alertaDiv.className = 'alert ' + tipo;
+                alertaDiv.style.display = 'block';
+                setTimeout(() => { alertaDiv.style.display = 'none'; }, 5000);
+            }
+        }
+
+        function numeroParaMoeda(numero) {
+            if (isNaN(numero)) return '0,00';
+            return numero.toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+        }
+
+        function moedaParaNumero(valorMoeda) {
+            if (!valorMoeda) return 0;
+            const limpo = String(valorMoeda).replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '');
+            const numero = parseFloat(limpo);
+            return isNaN(numero) ? 0 : numero;
+        }
+
+        function formatarMoeda(input) {
+            const somenteDigitos = (input.value || '').replace(/\D/g, '');
+            if (!somenteDigitos) {
+                input.value = '';
+                return;
+            }
+            const valorNumerico = parseInt(somenteDigitos, 10) / 100;
+            input.value = numeroParaMoeda(valorNumerico);
+        }
+
+        function aplicarMascaraMoedaTempoReal(input) {
+            formatarMoeda(input);
+        }
+
+
+        function aplicarMascaraProcessoSEI(input) {
+            const digitos = (input.value || '').replace(/\D/g, '').slice(0, 17);
+            let valor = digitos;
+            if (digitos.length > 15) {
+                valor = `${digitos.slice(0, 5)}.${digitos.slice(5, 11)}/${digitos.slice(11, 15)}-${digitos.slice(15, 17)}`;
+            } else if (digitos.length > 11) {
+                valor = `${digitos.slice(0, 5)}.${digitos.slice(5, 11)}/${digitos.slice(11, 15)}`;
+            } else if (digitos.length > 5) {
+                valor = `${digitos.slice(0, 5)}.${digitos.slice(5, 11)}`;
+            }
+            input.value = valor;
+            try {
+                const len = input.value.length;
+                input.setSelectionRange(len, len);
+            } catch (_) {}
+        }
+
+        function formatarCpfCnpj(input) {
+            const digitos = (input.value || '').replace(/\D/g, '').slice(0, 14);
+            if (digitos.length <= 11) {
+                let valor = digitos;
+                if (digitos.length > 3) valor = digitos.slice(0, 3) + '.' + digitos.slice(3);
+                if (digitos.length > 6) valor = digitos.slice(0, 3) + '.' + digitos.slice(3, 6) + '.' + digitos.slice(6);
+                if (digitos.length > 9) valor = digitos.slice(0, 3) + '.' + digitos.slice(3, 6) + '.' + digitos.slice(6, 9) + '-' + digitos.slice(9);
+                input.value = valor;
+            } else {
+                input.value = digitos.slice(0, 2) + '.' + digitos.slice(2, 5) + '.' + digitos.slice(5, 8) + '/' + digitos.slice(8, 12) + '-' + digitos.slice(12);
+            }
+        }
+
+        function aplicarMascaraDataCompletaTempoReal(input) {
+            let valor = (input.value || '').replace(/\D/g, '').slice(0, 8);
+            if (valor.length > 4) valor = valor.slice(0, 2) + '/' + valor.slice(2, 4) + '/' + valor.slice(4);
+            else if (valor.length > 2) valor = valor.slice(0, 2) + '/' + valor.slice(2);
+            input.value = valor;
+        }
+
+        function formatarAno(input) {
+            input.value = (input.value || '').replace(/\D/g, '').slice(0, 4);
+        }
+
+        function formatarPercentualTempoReal(input) {
+            formatarPercentualRepasseLinha(input);
+        }
+
+        function formatarPercentualRepasseLinha(input) {
+            let digitos = (input.value || '').replace(/\D/g, '').slice(0, 3);
+            if (!digitos) {
+                input.value = '';
+                return;
+            }
+            let numero = parseInt(digitos, 10);
+            if (isNaN(numero)) numero = 0;
+            if (numero > 100) {
+                numero = 100;
+                mostrarAlerta('Percentual de repasse limitado a 100%.', 'error');
+            }
+            input.value = (numero < 100 ? String(numero).padStart(2, '0') : '100') + '%';
+            try {
+                const len = input.value.length;
+                input.setSelectionRange(len, len);
+            } catch (_) {}
+        }
+
+        function tratarBackspacePercentualRepasse(event, input) {
+            if (event.key !== 'Backspace') return;
+            event.preventDefault();
+            let digitos = (input.value || '').replace(/\D/g, '');
+            digitos = digitos.slice(0, -1);
+            if (!digitos) {
+                input.value = '';
+            } else {
+                input.value = digitos;
+                formatarPercentualRepasseLinha(input);
+            }
+            const linha = input.closest('[data-linha]');
+            if (linha) calcularLinha(parseInt(linha.getAttribute('data-linha'), 10));
+        }
+
+        function formatarPercentualCampo(input) {
+            if (!input) return;
+            formatarPercentualRepasseLinha(input);
+        }
+
+        function obterPercentualRepasseLinha(linha) {
+            const toggle = linha.querySelector('.repasse-toggle');
+            if (!toggle || !toggle.checked) return 0;
+            const campo = linha.querySelector('.percentual-repasse-linha');
+            const numero = parseInt(String(campo?.value || '').replace(/\D/g, ''), 10);
+            if (isNaN(numero) || numero < 0) return 0;
+            return Math.min(numero, 100);
+        }
+
+        function alternarRepasseLinha(toggle) {
+            const linha = toggle.closest('[data-linha]');
+            if (!linha) return;
+            const percentual = linha.querySelector('.percentual-repasse-linha');
+            const valorRepasse = linha.querySelector('.valor-repasse');
+            if (percentual) {
+                percentual.disabled = !toggle.checked;
+                if (!toggle.checked) percentual.value = '';
+                else if (!percentual.value) percentual.value = '';
+            }
+            if (valorRepasse) {
+                valorRepasse.classList.toggle('inativo', !toggle.checked);
+                if (!toggle.checked) valorRepasse.value = '';
+            }
+            atualizarRepasseEstado();
+        }
+
+        function obterIdentificacaoTrimestre(linha) {
+            const trimestre = linha.querySelector('.trimestre-select')?.value || '';
+            const ano = linha.querySelector('.ano-trimestre')?.value || '';
+            return trimestre && ano ? `${trimestre}/${ano}` : (trimestre || ano);
+        }
+
+        function garantirPrefixoSEI(input) {
+            let valor = input.value || '';
+            if (!valor.startsWith('SEI ')) {
+                valor = valor.replace(/^SEI\s*/i, '').replace(/^\s+/, '');
+                input.value = 'SEI ' + valor;
+            }
+            if (input.selectionStart < 4) input.setSelectionRange(4, 4);
+        }
+
+        function inicializarCamposSEI() {
+            document.querySelectorAll('.campo-sei').forEach(input => {
+                if (!input.value || !input.value.startsWith('SEI ')) input.value = 'SEI ';
+                input.addEventListener('focus', () => garantirPrefixoSEI(input));
+                input.addEventListener('input', () => garantirPrefixoSEI(input));
+                input.addEventListener('keydown', event => {
+                    const inicio = input.selectionStart;
+                    const fim = input.selectionEnd;
+                    if ((event.key === 'Backspace' && inicio <= 4 && fim <= 4) || (event.key === 'Delete' && inicio < 4)) {
+                        event.preventDefault();
+                    }
+                });
+                input.addEventListener('click', () => {
+                    if (input.selectionStart < 4) input.setSelectionRange(4, 4);
+                });
+            });
+        }
+
+        let titularContaEditadoManualmente = false;
+        let cpfCnpjTitularEditadoManualmente = false;
+
+        function sincronizarDadosTitularPadrao() {
+            const interessado = document.getElementById('interessado')?.value || '';
+            const cpfCnpj = document.getElementById('cpfCnpj')?.value || '';
+            const titular = document.getElementById('titularConta');
+            const cpfTitular = document.getElementById('cpfCnpjTitular');
+
+            if (titular && !titularContaEditadoManualmente) titular.value = interessado;
+            if (cpfTitular && !cpfCnpjTitularEditadoManualmente) cpfTitular.value = cpfCnpj;
+        }
+
+        function alternarBloco(titulo) {
+            const bloco = titulo.closest('.bloco');
+            if (bloco) bloco.classList.toggle('recolhido');
+        }
+
+        function atualizarDescricaoMotivo() {
+            const motivo = document.getElementById('motivoRestituicao')?.value || '';
+            const campo = document.getElementById('descricaoMotivo');
+            if (!campo) return;
+            const ativo = motivo === 'Outro';
+            campo.disabled = !ativo;
+            if (!ativo) campo.value = '';
+            campo.placeholder = ativo ? 'Descreva resumidamente o motivo da restituição.' : 'Ativo apenas quando o motivo selecionado for Outro.';
+        }
+
+        function formatarDataMes(input) {
+            let valor = input.value.replace(/\D/g, '');
+            if (valor.length >= 6) {
+                valor = valor.substring(0, 2) + '/' + valor.substring(2, 6);
+            } else if (valor.length === 5) {
+                valor = '0' + valor.substring(0, 1) + '/' + valor.substring(1, 5);
+            }
+
+            const regex = /^(0[1-9]|1[0-2])\/\d{4}$/;
+            if (regex.test(valor)) {
+                const [mes, ano] = valor.split('/').map(Number);
+                if (ano >= 1995 && ano <= 2030) input.value = valor;
+                else {
+                    input.value = '';
+                    mostrarAlerta('Mês/ano inválido. Use entre 1995 e 2030.', 'error');
+                }
+            } else if (valor.length >= 6) {
+                input.value = '';
+                mostrarAlerta('Data inválida. Use formato MM/AAAA.', 'error');
+            }
+        }
+
+        function formatarDataCompleta(input) {
+            let valor = input.value.replace(/\D/g, '');
+            if (!valor) return;
+            if (valor.length === 6) valor = valor.substring(0, 2) + '/' + valor.substring(2, 4) + '/20' + valor.substring(4, 6);
+            if (valor.length >= 8) valor = valor.substring(0, 2) + '/' + valor.substring(2, 4) + '/' + valor.substring(4, 8);
+
+            const regex = /^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+            if (!regex.test(valor)) {
+                input.value = '';
+                mostrarAlerta('Data inválida. Use formato DD/MM/AAAA.', 'error');
+                return;
+            }
+
+            const [dia, mes, ano] = valor.split('/').map(Number);
+            const data = new Date(ano, mes - 1, dia);
+            if (data.getFullYear() !== ano || data.getMonth() !== mes - 1 || data.getDate() !== dia || ano < 1995 || ano > 2030) {
+                input.value = '';
+                mostrarAlerta('Data inválida ou fora do intervalo aceito.', 'error');
+                return;
+            }
+            input.value = valor;
+        }
+
+        function dataCompletaParaMesAno(dataCompleta) {
+            const partes = String(dataCompleta || '').split('/');
+            if (partes.length !== 3) return '';
+            return `${partes[1]}/${partes[2]}`;
+        }
+
+        async function buscarDadosOnline() {
+            atualizarStatus('🔄 Carregando base automática da Selic...', true);
+            try {
+                const resposta = await fetch(`../dados/selic-rfb.json?v=${Date.now()}`, { cache: 'no-store' });
+                if (!resposta.ok) throw new Error(`Falha ao carregar arquivo local de dados: ${resposta.status}`);
+
+                const payload = await resposta.json();
+                dadosPlanilha = payload.taxas || {};
+                metadadosSelic = {
+                    ultimaCompetencia: payload.ultimaCompetencia || '',
+                    ultimaTaxa: typeof payload.ultimaTaxa === 'number' ? payload.ultimaTaxa : null,
+                    competenciaProvisoria: payload.competenciaProvisoria || '',
+                    taxaProvisoria: typeof payload.taxaProvisoria === 'number' ? payload.taxaProvisoria : null,
+                    fonte: payload.fonte || 'Base local do repositório'
+                };
+
+                const totalTaxas = Object.keys(dadosPlanilha).length;
+                if (!totalTaxas) throw new Error('Arquivo de dados sem taxas válidas');
+
+                atualizarStatus(`✅ ${totalTaxas} competências carregadas da base automática`, true);
+                statusConexao = 'online';
+                await atualizarTodasLinhas();
+                mostrarModalUltimaTaxa();
+            } catch (error) {
+                console.error('Erro ao carregar base local:', error);
+                statusConexao = 'offline';
+                atualizarStatus('⚠️ Não foi possível carregar a base automática da Selic', false);
+                mostrarAlerta('Não foi possível carregar o arquivo automático de taxas.', 'error');
+            }
+        }
+
+        function obterTaxaMes(ano, mes) {
+            const chave = `${ano}-${mes.toString().padStart(2, '0')}`;
+            if (!(chave in dadosPlanilha)) throw new Error(`Dados ausentes para ${mes.toString().padStart(2, '0')}/${ano}`);
+            return dadosPlanilha[chave];
+        }
+
+        function calcularTaxaSelicAcumulada(dataPagamentoMesAno, dataAtualizacaoMesAno) {
+            const [mesPag, anoPag] = dataPagamentoMesAno.split('/').map(Number);
+            const [mesAtualizacao, anoAtualizacao] = dataAtualizacaoMesAno.split('/').map(Number);
+
+            if (anoAtualizacao < anoPag || (anoAtualizacao === anoPag && mesAtualizacao <= mesPag)) return 0;
+
+            let somaTaxas = 0;
+            let anoAtual = anoPag;
+            let mesAtual = mesPag;
+
+            while (true) {
+                mesAtual++;
+                if (mesAtual > 12) {
+                    mesAtual = 1;
+                    anoAtual++;
+                }
+
+                if (anoAtual > anoAtualizacao || (anoAtual === anoAtualizacao && mesAtual >= mesAtualizacao)) break;
+                somaTaxas += obterTaxaMes(anoAtual, mesAtual);
+            }
+
+            somaTaxas += 1.0;
+            return somaTaxas;
+        }
+
+        async function calcularLinha(indice) {
+            const linha = document.querySelector(`[data-linha="${indice}"]`);
+            if (!linha) return;
+
+            const valorPagoInput = linha.querySelector('.valor-pago');
+            const valorRepasseInput = linha.querySelector('.valor-repasse');
+            const dataPagamentoInput = linha.querySelector('.data-pagamento');
+            const valorIbamaInput = linha.querySelector('.valor-ibama');
+            const taxaSelicInput = linha.querySelector('.taxa-selic');
+            const valorSelicInput = linha.querySelector('.valor-selic');
+            const valorRestituirInput = linha.querySelector('.valor-restituir');
+            const mesReferencia = document.getElementById('mesReferencia').value;
+
+            const valorPago = moedaParaNumero(valorPagoInput.value);
+            const percentualRepasse = obterPercentualRepasseLinha(linha);
+            const repasseAtivo = linha.querySelector('.repasse-toggle')?.checked || false;
+            const valorRepasse = repasseAtivo && valorPago > 0 ? valorPago * percentualRepasse / 100 : 0;
+            const dataPagamento = dataPagamentoInput.value;
+
+            if (valorRepasseInput) {
+                valorRepasseInput.classList.toggle('inativo', !repasseAtivo);
+                valorRepasseInput.value = repasseAtivo && valorPago > 0 ? numeroParaMoeda(valorRepasse) : '';
+            }
+
+            if (!valorPago || !dataPagamento || !mesReferencia) {
+                valorIbamaInput.value = '';
+                taxaSelicInput.value = '';
+                valorSelicInput.value = '';
+                valorRestituirInput.value = '';
+                calcularTotais();
+                atualizarRepasseEstado();
+                atualizarConclusao();
+                return;
+            }
+
+            const valorIbama = Math.max(valorPago - valorRepasse, 0);
+            valorIbamaInput.value = numeroParaMoeda(valorIbama);
+
+            const regexData = /^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+            const regexMes = /^(0[1-9]|1[0-2])\/\d{4}$/;
+            if (!regexData.test(dataPagamento) || !regexMes.test(mesReferencia)) {
+                taxaSelicInput.value = 'Data inválida';
+                valorSelicInput.value = '';
+                valorRestituirInput.value = '';
+                calcularTotais();
+                return;
+            }
+
+            taxaSelicInput.value = 'Calculando...';
+            taxaSelicInput.classList.add('loading');
+
+            try {
+                await new Promise(resolve => setTimeout(resolve, 120));
+                const mesAnoPagamento = dataCompletaParaMesAno(dataPagamento);
+                const taxaSelic = calcularTaxaSelicAcumulada(mesAnoPagamento, mesReferencia);
+                const valorSelic = valorIbama * (taxaSelic / 100);
+                const valorRestituir = valorIbama + valorSelic;
+
+                taxaSelicInput.value = taxaSelic.toFixed(2).replace('.', ',') + '%';
+                taxaSelicInput.classList.remove('loading');
+                valorSelicInput.value = numeroParaMoeda(valorSelic);
+                valorRestituirInput.value = numeroParaMoeda(valorRestituir);
+            } catch (error) {
+                taxaSelicInput.value = error.message && error.message.startsWith('Dados ausentes') ? 'Dados ausentes' : 'Erro';
+                taxaSelicInput.classList.remove('loading');
+                valorSelicInput.value = '';
+                valorRestituirInput.value = '';
+                mostrarAlerta(error.message && error.message.startsWith('Dados ausentes') ? error.message : 'Erro no cálculo.', 'error');
+            }
+
+            calcularTotais();
+            atualizarRepasseEstado();
+            atualizarAnalisePrazo();
+            atualizarConclusao();
+        }
+
+        function calcularTotais() {
+            let totalPago = 0;
+            let totalRepasse = 0;
+            let totalIbama = 0;
+            let totalSelic = 0;
+            let totalRestituir = 0;
+
+            document.querySelectorAll('.data-row[data-linha]').forEach(linha => {
+                totalPago += moedaParaNumero(linha.querySelector('.valor-pago')?.value || '');
+                totalRepasse += moedaParaNumero(linha.querySelector('.valor-repasse')?.value || '');
+                totalIbama += moedaParaNumero(linha.querySelector('.valor-ibama')?.value || '');
+                totalSelic += moedaParaNumero(linha.querySelector('.valor-selic')?.value || '');
+                totalRestituir += moedaParaNumero(linha.querySelector('.valor-restituir')?.value || '');
+            });
+
+            preencherTexto('totalPago', numeroParaMoeda(totalPago));
+            preencherTexto('totalRepasse', numeroParaMoeda(totalRepasse));
+            preencherTexto('totalIbama', numeroParaMoeda(totalIbama));
+            preencherTexto('totalSelic', numeroParaMoeda(totalSelic));
+            preencherTexto('totalRestituir', numeroParaMoeda(totalRestituir));
+
+            preencherHTML('resumoTotalPago', numeroParaMoeda(totalPago));
+            preencherHTML('resumoTotalRepasse', numeroParaMoeda(totalRepasse));
+            preencherHTML('resumoTotalIbama', numeroParaMoeda(totalIbama));
+            preencherHTML('resumoTotalSelic', numeroParaMoeda(totalSelic));
+            preencherHTML('resumoTotalRestituir', numeroParaMoeda(totalRestituir));
+        }
+
+        function preencherTexto(id, valor) {
+            const el = document.getElementById(id);
+            if (el) el.value = valor;
+        }
+
+        function preencherHTML(id, valor) {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = valor;
+        }
+
+        function adicionarLinha() {
+            const tbody = document.querySelector('#tabelaRestituicao tbody');
+            const totalRow = tbody.querySelector('.total-row');
+            const indice = contadorLinhas;
+            const tr = document.createElement('tr');
+            tr.className = 'data-row';
+            tr.setAttribute('data-linha', indice);
+            tr.innerHTML = `
+                <td class="white-cell">
+                    <div class="trimestre-ano">
+                        <select class="trimestre-select" onchange="atualizarAnalisePrazo(); atualizarRepasseEstado()">
+                            <option value=""></option>
+                            <option value="1º">1º</option>
+                            <option value="2º">2º</option>
+                            <option value="3º">3º</option>
+                            <option value="4º">4º</option>
+                        </select>
+                        <span>/</span>
+                        <input type="text" class="ano-trimestre" maxlength="4" inputmode="numeric" placeholder="AAAA" oninput="formatarAno(this); atualizarAnalisePrazo(); atualizarRepasseEstado()">
+                    </div>
+                </td>
+                <td class="white-cell"><input type="text" class="numero-debito" placeholder="0000000"></td>
+                <td class="white-cell"><input type="text" class="data-pagamento" placeholder="DD/MM/AAAA" maxlength="10" inputmode="numeric" oninput="aplicarMascaraDataCompletaTempoReal(this)" onblur="formatarDataCompleta(this); calcularLinha(${indice}); atualizarAnalisePrazo()"></td>
+                <td class="white-cell"><input type="text" class="valor-pago" placeholder="0,00" inputmode="numeric" oninput="aplicarMascaraMoedaTempoReal(this); calcularLinha(${indice})"></td>
+                <td class="white-cell">
+                    <div class="repasse-toggle-wrap">
+                        <input type="checkbox" class="repasse-toggle" onchange="alternarRepasseLinha(this); calcularLinha(${indice})" title="Marcar quando houver repasse ao estado">
+                        <input type="text" class="percentual-repasse-linha" placeholder="00%" inputmode="numeric" disabled onkeydown="tratarBackspacePercentualRepasse(event, this)" oninput="formatarPercentualRepasseLinha(this); calcularLinha(${indice})">
+                    </div>
+                </td>
+                <td class="gray-cell"><input type="text" class="valor-repasse inativo" readonly></td>
+                <td class="gray-cell"><input type="text" class="valor-ibama" readonly></td>
+                <td class="gray-cell"><input type="text" class="taxa-selic" readonly></td>
+                <td class="gray-cell"><input type="text" class="valor-selic" readonly></td>
+                <td class="gray-cell"><input type="text" class="valor-restituir" readonly></td>
+                <td class="linha-acoes"><button type="button" class="btn-linha btn-excluir-linha" onclick="excluirOuLimparLinha(${indice})" title="Excluir linha">×</button></td>
+            `;
+            tbody.insertBefore(tr, totalRow);
+            contadorLinhas++;
+            mostrarAlerta('✅ Nova linha adicionada.', 'success');
+        }
+
+        function removerLinha() {
+            const linhasData = document.querySelectorAll('.data-row[data-linha]');
+            if (linhasData.length > 1) {
+                linhasData[linhasData.length - 1].remove();
+                calcularTotais();
+                atualizarRepasseEstado();
+                atualizarConclusao();
+                mostrarAlerta('✅ Linha removida.', 'success');
+            } else {
+                mostrarAlerta('⚠️ Mantenha pelo menos uma linha.', 'error');
+            }
+        }
+
+        function limparLinha(indice) {
+            const linha = document.querySelector(`[data-linha="${indice}"]`);
+            if (!linha) return;
+            linha.querySelectorAll('input').forEach(input => {
+                if (input.type === 'checkbox') input.checked = false;
+                else input.value = '';
+                if (input.classList.contains('percentual-repasse-linha')) input.disabled = true;
+                if (input.classList.contains('valor-repasse')) input.classList.add('inativo');
+            });
+            linha.querySelectorAll('select').forEach(select => select.value = '');
+            calcularTotais();
+            atualizarRepasseEstado();
+            atualizarAnalisePrazo();
+            atualizarConclusao();
+        }
+
+
+        function excluirOuLimparLinha(indice) {
+            const linhasData = document.querySelectorAll('.data-row[data-linha]');
+            const linha = document.querySelector(`[data-linha="${indice}"]`);
+            if (!linha) return;
+
+            if (linhasData.length > 1) {
+                linha.remove();
+                calcularTotais();
+                atualizarRepasseEstado();
+                atualizarAnalisePrazo();
+                atualizarConclusao();
+                mostrarAlerta('✅ Linha excluída.', 'success');
+            } else {
+                limparLinha(indice);
+            }
+        }
+
+        async function atualizarTodasLinhas() {
+            const linhas = document.querySelectorAll('.data-row[data-linha]');
+            for (let i = 0; i < linhas.length; i++) {
+                const indice = parseInt(linhas[i].getAttribute('data-linha'), 10);
+                await calcularLinha(indice);
+            }
+            calcularTotais();
+            atualizarRepasseEstado();
+            atualizarAnalisePrazo();
+            atualizarConclusao();
+        }
+
+        function atualizarRepasseEstado() {
+            const linhas = Array.from(document.querySelectorAll('.data-row[data-linha]'));
+            const trimestresComRepasse = [];
+            let totalRepasse = 0;
+
+            linhas.forEach(linha => {
+                const repasse = moedaParaNumero(linha.querySelector('.valor-repasse')?.value || '');
+                const trimestre = obterIdentificacaoTrimestre(linha);
+                if (repasse > 0) {
+                    totalRepasse += repasse;
+                    if (trimestre) trimestresComRepasse.push(trimestre);
+                }
+            });
+
+            const status = document.getElementById('statusRepasse');
+            if (!status) return;
+
+            if (totalRepasse > 0) {
+                const textoPeriodos = trimestresComRepasse.filter(Boolean).join('; ');
+                status.innerHTML = `<strong>Repasse estadual identificado.</strong><br>Total repassado ao estado: R$ ${numeroParaMoeda(totalRepasse)}${textoPeriodos ? '<br>Períodos/trimestres com repasse: ' + textoPeriodos : ''}`;
+            } else {
+                status.innerHTML = '<strong>Não há repasse estadual identificado nas linhas preenchidas.</strong><br>Os valores calculados como repasse ao Estado estão zerados.';
+            }
+        }
+
+        function atualizarAnalisePrazo() {
+            const dataPedido = document.getElementById('dataPedido')?.value || '';
+            const prazo = document.getElementById('prazoCincoAnos');
+            const periodos = document.getElementById('periodosPrescritos');
+            const indicacao = document.getElementById('indicacaoPrazo');
+            const regexData = /^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+
+            function definir(valor, lista = '', textoIndicacao = '') {
+                if (prazo) prazo.value = valor;
+                if (periodos) periodos.value = lista;
+                if (indicacao) indicacao.value = textoIndicacao || valor;
+            }
+
+            if (!regexData.test(dataPedido)) {
+                definir('A verificar', '', 'Aguardando data do pedido');
+                return;
+            }
+
+            const [diaP, mesP, anoP] = dataPedido.split('/').map(Number);
+            const dataLimite = new Date(anoP - 5, mesP - 1, diaP);
+            const prescritos = [];
+            let analisados = 0;
+            let incompletos = false;
+
+            document.querySelectorAll('.data-row[data-linha]').forEach(linha => {
+                const dataPagamento = linha.querySelector('.data-pagamento')?.value || '';
+                const trimestre = obterIdentificacaoTrimestre(linha);
+                const valorPago = moedaParaNumero(linha.querySelector('.valor-pago')?.value || '');
+                const temAlgumDado = trimestre || dataPagamento || valorPago > 0 || (linha.querySelector('.numero-debito')?.value || '');
+                if (!temAlgumDado) return;
+
+                if (!regexData.test(dataPagamento) || !trimestre) {
+                    incompletos = true;
+                    return;
+                }
+
+                analisados++;
+                const [dia, mes, ano] = dataPagamento.split('/').map(Number);
+                const dataPag = new Date(ano, mes - 1, dia);
+                if (dataPag < dataLimite && !prescritos.includes(trimestre)) prescritos.push(trimestre);
+            });
+
+            const lista = prescritos.join(', ');
+            if (!analisados) {
+                definir('A verificar', '', 'Aguardando demonstrativo de cálculo');
+            } else if (incompletos) {
+                definir('A verificar', lista, 'Há linhas incompletas no demonstrativo');
+            } else if (prescritos.length === 0) {
+                definir('Sim', '', 'Pagamentos informados parecem dentro do prazo');
+            } else if (prescritos.length === analisados) {
+                definir('Não', lista, 'Todos os períodos informados parecem possivelmente prescritos');
+            } else {
+                definir('Parcialmente - Há períodos possivelmente prescritos', lista, 'Há períodos possivelmente prescritos');
+            }
+        }
+
+        function atualizarConclusao() {
+            const campoConclusao = document.getElementById('conclusaoAnalise');
+            if (!campoConclusao) return;
+
+            const totalRestituir = document.getElementById('totalRestituir')?.value || '0,00';
+            const mesReferencia = document.getElementById('mesReferencia')?.value || '';
+            const motivo = document.getElementById('motivoRestituicao')?.value || 'restituição';
+            const repasse = moedaParaNumero(document.getElementById('totalRepasse')?.value || '');
+
+            let texto = `Com base nos dados informados e no demonstrativo de cálculo, apurou-se o valor de R$ ${totalRestituir} a título de restituição de TCFA, atualizado pela taxa Selic até ${mesReferencia || 'MM/AAAA'}, em razão de ${motivo.toLowerCase()}.`;
+            if (repasse > 0) {
+                texto += ' Os valores repassados ao estado foram deduzidos da base de restituição pelo Ibama, sem prejuízo de eventual requerimento da parcela estadual perante o órgão competente.';
+            }
+
+            if (!campoConclusao.dataset.editado) campoConclusao.value = texto;
+        }
+
+        document.addEventListener('input', function(event) {
+            if (!event.target) return;
+            if (event.target.id === 'conclusaoAnalise') event.target.dataset.editado = 'true';
+            if (event.target.id === 'titularConta') titularContaEditadoManualmente = true;
+            if (event.target.id === 'cpfCnpjTitular') cpfCnpjTitularEditadoManualmente = true;
+        });
+
+        document.addEventListener('click', function(event) {
+            if (event.target && event.target.classList.contains('bloco-titulo')) alternarBloco(event.target);
+        });
+
+        function obterDadosParaPDF() {
+            const linhas = Array.from(document.querySelectorAll('.data-row[data-linha]')).map(linha => ({
+                trimestre: obterIdentificacaoTrimestre(linha),
+                debito: linha.querySelector('.numero-debito')?.value || '',
+                dataPagamento: linha.querySelector('.data-pagamento')?.value || '',
+                valorPago: linha.querySelector('.valor-pago')?.value || '',
+                percentualRepasse: linha.querySelector('.repasse-toggle')?.checked ? (linha.querySelector('.percentual-repasse-linha')?.value || '') : '',
+                valorRepasse: linha.querySelector('.valor-repasse')?.value || '',
+                valorIbama: linha.querySelector('.valor-ibama')?.value || '',
+                taxaSelic: linha.querySelector('.taxa-selic')?.value || '',
+                valorSelic: linha.querySelector('.valor-selic')?.value || '',
+                valorRestituir: linha.querySelector('.valor-restituir')?.value || ''
+            })).filter(linha => linha.trimestre || linha.debito || linha.dataPagamento || linha.valorPago || linha.valorRepasse || linha.valorRestituir);
+
+            return {
+                mesReferencia: valorCampo('mesReferencia'),
+                processoSei: valorCampo('processoSei'),
+                interessado: valorCampo('interessado'),
+                cpfCnpj: valorCampo('cpfCnpj'),
+                seiRequerimento: valorCampo('seiRequerimento'),
+                dataPedido: valorCampo('dataPedido'),
+                seiComprovacao: valorCampo('seiComprovacao'),
+                seiDadosBancarios: valorCampo('seiDadosBancarios'),
+                tipoRepresentacao: valorCampo('tipoRepresentacao'),
+                seiRepresentacao: valorCampo('seiRepresentacao'),
+                motivoRestituicao: valorCampo('motivoRestituicao'),
+                seiDecisao: valorCampo('seiDecisao'),
+                descricaoMotivo: valorCampo('descricaoMotivo'),
+                prazoCincoAnos: valorCampo('prazoCincoAnos'),
+                periodosPrescritos: valorCampo('periodosPrescritos'),
+                indicacaoPrazo: valorCampo('indicacaoPrazo'),
+                linhas,
+                totalPago: valorCampo('totalPago'),
+                totalRepasse: valorCampo('totalRepasse'),
+                totalIbama: valorCampo('totalIbama'),
+                totalSelic: valorCampo('totalSelic'),
+                totalRestituir: valorCampo('totalRestituir'),
+                observacaoRepasse: valorCampo('observacaoRepasse'),
+                titularConta: valorCampo('titularConta'),
+                cpfCnpjTitular: valorCampo('cpfCnpjTitular'),
+                banco: valorCampo('banco'),
+                codigoBanco: valorCampo('codigoBanco'),
+                agencia: valorCampo('agencia'),
+                digitoAgencia: valorCampo('digitoAgencia'),
+                conta: valorCampo('conta'),
+                tipoConta: valorCampo('tipoConta'),
+                observacoesGerais: valorCampo('observacoesGerais'),
+                conclusaoAnalise: valorCampo('conclusaoAnalise')
+            };
+        }
+
+        function valorCampo(id) {
+            const el = document.getElementById(id);
+            return el ? el.value : '';
+        }
+
+        function criarTextoPDF(texto) {
+            const mapaWinAnsi = {
+                '€': 128, '‚': 130, 'ƒ': 131, '„': 132, '…': 133, '†': 134, '‡': 135,
+                'ˆ': 136, '‰': 137, 'Š': 138, '‹': 139, 'Œ': 140, 'Ž': 142,
+                '‘': 145, '’': 146, '“': 147, '”': 148, '•': 149, '–': 150, '—': 151,
+                '˜': 152, '™': 153, 'š': 154, '›': 155, 'œ': 156, 'ž': 158, 'Ÿ': 159
+            };
+
+            function byteParaPDF(byte) {
+                if (byte === 40 || byte === 41 || byte === 92) return '\\' + String.fromCharCode(byte);
+                if (byte >= 32 && byte <= 126) return String.fromCharCode(byte);
+                return '\\' + byte.toString(8).padStart(3, '0');
+            }
+
+            let resultado = '(';
+            const conteudo = String(texto || '');
+            for (let i = 0; i < conteudo.length; i++) {
+                const caractere = conteudo[i];
+                const codigo = caractere.charCodeAt(0);
+                if (mapaWinAnsi[caractere] !== undefined) resultado += byteParaPDF(mapaWinAnsi[caractere]);
+                else if (codigo <= 255) resultado += byteParaPDF(codigo);
+                else resultado += ' ';
+            }
+            resultado += ')';
+            return resultado;
+        }
+
+        function montarPDFAnalise(dados) {
+            const larguraPagina = 595;
+            const alturaPagina = 842;
+            const margem = 32;
+            const paginas = [];
+            let comandos = [];
+            let y = alturaPagina - 52;
+
+            function novaPagina() {
+                if (comandos.length) paginas.push(comandos);
+                comandos = [];
+                comandos.push('1 1 1 rg');
+                comandos.push(`0 0 ${larguraPagina} ${alturaPagina} re f`);
+                y = alturaPagina - 52;
+            }
+
+            function garantir(alturaNecessaria) {
+                if (y - alturaNecessaria < 45) novaPagina();
+            }
+
+            function textoPDF(texto) { return criarTextoPDF(String(texto || '')); }
+
+            function addText(texto, x, yTexto, tamanho = 9, alinhamento = 'left', largura = 0, negrito = false) {
+                const fonte = negrito ? 'F2' : 'F1';
+                let textoX = x;
+                const fatorEstimativa = negrito ? 0.54 : 0.48;
+                const textoEstimado = String(texto || '').length * tamanho * fatorEstimativa;
+                if (alinhamento === 'center') textoX = x + (largura - textoEstimado) / 2;
+                if (alinhamento === 'right') textoX = x + largura - textoEstimado;
+                comandos.push(`BT /${fonte} ${tamanho} Tf ${textoX.toFixed(2)} ${yTexto.toFixed(2)} Td ${textoPDF(texto)} Tj ET`);
+            }
+
+            function cell(x, yCell, w, h, texto, opts = {}) {
+                const fill = opts.fill || null;
+                const textColor = opts.textColor || [0, 0, 0];
+                const size = opts.size || 8;
+                const bold = opts.bold || false;
+                const align = opts.align || 'center';
+                if (fill) {
+                    comandos.push(`${fill[0]} ${fill[1]} ${fill[2]} rg`);
+                    comandos.push(`${x.toFixed(2)} ${yCell.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f`);
+                }
+                comandos.push('0.72 w 0.72 0.72 0.72 RG');
+                comandos.push(`${x.toFixed(2)} ${yCell.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re S`);
+                comandos.push(`${textColor[0]} ${textColor[1]} ${textColor[2]} rg`);
+                const linhas = String(texto || '').split('\n');
+                const alturaLinha = size + 2;
+                const yInicial = yCell + (h / 2) + ((linhas.length - 1) * alturaLinha / 2) - (size / 2);
+                linhas.forEach((linha, idx) => addText(linha, x + 3, yInicial - idx * alturaLinha, size, align, w - 6, bold));
+            }
+
+            function heading(texto) {
+                garantir(30);
+                const alturaBarra = 20;
+                comandos.push('0.88 0.88 0.88 rg');
+                comandos.push(`${margem} ${(y - alturaBarra).toFixed(2)} ${(larguraPagina - 2 * margem).toFixed(2)} ${alturaBarra} re f`);
+                comandos.push('0 0 0 rg');
+                addText(texto, margem + 5, y - 13, 10, 'left', 0, true);
+                y -= 32;
+            }
+
+            function wrap(texto, maxChars) {
+                const palavras = String(texto || '').replace(/\s+/g, ' ').trim().split(' ');
+                const linhas = [];
+                let atual = '';
+                palavras.forEach(palavra => {
+                    if (!palavra) return;
+                    if ((atual + ' ' + palavra).trim().length > maxChars) {
+                        if (atual) linhas.push(atual);
+                        atual = palavra;
+                    } else atual = (atual + ' ' + palavra).trim();
+                });
+                if (atual) linhas.push(atual);
+                return linhas.length ? linhas : [''];
+            }
+
+            function paragraph(texto, maxChars = 124, tamanho = 9) {
+                const linhas = wrap(texto, maxChars);
+                garantir(linhas.length * 12 + 4);
+                linhas.forEach(linha => {
+                    addText(linha, margem, y, tamanho, 'left', 0, false);
+                    y -= 12;
+                });
+                y -= 4;
+            }
+
+            function addTextJustificado(linha, x, yTexto, tamanho = 9, largura = 0) {
+                const textoLinha = String(linha || '').trim();
+                const espacos = (textoLinha.match(/ /g) || []).length;
+                const textoEstimado = textoLinha.length * tamanho * 0.48;
+                let espacamento = 0;
+                if (espacos > 0 && largura > textoEstimado) {
+                    espacamento = (largura - textoEstimado) / espacos;
+                }
+                comandos.push(`BT /F1 ${tamanho} Tf ${espacamento.toFixed(2)} Tw ${x.toFixed(2)} ${yTexto.toFixed(2)} Td ${textoPDF(textoLinha)} Tj 0 Tw ET`);
+            }
+
+            function paragraphJustificado(texto, maxChars = 124, tamanho = 9) {
+                const linhas = wrap(texto, maxChars);
+                garantir(linhas.length * 12 + 4);
+                linhas.forEach((linha, indice) => {
+                    const podeJustificar = indice < linhas.length - 1 && linha.length > maxChars * 0.55 && (linha.match(/ /g) || []).length >= 3;
+                    if (podeJustificar) {
+                        addTextJustificado(linha, margem, y, tamanho, larguraPagina - 2 * margem);
+                    } else {
+                        addText(linha, margem, y, tamanho, 'left', 0, false);
+                    }
+                    y -= 12;
+                });
+                y -= 4;
+            }
+
+            function linhaCampo(rotulo, valor) {
+                garantir(14);
+                const textoRotulo = `${rotulo}:`;
+                addText(textoRotulo, margem, y, 9, 'left', 0, true);
+                const xValor = margem + textoRotulo.length * 4.65 + 8;
+                addText(valor || 'Não informado', xValor, y, 9, 'left', 0, false);
+                y -= 13;
+            }
+
+            novaPagina();
+
+            const alturaTitulo = 26;
+            const yTitulo = alturaPagina - 70;
+            comandos.push('0.12 0.31 0.47 rg');
+            comandos.push(`${margem} ${yTitulo.toFixed(2)} ${larguraPagina - 2 * margem} ${alturaTitulo} re f`);
+            comandos.push('1 1 1 rg');
+            addText('ANÁLISE DE RESTITUIÇÃO', margem, yTitulo + 8.5, 12.5, 'center', larguraPagina - 2 * margem, true);
+            y = yTitulo - 28;
+
+            heading('IDENTIFICAÇÃO');
+            linhaCampo('Processo SEI', dados.processoSei);
+            linhaCampo('Interessado', dados.interessado);
+            linhaCampo('CPF/CNPJ', dados.cpfCnpj);
+
+            heading('DADOS DO PEDIDO');
+            linhaCampo('Requerimento de restituição', dados.seiRequerimento);
+            linhaCampo('Data do pedido', dados.dataPedido);
+            linhaCampo('Comprovação de pagamento', dados.seiComprovacao);
+            linhaCampo('Pedido dentro do prazo de 5 anos', dados.prazoCincoAnos);
+            if (dados.periodosPrescritos) linhaCampo('Períodos/trimestres possivelmente prescritos', dados.periodosPrescritos);
+            linhaCampo('Representação', dados.tipoRepresentacao);
+            linhaCampo('Documento da representação', dados.seiRepresentacao);
+            linhaCampo('Motivo da restituição', dados.motivoRestituicao);
+            linhaCampo('Decisão/análise relacionada', dados.seiDecisao);
+            if (dados.motivoRestituicao === 'Outro' && dados.descricaoMotivo) paragraph(`Descrição do motivo: ${dados.descricaoMotivo}`);
+
+            heading('DEMONSTRATIVO DE CÁLCULO');
+            linhaCampo('Mês de atualização/restituição', dados.mesReferencia);
+
+            const x0 = margem;
+            const rowH = 28;
+
+            function desenharCabecalhoTabela() {
+                garantir(42);
+                let x = x0;
+                const largurasVisiveis = [75, 52, 58, 48, 61, 61, 44, 57, 75];
+                const cabecalhosVisiveis = ['Trimestre/Débito', 'Data', 'Valor\npago', '%\nrepasse', 'Repasse\nestado', 'Ficou no\nIbama', 'Selic\n%', 'Selic\nR$', 'Valor a\nrestituir'];
+                cabecalhosVisiveis.forEach((h, i) => {
+                    cell(x, y - 30, largurasVisiveis[i], 30, h, { fill: [0.12, 0.31, 0.47], textColor: [1,1,1], size: 6.5, bold: true });
+                    x += largurasVisiveis[i];
+                });
+                y -= 30;
+                return largurasVisiveis;
+            }
+
+            let largurasTabela = desenharCabecalhoTabela();
+            dados.linhas.forEach(linha => {
+                garantir(rowH + 4);
+                if (y - rowH < 45) {
+                    novaPagina();
+                    heading('DEMONSTRATIVO DE CÁLCULO - CONTINUAÇÃO');
+                    largurasTabela = desenharCabecalhoTabela();
+                }
+                let x = x0;
+                const primeira = `${linha.trimestre}${linha.debito ? ' - ' + linha.debito : ''}`;
+                const valores = [primeira, linha.dataPagamento, linha.valorPago, linha.percentualRepasse, linha.valorRepasse || '0,00', linha.valorIbama, linha.taxaSelic, linha.valorSelic, linha.valorRestituir];
+                valores.forEach((valor, i) => {
+                    const fill = i >= 5 ? [0.90, 0.90, 0.90] : null;
+                    cell(x, y - rowH, largurasTabela[i], rowH, valor, { fill, size: 6.5, bold: i === 8 });
+                    x += largurasTabela[i];
+                });
+                y -= rowH;
+            });
+
+            garantir(rowH + 8);
+            let xt = x0;
+            const totalValores = ['TOTAL', '', dados.totalPago, '', dados.totalRepasse, dados.totalIbama, '', dados.totalSelic, dados.totalRestituir];
+            totalValores.forEach((valor, i) => {
+                cell(xt, y - rowH, largurasTabela[i], rowH, valor, { fill: [0.88,0.88,0.88], size: 7, bold: true });
+                xt += largurasTabela[i];
+            });
+            y -= rowH + 12;
+            heading('REPASSE AO ESTADO');
+            if (moedaParaNumero(dados.totalRepasse) > 0) {
+                paragraph('Foi identificado valor repassado ao estado em uma ou mais linhas do demonstrativo. Os valores repassados foram deduzidos da base de restituição pelo Ibama.', 124);
+            } else {
+                paragraph('Não foi identificado valor repassado ao estado nas linhas preenchidas no demonstrativo de cálculo.', 124);
+            }
+            
+            heading('DADOS BANCÁRIOS INFORMADOS');
+            linhaCampo('Dados bancários (SEI)', dados.seiDadosBancarios);
+            linhaCampo('Titular da conta', dados.titularConta);
+            linhaCampo('CPF/CNPJ do titular', dados.cpfCnpjTitular);
+            linhaCampo('Banco', `${dados.banco}${dados.codigoBanco ? ' / Código: ' + dados.codigoBanco : ''}`);
+            linhaCampo('Agência', `${dados.agencia}${dados.digitoAgencia ? ' / Código/Dígito: ' + dados.digitoAgencia : ''}`);
+            linhaCampo('Conta', dados.conta);
+            linhaCampo('Tipo de conta', dados.tipoConta);
+
+            heading('CONCLUSÃO DA ANÁLISE');
+            paragraphJustificado(dados.conclusaoAnalise || '', 124);
+
+            paginas.push(comandos);
+
+            const objetos = [];
+            objetos.push('<< /Type /Catalog /Pages 2 0 R >>');
+            const kids = paginas.map((_, i) => `${5 + i * 2} 0 R`).join(' ');
+            objetos.push(`<< /Type /Pages /Kids [${kids}] /Count ${paginas.length} >>`);
+            objetos.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+            objetos.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+
+            paginas.forEach((cmds, i) => {
+                const pageObjNum = 5 + i * 2;
+                const contentObjNum = 6 + i * 2;
+                const conteudo = cmds.join('\n');
+                objetos.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${larguraPagina} ${alturaPagina}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentObjNum} 0 R >>`);
+                objetos.push(`<< /Length ${conteudo.length} >>\nstream\n${conteudo}\nendstream`);
+            });
+
+            let pdf = '%PDF-1.4\n';
+            const offsets = [0];
+            objetos.forEach((objeto, indice) => {
+                offsets.push(pdf.length);
+                pdf += `${indice + 1} 0 obj\n${objeto}\nendobj\n`;
+            });
+
+            const inicioXref = pdf.length;
+            pdf += `xref\n0 ${objetos.length + 1}\n`;
+            pdf += '0000000000 65535 f \n';
+            for (let i = 1; i < offsets.length; i++) pdf += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
+            pdf += `trailer\n<< /Size ${objetos.length + 1} /Root 1 0 R >>\nstartxref\n${inicioXref}\n%%EOF`;
+            return pdf;
+        }
+
+        function montarPDFCalculo(dados) {
+            const larguraPagina = 595;
+            const alturaPagina = 842;
+            const margem = 32;
+            const paginas = [];
+            let comandos = [];
+            let y = alturaPagina - 52;
+
+            function novaPagina() {
+                if (comandos.length) paginas.push(comandos);
+                comandos = [];
+                comandos.push('1 1 1 rg');
+                comandos.push(`0 0 ${larguraPagina} ${alturaPagina} re f`);
+                y = alturaPagina - 52;
+            }
+
+            function garantir(alturaNecessaria) {
+                if (y - alturaNecessaria < 45) novaPagina();
+            }
+
+            function textoPDF(texto) { return criarTextoPDF(String(texto || '')); }
+
+            function addText(texto, x, yTexto, tamanho = 9, alinhamento = 'left', largura = 0, negrito = false) {
+                const fonte = negrito ? 'F2' : 'F1';
+                let textoX = x;
+                const fatorEstimativa = negrito ? 0.54 : 0.48;
+                const textoEstimado = String(texto || '').length * tamanho * fatorEstimativa;
+                if (alinhamento === 'center') textoX = x + (largura - textoEstimado) / 2;
+                if (alinhamento === 'right') textoX = x + largura - textoEstimado;
+                comandos.push(`BT /${fonte} ${tamanho} Tf ${textoX.toFixed(2)} ${yTexto.toFixed(2)} Td ${textoPDF(texto)} Tj ET`);
+            }
+
+            function cell(x, yCell, w, h, texto, opts = {}) {
+                const fill = opts.fill || null;
+                const textColor = opts.textColor || [0, 0, 0];
+                const size = opts.size || 8;
+                const bold = opts.bold || false;
+                const align = opts.align || 'center';
+                if (fill) {
+                    comandos.push(`${fill[0]} ${fill[1]} ${fill[2]} rg`);
+                    comandos.push(`${x.toFixed(2)} ${yCell.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f`);
+                }
+                comandos.push('0.72 w 0.72 0.72 0.72 RG');
+                comandos.push(`${x.toFixed(2)} ${yCell.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re S`);
+                comandos.push(`${textColor[0]} ${textColor[1]} ${textColor[2]} rg`);
+                const linhas = String(texto || '').split('\n');
+                const alturaLinha = size + 2;
+                const yInicial = yCell + (h / 2) + ((linhas.length - 1) * alturaLinha / 2) - (size / 2);
+                linhas.forEach((linha, idx) => addText(linha, x + 3, yInicial - idx * alturaLinha, size, align, w - 6, bold));
+            }
+
+            function heading(texto) {
+                garantir(30);
+                const alturaBarra = 20;
+                comandos.push('0.88 0.88 0.88 rg');
+                comandos.push(`${margem} ${(y - alturaBarra).toFixed(2)} ${(larguraPagina - 2 * margem).toFixed(2)} ${alturaBarra} re f`);
+                comandos.push('0 0 0 rg');
+                addText(texto, margem + 5, y - 13, 10, 'left', 0, true);
+                y -= 32;
+            }
+
+            function linhaCampo(rotulo, valor) {
+                garantir(14);
+                const textoRotulo = `${rotulo}:`;
+                addText(textoRotulo, margem, y, 9, 'left', 0, true);
+                const xValor = margem + textoRotulo.length * 4.65 + 8;
+                addText(valor || 'Não informado', xValor, y, 9, 'left', 0, false);
+                y -= 13;
+            }
+
+            novaPagina();
+
+            const alturaTitulo = 26;
+            const yTitulo = alturaPagina - 70;
+            comandos.push('0.12 0.31 0.47 rg');
+            comandos.push(`${margem} ${yTitulo.toFixed(2)} ${larguraPagina - 2 * margem} ${alturaTitulo} re f`);
+            comandos.push('1 1 1 rg');
+            addText('DEMONSTRATIVO DE CÁLCULO', margem, yTitulo + 8.5, 12.5, 'center', larguraPagina - 2 * margem, true);
+            y = yTitulo - 28;
+
+            heading('DEMONSTRATIVO DE CÁLCULO');
+            linhaCampo('Mês de atualização/restituição', dados.mesReferencia);
+
+            const x0 = margem;
+            const rowH = 28;
+
+            function desenharCabecalhoTabela() {
+                garantir(42);
+                let x = x0;
+                const largurasVisiveis = [75, 52, 58, 48, 61, 61, 44, 57, 75];
+                const cabecalhosVisiveis = ['Trimestre/Débito', 'Data', 'Valor\npago', '%\nrepasse', 'Repasse\nestado', 'Ficou no\nIbama', 'Selic\n%', 'Selic\nR$', 'Valor a\nrestituir'];
+                cabecalhosVisiveis.forEach((h, i) => {
+                    cell(x, y - 30, largurasVisiveis[i], 30, h, { fill: [0.12, 0.31, 0.47], textColor: [1,1,1], size: 6.5, bold: true });
+                    x += largurasVisiveis[i];
+                });
+                y -= 30;
+                return largurasVisiveis;
+            }
+
+            let largurasTabela = desenharCabecalhoTabela();
+            dados.linhas.forEach(linha => {
+                garantir(rowH + 4);
+                if (y - rowH < 45) {
+                    novaPagina();
+                    heading('DEMONSTRATIVO DE CÁLCULO - CONTINUAÇÃO');
+                    largurasTabela = desenharCabecalhoTabela();
+                }
+                let x = x0;
+                const primeira = `${linha.trimestre}${linha.debito ? ' - ' + linha.debito : ''}`;
+                const valores = [primeira, linha.dataPagamento, linha.valorPago, linha.percentualRepasse, linha.valorRepasse || '0,00', linha.valorIbama, linha.taxaSelic, linha.valorSelic, linha.valorRestituir];
+                valores.forEach((valor, i) => {
+                    const fill = i >= 5 ? [0.90, 0.90, 0.90] : null;
+                    cell(x, y - rowH, largurasTabela[i], rowH, valor, { fill, size: 6.5, bold: i === 8 });
+                    x += largurasTabela[i];
+                });
+                y -= rowH;
+            });
+
+            garantir(rowH + 8);
+            let xt = x0;
+            const totalValores = ['TOTAL', '', dados.totalPago, '', dados.totalRepasse, dados.totalIbama, '', dados.totalSelic, dados.totalRestituir];
+            totalValores.forEach((valor, i) => {
+                cell(xt, y - rowH, largurasTabela[i], rowH, valor, { fill: [0.88,0.88,0.88], size: 7, bold: true });
+                xt += largurasTabela[i];
+            });
+            y -= rowH + 12;
+
+            paginas.push(comandos);
+
+            const objetos = [];
+            objetos.push('<< /Type /Catalog /Pages 2 0 R >>');
+            const kids = paginas.map((_, i) => `${5 + i * 2} 0 R`).join(' ');
+            objetos.push(`<< /Type /Pages /Kids [${kids}] /Count ${paginas.length} >>`);
+            objetos.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+            objetos.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+
+            paginas.forEach((cmds, i) => {
+                const contentObjNum = 6 + i * 2;
+                const conteudo = cmds.join('\n');
+                objetos.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${larguraPagina} ${alturaPagina}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentObjNum} 0 R >>`);
+                objetos.push(`<< /Length ${conteudo.length} >>\nstream\n${conteudo}\nendstream`);
+            });
+
+            let pdf = '%PDF-1.4\n';
+            const offsets = [0];
+            objetos.forEach((objeto, indice) => {
+                offsets.push(pdf.length);
+                pdf += `${indice + 1} 0 obj\n${objeto}\nendobj\n`;
+            });
+
+            const inicioXref = pdf.length;
+            pdf += `xref\n0 ${objetos.length + 1}\n`;
+            pdf += '0000000000 65535 f \n';
+            for (let i = 1; i < offsets.length; i++) pdf += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
+            pdf += `trailer\n<< /Size ${objetos.length + 1} /Root 1 0 R >>\nstartxref\n${inicioXref}\n%%EOF`;
+            return pdf;
+        }
+
+        function gerarPDFCalculoDireto() {
+            const dados = obterDadosParaPDF();
+            if (!dados.linhas.length) {
+                mostrarAlerta('Preencha ao menos uma linha do demonstrativo antes de gerar o PDF do cálculo.', 'error');
+                return;
+            }
+
+            const pdf = montarPDFCalculo(dados);
+            const blob = new Blob([pdf], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'demonstrativo_calculo_restituicao.pdf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            mostrarAlerta('✅ PDF do cálculo gerado com sucesso.', 'success');
+        }
+
+        function gerarPDFDireto() {
+            atualizarConclusao();
+            const dados = obterDadosParaPDF();
+            if (!dados.linhas.length) {
+                mostrarAlerta('Preencha ao menos uma linha do demonstrativo antes de gerar o PDF.', 'error');
+                return;
+            }
+
+            const pdf = montarPDFAnalise(dados);
+            const blob = new Blob([pdf], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'analise_restituicao.pdf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            mostrarAlerta('✅ PDF gerado com sucesso.', 'success');
+        }
+
+        function criarModalUltimaTaxa() {
+            if (document.getElementById('modalUltimaTaxa')) return;
+            const modal = document.createElement('div');
+            modal.id = 'modalUltimaTaxa';
+            modal.style.display = 'none';
+            modal.style.position = 'fixed';
+            modal.style.zIndex = '9999';
+            modal.style.left = '0';
+            modal.style.top = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.overflow = 'auto';
+            modal.style.backgroundColor = 'rgba(0,0,0,0.4)';
+            modal.style.fontFamily = 'Arial, sans-serif';
+            modal.innerHTML = `
+                <div style="background-color:#fefefe;margin:15% auto;padding:20px 30px;border:1px solid #888;width:400px;border-radius:8px;box-shadow:0 4px 10px rgba(0,0,0,0.3);text-align:center;position:relative;font-weight:bold;font-size:16px;">
+                    <p id="textoUltimaTaxa" style="margin-top:20px;"></p>
+                    <button id="btnOkModal" style="background-color:#1f4e79;color:white;border:none;padding:10px 20px;border-radius:4px;cursor:pointer;font-size:14px;font-weight:bold;margin-top:15px;">OK</button>
+                </div>`;
+            document.body.appendChild(modal);
+            document.getElementById('btnOkModal').onclick = () => { modal.style.display = 'none'; };
+        }
+
+        function mostrarModalUltimaTaxa() {
+            criarModalUltimaTaxa();
+            const modal = document.getElementById('modalUltimaTaxa');
+            const textoElemento = document.getElementById('textoUltimaTaxa');
+            if (!modal || !textoElemento) return;
+            if (!metadadosSelic.ultimaCompetencia || metadadosSelic.ultimaTaxa === null || !metadadosSelic.competenciaProvisoria || metadadosSelic.taxaProvisoria === null) return;
+            textoElemento.innerHTML = `ATUALIZADO!<br><br>${metadadosSelic.ultimaTaxa.toFixed(2).replace('.', ',')}% (${metadadosSelic.ultimaCompetencia})<br>${metadadosSelic.taxaProvisoria.toFixed(2).replace('.', ',')}% (${metadadosSelic.competenciaProvisoria})`;
+            modal.style.display = 'block';
+        }
+
+        function moverFocoComoTab(event) {
+            if (event.key !== 'Enter') return;
+            const elemento = event.target;
+            if (!elemento || elemento.tagName === 'TEXTAREA') return;
+            if (elemento.tagName !== 'INPUT' && elemento.tagName !== 'SELECT') return;
+            if (elemento.type === 'button' || elemento.type === 'submit' || elemento.type === 'reset') return;
+            event.preventDefault();
+
+            const focaveis = Array.from(document.querySelectorAll(
+                'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )).filter(el => el.offsetParent !== null && !el.readOnly);
+
+            const indiceAtual = focaveis.indexOf(elemento);
+            if (indiceAtual === -1) return;
+            const proximo = focaveis[indiceAtual + 1];
+            if (proximo) {
+                proximo.focus();
+                if (typeof proximo.select === 'function' && (proximo.tagName === 'INPUT' || proximo.tagName === 'TEXTAREA')) proximo.select();
+            }
+        }
+
+        document.addEventListener('keydown', moverFocoComoTab);
+
+        window.onload = function() {
+            console.log('🚀 CALCULADORA DE RESTITUIÇÃO inicializando...');
+            definirMesVigente();
+            inicializarCamposSEI();
+            sincronizarDadosTitularPadrao();
+            atualizarDescricaoMotivo();
+            atualizarAnalisePrazo();
+            atualizarConclusao();
+            buscarDadosOnline().then(() => {
+                mostrarAlerta('✅ Sistema pronto para análise de restituição.', 'success');
+            });
+        };
+    </script>
+</body>
+</html>
