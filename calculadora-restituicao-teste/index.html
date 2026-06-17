@@ -8,7 +8,7 @@
     <title>Calculadora de restituição</title>
     <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_restituicao_portal_v_6 -->
+    <!-- Versão: calculadora_restituicao_teste_v_9 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -638,6 +638,97 @@
             .painel-resumo { grid-template-columns: 1fr; }
         }
 
+
+        .pdf-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .pdf-modal-overlay.aberto {
+            display: flex;
+        }
+
+        .pdf-modal {
+            width: 100%;
+            max-width: 460px;
+            background: #ffffff;
+            border: 1px solid #c9d2cc;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        .pdf-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #1f4e79;
+            color: #ffffff;
+            padding: 10px 14px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .pdf-modal-close {
+            border: none;
+            background: transparent;
+            color: #ffffff;
+            font-size: 20px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0 2px;
+            font-weight: bold;
+        }
+
+        .pdf-modal-body {
+            padding: 16px 18px 14px;
+            text-align: left;
+        }
+
+        .pdf-modal-instrucao {
+            margin: 0 0 12px 0;
+            font-weight: bold;
+            font-size: 14px;
+            color: var(--cor-texto);
+        }
+
+        .pdf-opcoes-grupos {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .pdf-opcoes-grupos label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--cor-texto);
+            font-weight: 600;
+        }
+
+        .pdf-opcoes-grupos input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .pdf-modal-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            padding-top: 4px;
+        }
+
         @media (max-width: 720px) {
             .cabecalho-conteudo { padding: 0 16px 10px; }
             .marca-topo {
@@ -843,7 +934,6 @@
                         <div class="botoes-demonstrativo">
                             <button class="btn" onclick="adicionarLinha()">+ Adicionar Linha</button>
                             <button class="btn" onclick="removerLinha()">- Remover Linha</button>
-                            <button class="btn" onclick="gerarPDFCalculoDireto()">PDF do Cálculo</button>
                             <button class="btn" onclick="buscarDadosOnline()">🔄 Atualizar Base</button>
                         </div>
                     </div>
@@ -902,10 +992,37 @@
             </div>
 
             <div class="buttons">
-                <button class="btn btn-primario" onclick="gerarPDFDireto()">Gerar PDF</button>
+                <button class="btn btn-primario" onclick="abrirModalSelecionarPDF()">Gerar PDF</button>
             </div>
         </div>
     </main>
+
+
+    <div id="modalSelecionarPDF" class="pdf-modal-overlay" aria-hidden="true">
+        <div class="pdf-modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalSelecionarPDF">
+            <div class="pdf-modal-header">
+                <span id="tituloModalSelecionarPDF">Gerar PDF</span>
+                <button type="button" class="pdf-modal-close" onclick="fecharModalSelecionarPDF()" aria-label="Fechar">×</button>
+            </div>
+            <div class="pdf-modal-body">
+                <p class="pdf-modal-instrucao">Selecione os grupos que deseja incluir no PDF:</p>
+                <div class="pdf-opcoes-grupos">
+                    <label><input type="checkbox" class="pdf-grupo-check" value="identificacao" checked> Identificação</label>
+                    <label><input type="checkbox" class="pdf-grupo-check" value="dadosPedido" checked> Dados do pedido</label>
+                    <label><input type="checkbox" class="pdf-grupo-check" value="representacaoMotivo" checked> Representação e motivo da restituição</label>
+                    <label><input type="checkbox" class="pdf-grupo-check" value="demonstrativo" checked> Demonstrativo de cálculo</label>
+                    <label><input type="checkbox" class="pdf-grupo-check" value="repasseEstado" checked> Repasse ao estado</label>
+                    <label><input type="checkbox" class="pdf-grupo-check" value="dadosBancarios" checked> Dados bancários informados</label>
+                    <label><input type="checkbox" class="pdf-grupo-check" value="conclusao" checked> Conclusão da análise</label>
+                </div>
+                <div class="pdf-modal-actions">
+                    <button type="button" class="btn" onclick="marcarTodosGruposPDF()">Marcar todos</button>
+                    <button type="button" class="btn" onclick="desmarcarTodosGruposPDF()">Desmarcar todos</button>
+                    <button type="button" class="btn btn-primario" onclick="gerarPDFSelecionado()">Gerar PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <footer class="rodape">CALC-IBAMA · SECAT/CCOB</footer>
 
@@ -1663,13 +1780,22 @@
             return resultado;
         }
 
-        function montarPDFAnalise(dados) {
+        function montarPDFAnalise(dados, gruposSelecionados = null) {
             const larguraPagina = 595;
             const alturaPagina = 842;
             const margem = 32;
             const paginas = [];
             let comandos = [];
             let y = alturaPagina - 52;
+            const grupos = gruposSelecionados || {
+                identificacao: true,
+                dadosPedido: true,
+                representacaoMotivo: true,
+                demonstrativo: true,
+                repasseEstado: true,
+                dadosBancarios: true,
+                conclusao: true
+            };
 
             function novaPagina() {
                 if (comandos.length) paginas.push(comandos);
@@ -1794,87 +1920,104 @@
             addText('ANÁLISE DE RESTITUIÇÃO', margem, yTitulo + 8.5, 12.5, 'center', larguraPagina - 2 * margem, true);
             y = yTitulo - 28;
 
-            heading('IDENTIFICAÇÃO');
-            linhaCampo('Processo SEI', dados.processoSei);
-            linhaCampo('Interessado', dados.interessado);
-            linhaCampo('CPF/CNPJ', dados.cpfCnpj);
-
-            heading('DADOS DO PEDIDO');
-            linhaCampo('Requerimento de restituição', dados.seiRequerimento);
-            linhaCampo('Data do pedido', dados.dataPedido);
-            linhaCampo('Comprovação de pagamento', dados.seiComprovacao);
-            linhaCampo('Pedido dentro do prazo de 5 anos', dados.prazoCincoAnos);
-            if (dados.periodosPrescritos) linhaCampo('Períodos/trimestres possivelmente prescritos', dados.periodosPrescritos);
-            linhaCampo('Representação', dados.tipoRepresentacao);
-            linhaCampo('Documento da representação', dados.seiRepresentacao);
-            linhaCampo('Motivo da restituição', dados.motivoRestituicao);
-            linhaCampo('Decisão/análise relacionada', dados.seiDecisao);
-            if (dados.motivoRestituicao === 'Outro' && dados.descricaoMotivo) paragraph(`Descrição do motivo: ${dados.descricaoMotivo}`);
-
-            heading('DEMONSTRATIVO DE CÁLCULO');
-            linhaCampo('Mês de atualização/restituição', dados.mesReferencia);
-
-            const x0 = margem;
-            const rowH = 28;
-
-            function desenharCabecalhoTabela() {
-                garantir(42);
-                let x = x0;
-                const largurasVisiveis = [75, 52, 58, 48, 61, 61, 44, 57, 75];
-                const cabecalhosVisiveis = ['Trimestre/Débito', 'Data\npagamento', 'Valor\npago (R$)', 'Repasse\nestado (%)', 'Repasse\nestado (R$)', 'Ficou no\nIbama (R$)', 'Selic\n%', 'Selic\nR$', 'Valor a\nrestituir (R$)'];
-                cabecalhosVisiveis.forEach((h, i) => {
-                    cell(x, y - 30, largurasVisiveis[i], 30, h, { fill: [0.12, 0.31, 0.47], textColor: [1,1,1], size: 6.5, bold: true });
-                    x += largurasVisiveis[i];
-                });
-                y -= 30;
-                return largurasVisiveis;
+            if (grupos.identificacao) {
+                heading('IDENTIFICAÇÃO');
+                linhaCampo('Processo SEI', dados.processoSei);
+                linhaCampo('Interessado', dados.interessado);
+                linhaCampo('CPF/CNPJ', dados.cpfCnpj);
             }
 
-            let largurasTabela = desenharCabecalhoTabela();
-            dados.linhas.forEach(linha => {
-                garantir(rowH + 4);
-                if (y - rowH < 45) {
-                    novaPagina();
-                    heading('DEMONSTRATIVO DE CÁLCULO - CONTINUAÇÃO');
-                    largurasTabela = desenharCabecalhoTabela();
-                }
-                let x = x0;
-                const primeira = `${linha.trimestre}${linha.debito ? ' - ' + linha.debito : ''}`;
-                const valores = [primeira, linha.dataPagamento, linha.valorPago, linha.percentualRepasse, linha.valorRepasse || '0,00', linha.valorIbama, linha.taxaSelic, linha.valorSelic, linha.valorRestituir];
-                valores.forEach((valor, i) => {
-                    const fill = i >= 5 ? [0.90, 0.90, 0.90] : null;
-                    cell(x, y - rowH, largurasTabela[i], rowH, valor, { fill, size: 6.5, bold: i === 8 });
-                    x += largurasTabela[i];
-                });
-                y -= rowH;
-            });
+            if (grupos.dadosPedido) {
+                heading('DADOS DO PEDIDO');
+                linhaCampo('Requerimento de restituição', dados.seiRequerimento);
+                linhaCampo('Data do pedido', dados.dataPedido);
+                linhaCampo('Comprovação de pagamento', dados.seiComprovacao);
+                linhaCampo('Pedido dentro do prazo de 5 anos', dados.prazoCincoAnos);
+                if (dados.periodosPrescritos) linhaCampo('Períodos/trimestres possivelmente prescritos', dados.periodosPrescritos);
+            }
 
-            garantir(rowH + 8);
-            let xt = x0;
-            const totalValores = ['TOTAL', '', dados.totalPago, '', dados.totalRepasse, dados.totalIbama, '', dados.totalSelic, dados.totalRestituir];
-            totalValores.forEach((valor, i) => {
-                cell(xt, y - rowH, largurasTabela[i], rowH, valor, { fill: [0.88,0.88,0.88], size: 7, bold: true });
-                xt += largurasTabela[i];
-            });
-            y -= rowH + 12;
-            heading('REPASSE AO ESTADO');
-            if (moedaParaNumero(dados.totalRepasse) > 0) {
-                paragraph('Foi identificado valor repassado ao estado em uma ou mais linhas do demonstrativo. Os valores repassados foram deduzidos da base de restituição pelo Ibama.', 124);
-            } else {
-                paragraph('Não foi identificado valor repassado ao estado nas linhas preenchidas no demonstrativo de cálculo.', 124);
+            if (grupos.representacaoMotivo) {
+                heading('REPRESENTAÇÃO E MOTIVO DA RESTITUIÇÃO');
+                linhaCampo('Representação', dados.tipoRepresentacao);
+                linhaCampo('Documento da representação', dados.seiRepresentacao);
+                linhaCampo('Motivo da restituição', dados.motivoRestituicao);
+                linhaCampo('Decisão/análise relacionada', dados.seiDecisao);
+                if (dados.motivoRestituicao === 'Outro' && dados.descricaoMotivo) paragraph(`Descrição do motivo: ${dados.descricaoMotivo}`);
+            }
+
+            if (grupos.demonstrativo) {
+                heading('DEMONSTRATIVO DE CÁLCULO');
+                linhaCampo('Mês de atualização/restituição', dados.mesReferencia);
+
+                const x0 = margem;
+                const rowH = 28;
+
+                function desenharCabecalhoTabela() {
+                    garantir(42);
+                    let x = x0;
+                    const largurasVisiveis = [75, 52, 58, 48, 61, 61, 44, 57, 75];
+                    const cabecalhosVisiveis = ['Trimestre/Débito', 'Data\npagamento', 'Valor\npago (R$)', 'Repasse\nestado (%)', 'Repasse\nestado (R$)', 'Ficou no\nIbama (R$)', 'Selic\n%', 'Selic\nR$', 'Valor a\nrestituir (R$)'];
+                    cabecalhosVisiveis.forEach((h, i) => {
+                        cell(x, y - 30, largurasVisiveis[i], 30, h, { fill: [0.12, 0.31, 0.47], textColor: [1,1,1], size: 6.5, bold: true });
+                        x += largurasVisiveis[i];
+                    });
+                    y -= 30;
+                    return largurasVisiveis;
+                }
+
+                let largurasTabela = desenharCabecalhoTabela();
+                dados.linhas.forEach(linha => {
+                    garantir(rowH + 4);
+                    if (y - rowH < 45) {
+                        novaPagina();
+                        heading('DEMONSTRATIVO DE CÁLCULO - CONTINUAÇÃO');
+                        largurasTabela = desenharCabecalhoTabela();
+                    }
+                    let x = x0;
+                    const primeira = `${linha.trimestre}${linha.debito ? ' - ' + linha.debito : ''}`;
+                    const valores = [primeira, linha.dataPagamento, linha.valorPago, linha.percentualRepasse, linha.valorRepasse || '0,00', linha.valorIbama, linha.taxaSelic, linha.valorSelic, linha.valorRestituir];
+                    valores.forEach((valor, i) => {
+                        const fill = i >= 5 ? [0.90, 0.90, 0.90] : null;
+                        cell(x, y - rowH, largurasTabela[i], rowH, valor, { fill, size: 6.5, bold: i === 8 });
+                        x += largurasTabela[i];
+                    });
+                    y -= rowH;
+                });
+
+                garantir(rowH + 8);
+                let xt = x0;
+                const totalValores = ['TOTAL', '', dados.totalPago, '', dados.totalRepasse, dados.totalIbama, '', dados.totalSelic, dados.totalRestituir];
+                totalValores.forEach((valor, i) => {
+                    cell(xt, y - rowH, largurasTabela[i], rowH, valor, { fill: [0.88,0.88,0.88], size: 7, bold: true });
+                    xt += largurasTabela[i];
+                });
+                y -= rowH + 12;
+            }
+
+            if (grupos.repasseEstado) {
+                heading('REPASSE AO ESTADO');
+                if (moedaParaNumero(dados.totalRepasse) > 0) {
+                    paragraph('Foi identificado valor repassado ao estado em uma ou mais linhas do demonstrativo. Os valores repassados foram deduzidos da base de restituição pelo Ibama.', 124);
+                } else {
+                    paragraph('Não foi identificado valor repassado ao estado nas linhas preenchidas no demonstrativo de cálculo.', 124);
+                }
             }
             
-            heading('DADOS BANCÁRIOS INFORMADOS');
-            linhaCampo('Dados bancários (SEI)', dados.seiDadosBancarios);
-            linhaCampo('Titular da conta', dados.titularConta);
-            linhaCampo('CPF/CNPJ do titular', dados.cpfCnpjTitular);
-            linhaCampo('Banco', `${dados.banco}${dados.codigoBanco ? ' / Código: ' + dados.codigoBanco : ''}`);
-            linhaCampo('Agência', `${dados.agencia}${dados.digitoAgencia ? ' / Código/Dígito: ' + dados.digitoAgencia : ''}`);
-            linhaCampo('Conta', dados.conta);
-            linhaCampo('Tipo de conta', dados.tipoConta);
+            if (grupos.dadosBancarios) {
+                heading('DADOS BANCÁRIOS INFORMADOS');
+                linhaCampo('Dados bancários (SEI)', dados.seiDadosBancarios);
+                linhaCampo('Titular da conta', dados.titularConta);
+                linhaCampo('CPF/CNPJ do titular', dados.cpfCnpjTitular);
+                linhaCampo('Banco', `${dados.banco}${dados.codigoBanco ? ' / Código: ' + dados.codigoBanco : ''}`);
+                linhaCampo('Agência', `${dados.agencia}${dados.digitoAgencia ? ' / Código/Dígito: ' + dados.digitoAgencia : ''}`);
+                linhaCampo('Conta', dados.conta);
+                linhaCampo('Tipo de conta', dados.tipoConta);
+            }
 
-            heading('CONCLUSÃO DA ANÁLISE');
-            paragraphJustificado(dados.conclusaoAnalise || '', 124);
+            if (grupos.conclusao) {
+                heading('CONCLUSÃO DA ANÁLISE');
+                paragraphJustificado(dados.conclusaoAnalise || '', 124);
+            }
 
             paginas.push(comandos);
 
@@ -2066,35 +2209,57 @@
             return pdf;
         }
 
-        function gerarPDFCalculoDireto() {
-            const dados = obterDadosParaPDF();
-            if (!dados.linhas.length) {
-                mostrarAlerta('Preencha ao menos uma linha do demonstrativo antes de gerar o PDF do cálculo.', 'error');
-                return;
-            }
-
-            const pdf = montarPDFCalculo(dados);
-            const blob = new Blob([pdf], { type: 'application/pdf' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = 'demonstrativo_calculo_restituicao.pdf';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-            mostrarAlerta('✅ PDF do cálculo gerado com sucesso.', 'success');
+        function obterGruposSelecionadosPDF() {
+            const selecionados = {};
+            document.querySelectorAll('.pdf-grupo-check').forEach(check => {
+                selecionados[check.value] = check.checked;
+            });
+            return selecionados;
         }
 
-        function gerarPDFDireto() {
+        function existeGrupoSelecionadoPDF(grupos) {
+            return Object.values(grupos || {}).some(Boolean);
+        }
+
+        function abrirModalSelecionarPDF() {
+            atualizarConclusao();
+            const modal = document.getElementById('modalSelecionarPDF');
+            if (!modal) return;
+            modal.classList.add('aberto');
+            modal.setAttribute('aria-hidden', 'false');
+        }
+
+        function fecharModalSelecionarPDF() {
+            const modal = document.getElementById('modalSelecionarPDF');
+            if (!modal) return;
+            modal.classList.remove('aberto');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        function marcarTodosGruposPDF() {
+            document.querySelectorAll('.pdf-grupo-check').forEach(check => { check.checked = true; });
+        }
+
+        function desmarcarTodosGruposPDF() {
+            document.querySelectorAll('.pdf-grupo-check').forEach(check => { check.checked = false; });
+        }
+
+        function gerarPDFDireto(gruposSelecionados = null) {
             atualizarConclusao();
             const dados = obterDadosParaPDF();
-            if (!dados.linhas.length) {
-                mostrarAlerta('Preencha ao menos uma linha do demonstrativo antes de gerar o PDF.', 'error');
+            const grupos = gruposSelecionados || obterGruposSelecionadosPDF();
+
+            if (!existeGrupoSelecionadoPDF(grupos)) {
+                mostrarAlerta('Selecione ao menos um grupo para gerar o PDF.', 'error');
                 return;
             }
 
-            const pdf = montarPDFAnalise(dados);
+            if (grupos.demonstrativo && !dados.linhas.length) {
+                mostrarAlerta('Preencha ao menos uma linha do demonstrativo antes de incluir esse grupo no PDF.', 'error');
+                return;
+            }
+
+            const pdf = montarPDFAnalise(dados, grupos);
             const blob = new Blob([pdf], { type: 'application/pdf' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -2105,6 +2270,17 @@
             document.body.removeChild(link);
             setTimeout(() => URL.revokeObjectURL(url), 1000);
             mostrarAlerta('✅ PDF gerado com sucesso.', 'success');
+        }
+
+        function gerarPDFSelecionado() {
+            const grupos = obterGruposSelecionadosPDF();
+            gerarPDFDireto(grupos);
+            if (existeGrupoSelecionadoPDF(grupos)) {
+                const dados = obterDadosParaPDF();
+                if (!(grupos.demonstrativo && !dados.linhas.length)) {
+                    fecharModalSelecionarPDF();
+                }
+            }
         }
 
         function criarModalUltimaTaxa() {
@@ -2160,6 +2336,13 @@
                 if (typeof proximo.select === 'function' && (proximo.tagName === 'INPUT' || proximo.tagName === 'TEXTAREA')) proximo.select();
             }
         }
+
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                fecharModalSelecionarPDF();
+            }
+        });
 
         document.addEventListener('keydown', moverFocoComoTab);
 
