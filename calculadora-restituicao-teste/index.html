@@ -8,7 +8,7 @@
     <title>Calculadora de restituição</title>
     <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_restituicao_teste_v_11 -->
+    <!-- Versão: calculadora_restituicao_teste_v_12 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -1678,7 +1678,7 @@
             const motivo = document.getElementById('motivoRestituicao')?.value || 'restituição';
             const repasse = moedaParaNumero(document.getElementById('totalRepasse')?.value || '');
 
-            let texto = `Com base nos dados informados e no demonstrativo de cálculo, apurou-se o valor de R$ ${totalRestituir} a título de restituição de TCFA, atualizado pela taxa Selic até ${mesReferencia || 'MM/AAAA'}, em razão de ${motivo.toLowerCase()}.`;
+            let texto = `Com base nos dados informados e no demonstrativo de cálculo, apurou-se o valor de R$ ${totalRestituir} a título de restituição, atualizado pela taxa Selic até ${mesReferencia || 'MM/AAAA'}, em razão de ${motivo.toLowerCase()}.`;
             if (repasse > 0) {
                 texto += ' Os valores repassados ao estado foram deduzidos da base de restituição pelo Ibama, sem prejuízo de eventual requerimento da parcela estadual perante o órgão competente.';
             }
