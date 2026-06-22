@@ -8,7 +8,7 @@
     <title>Calculadora de restituição</title>
     <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_restituicao_teste_v_20 -->
+    <!-- Versão: calculadora_restituicao_teste_v_24 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -1110,7 +1110,7 @@
                 <div class="pdf-modal-actions">
                     <button type="button" class="btn" onclick="marcarTodosGruposPDF()">Marcar todos</button>
                     <button type="button" class="btn" onclick="desmarcarTodosGruposPDF()">Desmarcar todos</button>
-                    <button type="button" class="btn btn-primario" onclick="gerarPDFSelecionado()">Gerar PDF</button>
+                    <button type="button" class="btn btn-primario" id="btnGerarPDFSelecionado">Gerar PDF</button>
                 </div>
             </div>
         </div>
@@ -1308,6 +1308,13 @@
             document.querySelectorAll('#tabelaRestituicao .percentual-repasse-linha').forEach(el => {
                 el.tabIndex = 0;
             });
+        }
+
+        function selecionarPercentualRepasse(input) {
+            if (!input || !input.classList || !input.classList.contains('percentual-repasse-linha')) return;
+            setTimeout(() => {
+                try { input.select(); } catch (_) {}
+            }, 0);
         }
 
         function formatarPercentualCampo(input) {
@@ -2105,6 +2112,18 @@
             if (event.target.id === 'cpfCnpjTitular') cpfCnpjTitularEditadoManualmente = true;
         });
 
+        document.addEventListener('focusin', function(event) {
+            if (event.target && event.target.classList && event.target.classList.contains('percentual-repasse-linha')) {
+                selecionarPercentualRepasse(event.target);
+            }
+        });
+
+        document.addEventListener('mouseup', function(event) {
+            if (event.target && event.target.classList && event.target.classList.contains('percentual-repasse-linha')) {
+                event.preventDefault();
+            }
+        });
+
         document.addEventListener('click', function(event) {
             if (event.target && event.target.classList.contains('bloco-titulo')) alternarBloco(event.target);
         });
@@ -2360,7 +2379,9 @@
                 const valorTexto = String(valor || 'Não informado');
                 const larguraTotal = larguraPagina - 2 * margem;
                 const larguraRotulo = estimarLarguraTextoPDF(textoRotulo, 9, true);
-                const larguraPrimeiraLinha = Math.max(larguraTotal - larguraRotulo, 60);
+                const espacoRotuloValor = 7;
+                const xValorPrimeiraLinha = Math.min(margem + larguraRotulo + espacoRotuloValor, margem + larguraTotal - 60);
+                const larguraPrimeiraLinha = Math.max((margem + larguraTotal) - xValorPrimeiraLinha, 60);
                 const palavras = String(valorTexto || '').replace(/\s+/g, ' ').trim().split(' ');
                 let primeiraLinha = '';
                 const restantesPalavras = [];
@@ -2381,7 +2402,44 @@
                 const totalLinhas = 1 + demaisLinhas.length;
                 garantir(totalLinhas * 13 + 2);
                 comandos.push(`BT /F2 9 Tf ${margem.toFixed(2)} ${y.toFixed(2)} Td ${textoPDF(textoRotulo)} Tj ET`);
-                addText(primeiraLinha || '', margem + larguraRotulo, y, 9, 'left', 0, false);
+                addText(primeiraLinha || '', xValorPrimeiraLinha, y, 9, 'left', 0, false);
+                y -= 13;
+                demaisLinhas.forEach(linha => {
+                    addText(linha, margem, y, 9, 'left', 0, false);
+                    y -= 13;
+                });
+            }
+
+
+            function linhaCampoSemDoisPontos(rotulo, valor) {
+                const textoRotulo = String(rotulo || '').trim() + ' ';
+                const valorTexto = String(valor || 'Não informado');
+                const larguraTotal = larguraPagina - 2 * margem;
+                const larguraRotulo = estimarLarguraTextoPDF(textoRotulo, 9, true);
+                const espacoRotuloValor = 8;
+                const xValorPrimeiraLinha = Math.min(margem + larguraRotulo + espacoRotuloValor, margem + larguraTotal - 60);
+                const larguraPrimeiraLinha = Math.max((margem + larguraTotal) - xValorPrimeiraLinha, 60);
+                const palavras = String(valorTexto || '').replace(/\s+/g, ' ').trim().split(' ');
+                let primeiraLinha = '';
+                const restantesPalavras = [];
+                palavras.forEach(palavra => {
+                    const candidato = primeiraLinha ? `${primeiraLinha} ${palavra}` : palavra;
+                    if (primeiraLinha && estimarLarguraTextoPDF(candidato, 9, false) > larguraPrimeiraLinha) {
+                        restantesPalavras.push(palavra);
+                    } else if (!primeiraLinha && estimarLarguraTextoPDF(candidato, 9, false) > larguraPrimeiraLinha) {
+                        primeiraLinha = palavra;
+                    } else if (restantesPalavras.length === 0) {
+                        primeiraLinha = candidato;
+                    } else {
+                        restantesPalavras.push(palavra);
+                    }
+                });
+                const textoRestante = restantesPalavras.join(' ');
+                const demaisLinhas = textoRestante ? quebrarTextoPorLargura(textoRestante, larguraTotal, 9, false) : [];
+                const totalLinhas = 1 + demaisLinhas.length;
+                garantir(totalLinhas * 13 + 2);
+                comandos.push(`BT /F2 9 Tf ${margem.toFixed(2)} ${y.toFixed(2)} Td ${textoPDF(textoRotulo)} Tj ET`);
+                addText(primeiraLinha || '', xValorPrimeiraLinha, y, 9, 'left', 0, false);
                 y -= 13;
                 demaisLinhas.forEach(linha => {
                     addText(linha, margem, y, 9, 'left', 0, false);
@@ -2411,7 +2469,7 @@
                 if (temDocumentoSEIPreenchido(dados.seiRequerimento)) linhaCampo('Requerimento de restituição', dados.seiRequerimento);
                 linhaCampo('Data-base para análise do prazo/ data do pedido', dados.dataPedido);
                 if (temDocumentoSEIPreenchido(dados.seiComprovacao)) linhaCampo('Comprovação de pagamento', dados.seiComprovacao);
-                linhaCampo('Inclui pagamentos afetados pelo decurso do prazo?', dados.prazoCincoAnos);
+                linhaCampoSemDoisPontos('Inclui pagamentos afetados pelo decurso do prazo?', dados.prazoCincoAnos);
                 if (dados.periodosPrescritos) linhaCampo('Nº dos Pagamentos afetados pelo decurso do prazo', dados.periodosPrescritos);
             }
 
@@ -2635,7 +2693,9 @@
                 const valorTexto = String(valor || 'Não informado');
                 const larguraTotal = larguraPagina - 2 * margem;
                 const larguraRotulo = estimarLarguraTextoPDF(textoRotulo, 9, true);
-                const larguraPrimeiraLinha = Math.max(larguraTotal - larguraRotulo, 60);
+                const espacoRotuloValor = 7;
+                const xValorPrimeiraLinha = Math.min(margem + larguraRotulo + espacoRotuloValor, margem + larguraTotal - 60);
+                const larguraPrimeiraLinha = Math.max((margem + larguraTotal) - xValorPrimeiraLinha, 60);
                 const palavras = String(valorTexto || '').replace(/\s+/g, ' ').trim().split(' ');
                 let primeiraLinha = '';
                 const restantesPalavras = [];
@@ -2656,7 +2716,7 @@
                 const totalLinhas = 1 + demaisLinhas.length;
                 garantir(totalLinhas * 13 + 2);
                 comandos.push(`BT /F2 9 Tf ${margem.toFixed(2)} ${y.toFixed(2)} Td ${textoPDF(textoRotulo)} Tj ET`);
-                addText(primeiraLinha || '', margem + larguraRotulo, y, 9, 'left', 0, false);
+                addText(primeiraLinha || '', xValorPrimeiraLinha, y, 9, 'left', 0, false);
                 y -= 13;
                 demaisLinhas.forEach(linha => {
                     addText(linha, margem, y, 9, 'left', 0, false);
@@ -2787,43 +2847,44 @@
         }
 
         function gerarPDFDireto(gruposSelecionados = null) {
-            atualizarConclusao();
-            const dados = obterDadosParaPDF();
-            const grupos = gruposSelecionados || obterGruposSelecionadosPDF();
+            try {
+                atualizarConclusao();
+                const dados = obterDadosParaPDF();
+                const grupos = gruposSelecionados || obterGruposSelecionadosPDF();
 
-            if (!existeGrupoSelecionadoPDF(grupos)) {
-                mostrarAlerta('Selecione ao menos um grupo para gerar o PDF.', 'error');
-                return;
+                if (!existeGrupoSelecionadoPDF(grupos)) {
+                    mostrarAlerta('Selecione ao menos um grupo para gerar o PDF.', 'error');
+                    return false;
+                }
+
+
+                const pdf = montarPDFAnalise(dados, grupos);
+                const blob = new Blob([pdf], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'analise_restituicao.pdf';
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                mostrarAlerta('✅ PDF gerado com sucesso.', 'success');
+                return true;
+            } catch (erro) {
+                console.error('Erro ao gerar PDF:', erro);
+                mostrarAlerta('Não foi possível gerar o PDF. Verifique os dados preenchidos e tente novamente.', 'error');
+                return false;
             }
-
-            if (grupos.demonstrativo && !dados.linhas.length) {
-                mostrarAlerta('Preencha ao menos uma linha do demonstrativo antes de incluir esse grupo no PDF.', 'error');
-                return;
-            }
-
-            const pdf = montarPDFAnalise(dados, grupos);
-            const blob = new Blob([pdf], { type: 'application/pdf' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = 'analise_restituicao.pdf';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-            mostrarAlerta('✅ PDF gerado com sucesso.', 'success');
         }
 
         function gerarPDFSelecionado() {
             const grupos = obterGruposSelecionadosPDF();
-            gerarPDFDireto(grupos);
-            if (existeGrupoSelecionadoPDF(grupos)) {
-                const dados = obterDadosParaPDF();
-                if (!(grupos.demonstrativo && !dados.linhas.length)) {
-                    fecharModalSelecionarPDF();
-                }
-            }
+            const gerou = gerarPDFDireto(grupos);
+            if (gerou) fecharModalSelecionarPDF();
         }
+
+        window.gerarPDFSelecionado = gerarPDFSelecionado;
 
         function criarModalUltimaTaxa() {
             if (document.getElementById('modalUltimaTaxa')) return;
@@ -2887,6 +2948,15 @@
         });
 
         document.addEventListener('keydown', moverFocoComoTab);
+
+        const botaoGerarPDFSelecionado = document.getElementById('btnGerarPDFSelecionado');
+        if (botaoGerarPDFSelecionado) {
+            botaoGerarPDFSelecionado.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                gerarPDFSelecionado();
+            });
+        }
 
         window.onload = function() {
             console.log('🚀 CALCULADORA DE RESTITUIÇÃO inicializando...');
