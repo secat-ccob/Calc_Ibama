@@ -8,7 +8,7 @@
     <title>Calculadora de restituição</title>
     <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_restituicao_teste_v_18 -->
+    <!-- Versão: calculadora_restituicao_teste_v_20 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -557,21 +557,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 3px;
-        }
-
-        .repasse-toggle {
-            width: 14px !important;
-            height: 14px;
-            flex: 0 0 auto;
-            cursor: pointer;
         }
 
         .percentual-repasse-linha {
             max-width: 40px;
+            background: #ffffff !important;
         }
 
-        .percentual-repasse-linha:disabled,
         .valor-repasse.inativo {
             opacity: 0.55;
         }
@@ -955,14 +947,13 @@
                                     </tr>
 
                                     <tr class="data-row" data-linha="0">
-                                        <td class="white-cell"><input type="text" class="numero-debito" placeholder="0000000" readonly></td>
-                                        <td class="white-cell"><input type="text" class="numero-pagamento" placeholder="0000000" readonly oninput="atualizarAnalisePrazo(); atualizarRepasseEstado()"></td>
-                                        <td class="white-cell"><input type="text" class="data-pagamento" placeholder="DD/MM/AAAA" maxlength="10" inputmode="numeric" readonly oninput="aplicarMascaraDataCompletaTempoReal(this)" onblur="formatarDataCompleta(this); calcularLinha(0); atualizarAnalisePrazo()"></td>
-                                        <td class="white-cell"><input type="text" class="valor-pago" placeholder="0,00" inputmode="numeric" readonly oninput="aplicarMascaraMoedaTempoReal(this); calcularLinha(0)"></td>
+                                        <td class="gray-cell"><input type="text" class="numero-debito" placeholder="0000000" readonly></td>
+                                        <td class="gray-cell"><input type="text" class="numero-pagamento" placeholder="0000000" readonly oninput="atualizarAnalisePrazo(); atualizarRepasseEstado()"></td>
+                                        <td class="gray-cell"><input type="text" class="data-pagamento" placeholder="DD/MM/AAAA" maxlength="10" inputmode="numeric" readonly oninput="aplicarMascaraDataCompletaTempoReal(this)" onblur="formatarDataCompleta(this); calcularLinha(0); atualizarAnalisePrazo()"></td>
+                                        <td class="gray-cell"><input type="text" class="valor-pago" placeholder="0,00" inputmode="numeric" readonly oninput="aplicarMascaraMoedaTempoReal(this); calcularLinha(0)"></td>
                                         <td class="white-cell">
                                             <div class="repasse-toggle-wrap">
-                                                <input type="checkbox" class="repasse-toggle" onchange="alternarRepasseLinha(this); calcularLinha(0)" title="Marcar quando houver repasse ao estado">
-                                                <input type="text" class="percentual-repasse-linha" placeholder="00%" inputmode="numeric" disabled onkeydown="tratarBackspacePercentualRepasse(event, this)" oninput="formatarPercentualRepasseLinha(this); calcularLinha(0)">
+                                                <input type="text" class="percentual-repasse-linha" placeholder="00%" value="00%" inputmode="numeric" onkeydown="tratarTeclaPercentualRepasse(event, this)" oninput="formatarPercentualRepasseLinha(this); calcularLinha(0)">
                                             </div>
                                         </td>
                                         <td class="gray-cell"><input type="text" class="valor-repasse inativo" readonly></td>
@@ -970,7 +961,7 @@
                                         <td class="gray-cell"><input type="text" class="taxa-selic" readonly></td>
                                         <td class="gray-cell"><input type="text" class="valor-selic" readonly></td>
                                         <td class="gray-cell"><input type="text" class="valor-restituir" readonly></td>
-                                        <td class="linha-acoes"><button type="button" class="btn-linha btn-excluir-linha" onclick="excluirOuLimparLinha(0)" title="Excluir linha">×</button></td>
+                                        <td class="gray-cell linha-acoes"><button type="button" class="btn-linha btn-excluir-linha" tabindex="-1" onclick="excluirOuLimparLinha(0)" title="Excluir linha">×</button></td>
                                     </tr>
 
                                     <tr class="data-row total-row">
@@ -1089,7 +1080,7 @@
             <div class="pdf-modal-body">
                 <div class="janela-data-prazo">
                     <label for="inputModalDataBasePrazo">Informe a data-base para análise do prazo/ data do pedido:</label>
-                    <input type="text" id="inputModalDataBasePrazo" maxlength="10" placeholder="DD/MM/AAAA" inputmode="numeric" oninput="aplicarMascaraDataCompletaTempoReal(this)">
+                    <input type="text" id="inputModalDataBasePrazo" maxlength="10" placeholder="DD/MM/AAAA" inputmode="numeric" oninput="aplicarMascaraDataCompletaTempoReal(this)" onkeydown="if(event.key === 'Enter'){ event.preventDefault(); event.stopPropagation(); confirmarModalDataBasePrazo(); return false; }">
                     <div class="pdf-modal-actions">
                         <button type="button" class="btn btn-primario" onclick="confirmarModalDataBasePrazo()">Confirmar</button>
                         <button type="button" class="btn" onclick="cancelarModalDataBasePrazo()">Cancelar</button>
@@ -1244,7 +1235,7 @@
         function formatarPercentualRepasseLinha(input) {
             let digitos = (input.value || '').replace(/\D/g, '').slice(0, 3);
             if (!digitos) {
-                input.value = '';
+                input.value = '00%';
                 return;
             }
             let numero = parseInt(digitos, 10);
@@ -1266,7 +1257,7 @@
             let digitos = (input.value || '').replace(/\D/g, '');
             digitos = digitos.slice(0, -1);
             if (!digitos) {
-                input.value = '';
+                input.value = '00%';
             } else {
                 input.value = digitos;
                 formatarPercentualRepasseLinha(input);
@@ -1275,34 +1266,63 @@
             if (linha) calcularLinha(parseInt(linha.getAttribute('data-linha'), 10));
         }
 
+        function focarPercentualRepasseAdjacente(input, direcao = 1) {
+            const percentuais = Array.from(document.querySelectorAll('#tabelaRestituicao .data-row[data-linha] .percentual-repasse-linha'))
+                .filter(el => el.offsetParent !== null && !el.disabled);
+            const indiceAtual = percentuais.indexOf(input);
+            if (indiceAtual === -1) return false;
+            const destino = percentuais[indiceAtual + direcao];
+            if (!destino) return false;
+            destino.focus();
+            if (typeof destino.select === 'function') destino.select();
+            return true;
+        }
+
+        function tratarTeclaPercentualRepasse(event, input) {
+            if (event.key === 'Backspace') {
+                tratarBackspacePercentualRepasse(event, input);
+                return;
+            }
+
+            if (event.key === 'Tab') {
+                const direcao = event.shiftKey ? -1 : 1;
+                if (focarPercentualRepasseAdjacente(input, direcao)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                return;
+            }
+
+            if (event.key === 'Enter') {
+                if (focarPercentualRepasseAdjacente(input, 1)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+            }
+        }
+
+        function ajustarTabulacaoTabelaDemonstrativo() {
+            document.querySelectorAll('#tabelaRestituicao input[readonly], #tabelaRestituicao button.btn-excluir-linha').forEach(el => {
+                el.tabIndex = -1;
+            });
+            document.querySelectorAll('#tabelaRestituicao .percentual-repasse-linha').forEach(el => {
+                el.tabIndex = 0;
+            });
+        }
+
         function formatarPercentualCampo(input) {
             if (!input) return;
             formatarPercentualRepasseLinha(input);
         }
 
         function obterPercentualRepasseLinha(linha) {
-            const toggle = linha.querySelector('.repasse-toggle');
-            if (!toggle || !toggle.checked) return 0;
             const campo = linha.querySelector('.percentual-repasse-linha');
             const numero = parseInt(String(campo?.value || '').replace(/\D/g, ''), 10);
             if (isNaN(numero) || numero < 0) return 0;
             return Math.min(numero, 100);
         }
 
-        function alternarRepasseLinha(toggle) {
-            const linha = toggle.closest('[data-linha]');
-            if (!linha) return;
-            const percentual = linha.querySelector('.percentual-repasse-linha');
-            const valorRepasse = linha.querySelector('.valor-repasse');
-            if (percentual) {
-                percentual.disabled = !toggle.checked;
-                if (!toggle.checked) percentual.value = '';
-                else if (!percentual.value) percentual.value = '';
-            }
-            if (valorRepasse) {
-                valorRepasse.classList.toggle('inativo', !toggle.checked);
-                if (!toggle.checked) valorRepasse.value = '';
-            }
+        function alternarRepasseLinha() {
             atualizarRepasseEstado();
         }
 
@@ -1493,13 +1513,12 @@
 
             const valorPago = moedaParaNumero(valorPagoInput.value);
             const percentualRepasse = obterPercentualRepasseLinha(linha);
-            const repasseAtivo = linha.querySelector('.repasse-toggle')?.checked || false;
-            const valorRepasse = repasseAtivo && valorPago > 0 ? valorPago * percentualRepasse / 100 : 0;
+            const valorRepasse = valorPago > 0 ? valorPago * percentualRepasse / 100 : 0;
             const dataPagamento = dataPagamentoInput.value;
 
             if (valorRepasseInput) {
-                valorRepasseInput.classList.toggle('inativo', !repasseAtivo);
-                valorRepasseInput.value = repasseAtivo && valorPago > 0 ? numeroParaMoeda(valorRepasse) : '';
+                valorRepasseInput.classList.toggle('inativo', percentualRepasse <= 0);
+                valorRepasseInput.value = numeroParaMoeda(valorRepasse);
             }
 
             if (!valorPago || !dataPagamento || !mesReferencia) {
@@ -1600,14 +1619,13 @@
             tr.className = 'data-row';
             tr.setAttribute('data-linha', indice);
             tr.innerHTML = `
-                <td class="white-cell"><input type="text" class="numero-debito" placeholder="0000000" readonly></td>
-                <td class="white-cell"><input type="text" class="numero-pagamento" placeholder="0000000" readonly oninput="atualizarAnalisePrazo(); atualizarRepasseEstado()"></td>
-                <td class="white-cell"><input type="text" class="data-pagamento" placeholder="DD/MM/AAAA" maxlength="10" inputmode="numeric" readonly oninput="aplicarMascaraDataCompletaTempoReal(this)" onblur="formatarDataCompleta(this); calcularLinha(${indice}); atualizarAnalisePrazo()"></td>
-                <td class="white-cell"><input type="text" class="valor-pago" placeholder="0,00" inputmode="numeric" readonly oninput="aplicarMascaraMoedaTempoReal(this); calcularLinha(${indice})"></td>
+                <td class="gray-cell"><input type="text" class="numero-debito" placeholder="0000000" readonly></td>
+                <td class="gray-cell"><input type="text" class="numero-pagamento" placeholder="0000000" readonly oninput="atualizarAnalisePrazo(); atualizarRepasseEstado()"></td>
+                <td class="gray-cell"><input type="text" class="data-pagamento" placeholder="DD/MM/AAAA" maxlength="10" inputmode="numeric" readonly oninput="aplicarMascaraDataCompletaTempoReal(this)" onblur="formatarDataCompleta(this); calcularLinha(${indice}); atualizarAnalisePrazo()"></td>
+                <td class="gray-cell"><input type="text" class="valor-pago" placeholder="0,00" inputmode="numeric" readonly oninput="aplicarMascaraMoedaTempoReal(this); calcularLinha(${indice})"></td>
                 <td class="white-cell">
                     <div class="repasse-toggle-wrap">
-                        <input type="checkbox" class="repasse-toggle" onchange="alternarRepasseLinha(this); calcularLinha(${indice})" title="Marcar quando houver repasse ao estado">
-                        <input type="text" class="percentual-repasse-linha" placeholder="00%" inputmode="numeric" disabled onkeydown="tratarBackspacePercentualRepasse(event, this)" oninput="formatarPercentualRepasseLinha(this); calcularLinha(${indice})">
+                        <input type="text" class="percentual-repasse-linha" placeholder="00%" value="00%" inputmode="numeric" onkeydown="tratarTeclaPercentualRepasse(event, this)" oninput="formatarPercentualRepasseLinha(this); calcularLinha(${indice})">
                     </div>
                 </td>
                 <td class="gray-cell"><input type="text" class="valor-repasse inativo" readonly></td>
@@ -1615,10 +1633,11 @@
                 <td class="gray-cell"><input type="text" class="taxa-selic" readonly></td>
                 <td class="gray-cell"><input type="text" class="valor-selic" readonly></td>
                 <td class="gray-cell"><input type="text" class="valor-restituir" readonly></td>
-                <td class="linha-acoes"><button type="button" class="btn-linha btn-excluir-linha" onclick="excluirOuLimparLinha(${indice})" title="Excluir linha">×</button></td>
+                <td class="gray-cell linha-acoes"><button type="button" class="btn-linha btn-excluir-linha" tabindex="-1" onclick="excluirOuLimparLinha(${indice})" title="Excluir linha">×</button></td>
             `;
             tbody.insertBefore(tr, totalRow);
             contadorLinhas++;
+            ajustarTabulacaoTabelaDemonstrativo();
             if (!silencioso) mostrarAlerta('✅ Nova linha adicionada.', 'success');
             return tr;
         }
@@ -1640,9 +1659,8 @@
             const linha = document.querySelector(`[data-linha="${indice}"]`);
             if (!linha) return;
             linha.querySelectorAll('input').forEach(input => {
-                if (input.type === 'checkbox') input.checked = false;
+                if (input.classList.contains('percentual-repasse-linha')) input.value = '00%';
                 else input.value = '';
-                if (input.classList.contains('percentual-repasse-linha')) input.disabled = true;
                 if (input.classList.contains('valor-repasse')) input.classList.add('inativo');
             });
             linha.querySelectorAll('select').forEach(select => select.value = '');
@@ -1980,9 +1998,12 @@
                 tr.querySelector('.numero-pagamento').value = pagamento.numeroPagamento || '';
                 tr.querySelector('.data-pagamento').value = pagamento.dataPagamento || '';
                 tr.querySelector('.valor-pago').value = pagamento.valorPago || '';
+                const percentual = tr.querySelector('.percentual-repasse-linha');
+                if (percentual) percentual.value = '00%';
             });
 
             if (!pagamentos.length) adicionarLinha(true);
+            ajustarTabulacaoTabelaDemonstrativo();
             await atualizarTodasLinhas();
         }
 
@@ -2094,7 +2115,7 @@
                 pagamento: linha.querySelector('.numero-pagamento')?.value || '',
                 dataPagamento: linha.querySelector('.data-pagamento')?.value || '',
                 valorPago: linha.querySelector('.valor-pago')?.value || '',
-                percentualRepasse: linha.querySelector('.repasse-toggle')?.checked ? (linha.querySelector('.percentual-repasse-linha')?.value || '0%') : '0%',
+                percentualRepasse: (linha.querySelector('.percentual-repasse-linha')?.value || '00%').replace(/^00%$/, '0%'),
                 valorRepasse: linha.querySelector('.valor-repasse')?.value || '',
                 valorIbama: linha.querySelector('.valor-ibama')?.value || '',
                 taxaSelic: linha.querySelector('.taxa-selic')?.value || '',
@@ -2316,12 +2337,56 @@
                 return total * tamanho * (negrito ? 1.035 : 1);
             }
 
+            function quebrarTextoPorLargura(texto, larguraMaxima, tamanho = 9, negrito = false) {
+                const palavras = String(texto || '').replace(/\s+/g, ' ').trim().split(' ');
+                if (!palavras.length || !palavras[0]) return [''];
+                const linhas = [];
+                let atual = '';
+                palavras.forEach(palavra => {
+                    const candidato = atual ? `${atual} ${palavra}` : palavra;
+                    if (atual && estimarLarguraTextoPDF(candidato, tamanho, negrito) > larguraMaxima) {
+                        linhas.push(atual);
+                        atual = palavra;
+                    } else {
+                        atual = candidato;
+                    }
+                });
+                if (atual) linhas.push(atual);
+                return linhas;
+            }
+
             function linhaCampo(rotulo, valor) {
-                garantir(14);
                 const textoRotulo = `${rotulo}: `;
                 const valorTexto = String(valor || 'Não informado');
-                comandos.push(`BT /F2 9 Tf ${margem.toFixed(2)} ${y.toFixed(2)} Td ${textoPDF(textoRotulo)} Tj /F1 9 Tf ${textoPDF(valorTexto)} Tj ET`);
+                const larguraTotal = larguraPagina - 2 * margem;
+                const larguraRotulo = estimarLarguraTextoPDF(textoRotulo, 9, true);
+                const larguraPrimeiraLinha = Math.max(larguraTotal - larguraRotulo, 60);
+                const palavras = String(valorTexto || '').replace(/\s+/g, ' ').trim().split(' ');
+                let primeiraLinha = '';
+                const restantesPalavras = [];
+                palavras.forEach(palavra => {
+                    const candidato = primeiraLinha ? `${primeiraLinha} ${palavra}` : palavra;
+                    if (primeiraLinha && estimarLarguraTextoPDF(candidato, 9, false) > larguraPrimeiraLinha) {
+                        restantesPalavras.push(palavra);
+                    } else if (!primeiraLinha && estimarLarguraTextoPDF(candidato, 9, false) > larguraPrimeiraLinha) {
+                        primeiraLinha = palavra;
+                    } else if (restantesPalavras.length === 0) {
+                        primeiraLinha = candidato;
+                    } else {
+                        restantesPalavras.push(palavra);
+                    }
+                });
+                const textoRestante = restantesPalavras.join(' ');
+                const demaisLinhas = textoRestante ? quebrarTextoPorLargura(textoRestante, larguraTotal, 9, false) : [];
+                const totalLinhas = 1 + demaisLinhas.length;
+                garantir(totalLinhas * 13 + 2);
+                comandos.push(`BT /F2 9 Tf ${margem.toFixed(2)} ${y.toFixed(2)} Td ${textoPDF(textoRotulo)} Tj ET`);
+                addText(primeiraLinha || '', margem + larguraRotulo, y, 9, 'left', 0, false);
                 y -= 13;
+                demaisLinhas.forEach(linha => {
+                    addText(linha, margem, y, 9, 'left', 0, false);
+                    y -= 13;
+                });
             }
 
             novaPagina();
@@ -2380,7 +2445,7 @@
                 }
 
                 let largurasTabela = desenharCabecalhoTabela();
-                dados.linhas.forEach(linha => {
+                dados.linhas.forEach((linha, indiceLinha) => {
                     garantir(rowH + 4);
                     if (y - rowH < 45) {
                         novaPagina();
@@ -2389,9 +2454,9 @@
                     }
                     let x = x0;
                     const valores = [linha.debito, linha.pagamento, linha.dataPagamento, linha.valorPago, linha.percentualRepasse, linha.valorRepasse || '0,00', linha.valorIbama, linha.taxaSelic, linha.valorSelic, linha.valorRestituir];
+                    const fillLinha = indiceLinha % 2 === 0 ? [1, 1, 1] : [0.93, 0.93, 0.93];
                     valores.forEach((valor, i) => {
-                        const fill = i >= 6 ? [0.90, 0.90, 0.90] : null;
-                        cell(x, y - rowH, largurasTabela[i], rowH, valor, { fill, size: 6.5, bold: i === 9 });
+                        cell(x, y - rowH, largurasTabela[i], rowH, valor, { fill: fillLinha, size: 6.5, bold: i === 9 });
                         x += largurasTabela[i];
                     });
                     y -= rowH;
@@ -2547,12 +2612,56 @@
                 return total * tamanho * (negrito ? 1.035 : 1);
             }
 
+            function quebrarTextoPorLargura(texto, larguraMaxima, tamanho = 9, negrito = false) {
+                const palavras = String(texto || '').replace(/\s+/g, ' ').trim().split(' ');
+                if (!palavras.length || !palavras[0]) return [''];
+                const linhas = [];
+                let atual = '';
+                palavras.forEach(palavra => {
+                    const candidato = atual ? `${atual} ${palavra}` : palavra;
+                    if (atual && estimarLarguraTextoPDF(candidato, tamanho, negrito) > larguraMaxima) {
+                        linhas.push(atual);
+                        atual = palavra;
+                    } else {
+                        atual = candidato;
+                    }
+                });
+                if (atual) linhas.push(atual);
+                return linhas;
+            }
+
             function linhaCampo(rotulo, valor) {
-                garantir(14);
                 const textoRotulo = `${rotulo}: `;
                 const valorTexto = String(valor || 'Não informado');
-                comandos.push(`BT /F2 9 Tf ${margem.toFixed(2)} ${y.toFixed(2)} Td ${textoPDF(textoRotulo)} Tj /F1 9 Tf ${textoPDF(valorTexto)} Tj ET`);
+                const larguraTotal = larguraPagina - 2 * margem;
+                const larguraRotulo = estimarLarguraTextoPDF(textoRotulo, 9, true);
+                const larguraPrimeiraLinha = Math.max(larguraTotal - larguraRotulo, 60);
+                const palavras = String(valorTexto || '').replace(/\s+/g, ' ').trim().split(' ');
+                let primeiraLinha = '';
+                const restantesPalavras = [];
+                palavras.forEach(palavra => {
+                    const candidato = primeiraLinha ? `${primeiraLinha} ${palavra}` : palavra;
+                    if (primeiraLinha && estimarLarguraTextoPDF(candidato, 9, false) > larguraPrimeiraLinha) {
+                        restantesPalavras.push(palavra);
+                    } else if (!primeiraLinha && estimarLarguraTextoPDF(candidato, 9, false) > larguraPrimeiraLinha) {
+                        primeiraLinha = palavra;
+                    } else if (restantesPalavras.length === 0) {
+                        primeiraLinha = candidato;
+                    } else {
+                        restantesPalavras.push(palavra);
+                    }
+                });
+                const textoRestante = restantesPalavras.join(' ');
+                const demaisLinhas = textoRestante ? quebrarTextoPorLargura(textoRestante, larguraTotal, 9, false) : [];
+                const totalLinhas = 1 + demaisLinhas.length;
+                garantir(totalLinhas * 13 + 2);
+                comandos.push(`BT /F2 9 Tf ${margem.toFixed(2)} ${y.toFixed(2)} Td ${textoPDF(textoRotulo)} Tj ET`);
+                addText(primeiraLinha || '', margem + larguraRotulo, y, 9, 'left', 0, false);
                 y -= 13;
+                demaisLinhas.forEach(linha => {
+                    addText(linha, margem, y, 9, 'left', 0, false);
+                    y -= 13;
+                });
             }
 
             novaPagina();
@@ -2759,7 +2868,7 @@
 
             const focaveis = Array.from(document.querySelectorAll(
                 'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])'
-            )).filter(el => el.offsetParent !== null && !el.readOnly);
+            )).filter(el => el.offsetParent !== null && !el.readOnly && el.tabIndex !== -1);
 
             const indiceAtual = focaveis.indexOf(elemento);
             if (indiceAtual === -1) return;
@@ -2786,6 +2895,7 @@
             sincronizarDadosTitularPadrao();
             atualizarDescricaoMotivo();
             atualizarAnalisePrazo();
+            ajustarTabulacaoTabelaDemonstrativo();
             atualizarConclusao();
             buscarDadosOnline().then(() => {
                 mostrarAlerta('✅ Sistema pronto para análise de restituição.', 'success');
