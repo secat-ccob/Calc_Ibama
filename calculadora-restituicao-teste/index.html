@@ -8,7 +8,7 @@
     <title>Calculadora de restituição</title>
     <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_restituicao_teste_v_15 -->
+    <!-- Versão: calculadora_restituicao_teste_v_18 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -627,6 +627,77 @@
         }
 
 
+        .upload-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .upload-status {
+            width: 180px;
+            min-height: 34px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            background: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #666;
+            user-select: none;
+            box-sizing: border-box;
+            font-size: 13px;
+            letter-spacing: 0.03em;
+        }
+
+        .upload-status.ok {
+            background: #1f7a1f;
+            border-color: #1f7a1f;
+            color: white;
+        }
+
+        .janela-opcoes-texto {
+            margin: 0 0 14px 0;
+            font-weight: bold;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        .janela-opcoes-botoes {
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+        }
+
+        .janela-opcoes-botoes .btn {
+            width: 100%;
+            margin-left: 0;
+            margin-right: 0;
+            white-space: normal;
+        }
+
+        .janela-data-prazo {
+            display: grid;
+            gap: 8px;
+        }
+
+        .janela-data-prazo label {
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .janela-data-prazo input {
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            padding: 7px 8px;
+            font-size: 14px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+
         @media (max-width: 900px) {
             .grade-2,
             .grade-3,
@@ -793,13 +864,13 @@
                 </section>
 
                 <section class="bloco">
-                    <div class="bloco-titulo">Dados do pedido</div>
+                    <div class="bloco-titulo">Análise de prazo</div>
                     <div class="bloco-conteudo">
                         <div class="grade-pedido-linha1">
                             <label class="campo">Requerimento de restituição (SEI)
                                 <input type="text" id="seiRequerimento" class="campo-sei" value="SEI ">
                             </label>
-                            <label class="campo">Data do pedido
+                            <label class="campo">Data-base para análise do prazo/ data do pedido
                                 <input type="text" id="dataPedido" maxlength="10" placeholder="DD/MM/AAAA" inputmode="numeric" oninput="aplicarMascaraDataCompletaTempoReal(this)" onblur="formatarDataCompleta(this); atualizarAnalisePrazo()">
                             </label>
                             <label class="campo">Comprovação de pagamento (SEI)
@@ -807,10 +878,10 @@
                             </label>
                         </div>
                         <div class="grade-pedido-linha2">
-                            <label class="campo">Pedido dentro do prazo de 5 anos?
+                            <label class="campo">Inclui pagamentos afetados pelo decurso do prazo?
                                 <input type="text" id="prazoCincoAnos" readonly value="A verificar">
                             </label>
-                            <label class="campo">Períodos/trimestres possivelmente prescritos
+                            <label class="campo">Nº dos Pagamentos afetados pelo decurso do prazo
                                 <input type="text" id="periodosPrescritos" readonly placeholder="Aguardando dados">
                             </label>
                         </div>
@@ -859,42 +930,35 @@
                 <section class="bloco">
                     <div class="bloco-titulo">Demonstrativo de cálculo</div>
                     <div class="bloco-conteudo">
+                        <div class="upload-row">
+                            <button type="button" class="btn" onclick="selecionarRelacaoPagamentosPDF()">Carregar relação dos pagamentos efetuados (PDF)</button>
+                            <div id="statusRelacaoPagamentos" class="upload-status" aria-live="polite"></div>
+                            <input type="file" id="inputRelacaoPagamentosPDF" accept="application/pdf,.pdf" style="display:none" onchange="arquivoRelacaoPagamentosSelecionado(this)">
+                        </div>
                         <div class="repasse-status" id="statusRepasse" style="margin-bottom: 10px;">Repasse estadual: aguardando preenchimento da tabela.</div>
 
                         <div class="tabela-wrapper">
                             <table id="tabelaRestituicao" class="tabela-calculo">
                                 <tbody>
                                     <tr class="header-row">
-                                        <td style="width: 9.5%;">Trimestre/Ano</td>
-                                        <td style="width: 9%;">Nº do débito</td>
-                                        <td style="width: 9%;">Data do pagamento</td>
-                                        <td style="width: 9.5%;">Valor pago (R$)</td>
-                                        <td style="width: 10%;">Percentual de repasse ao estado (%)</td>
-                                        <td style="width: 10.5%;">Valor repassado ao estado (R$)</td>
-                                        <td style="width: 10.5%;">Valor que ficou no Ibama (R$)</td>
-                                        <td style="width: 8%;">Selic (%)</td>
-                                        <td style="width: 9.5%;">Valor da Selic (R$)</td>
-                                        <td style="width: 10.5%;">Valor a restituir (R$)</td>
-                                        <td style="width: 4%;">Ação</td>
+                                        <td style="width: 8.5%;">Nº do débito</td>
+                                        <td style="width: 8.5%;">Nº pagamento</td>
+                                        <td style="width: 8.5%;">Data do pagamento</td>
+                                        <td style="width: 8.7%;">Valor pago (R$)</td>
+                                        <td style="width: 9.5%;">Percentual de repasse ao estado (%)</td>
+                                        <td style="width: 9.8%;">Valor repassado ao estado (R$)</td>
+                                        <td style="width: 9.8%;">Valor que ficou no Ibama (R$)</td>
+                                        <td style="width: 7%;">Selic (%)</td>
+                                        <td style="width: 8.7%;">Valor da Selic (R$)</td>
+                                        <td style="width: 9.8%;">Valor a restituir (R$)</td>
+                                        <td style="width: 4.2%;">Ação</td>
                                     </tr>
 
                                     <tr class="data-row" data-linha="0">
-                                        <td class="white-cell">
-                                            <div class="trimestre-ano">
-                                                <select class="trimestre-select" onchange="atualizarAnalisePrazo(); atualizarRepasseEstado()">
-                                                    <option value=""></option>
-                                                    <option value="1º">1º</option>
-                                                    <option value="2º">2º</option>
-                                                    <option value="3º">3º</option>
-                                                    <option value="4º">4º</option>
-                                                </select>
-                                                <span>/</span>
-                                                <input type="text" class="ano-trimestre" maxlength="4" inputmode="numeric" placeholder="AAAA" oninput="formatarAno(this); atualizarAnalisePrazo(); atualizarRepasseEstado()">
-                                            </div>
-                                        </td>
-                                        <td class="white-cell"><input type="text" class="numero-debito" placeholder="0000000"></td>
-                                        <td class="white-cell"><input type="text" class="data-pagamento" placeholder="DD/MM/AAAA" maxlength="10" inputmode="numeric" oninput="aplicarMascaraDataCompletaTempoReal(this)" onblur="formatarDataCompleta(this); calcularLinha(0); atualizarAnalisePrazo()"></td>
-                                        <td class="white-cell"><input type="text" class="valor-pago" placeholder="0,00" inputmode="numeric" oninput="aplicarMascaraMoedaTempoReal(this); calcularLinha(0)"></td>
+                                        <td class="white-cell"><input type="text" class="numero-debito" placeholder="0000000" readonly></td>
+                                        <td class="white-cell"><input type="text" class="numero-pagamento" placeholder="0000000" readonly oninput="atualizarAnalisePrazo(); atualizarRepasseEstado()"></td>
+                                        <td class="white-cell"><input type="text" class="data-pagamento" placeholder="DD/MM/AAAA" maxlength="10" inputmode="numeric" readonly oninput="aplicarMascaraDataCompletaTempoReal(this)" onblur="formatarDataCompleta(this); calcularLinha(0); atualizarAnalisePrazo()"></td>
+                                        <td class="white-cell"><input type="text" class="valor-pago" placeholder="0,00" inputmode="numeric" readonly oninput="aplicarMascaraMoedaTempoReal(this); calcularLinha(0)"></td>
                                         <td class="white-cell">
                                             <div class="repasse-toggle-wrap">
                                                 <input type="checkbox" class="repasse-toggle" onchange="alternarRepasseLinha(this); calcularLinha(0)" title="Marcar quando houver repasse ao estado">
@@ -999,6 +1063,42 @@
     </main>
 
 
+    <div id="modalOpcaoRelacaoPagamentos" class="pdf-modal-overlay" aria-hidden="true">
+        <div class="pdf-modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalOpcaoRelacaoPagamentos">
+            <div class="pdf-modal-header">
+                <span id="tituloModalOpcaoRelacaoPagamentos">Relação de pagamentos</span>
+                <button type="button" class="pdf-modal-close" onclick="cancelarModalOpcaoRelacaoPagamentos()" aria-label="Fechar">×</button>
+            </div>
+            <div class="pdf-modal-body">
+                <p class="janela-opcoes-texto">Selecione uma opção</p>
+                <div class="janela-opcoes-botoes">
+                    <button type="button" class="btn btn-primario" onclick="confirmarOpcaoRelacaoPagamentos('prazo')">Carregar pagamentos dentro do prazo para restituição</button>
+                    <button type="button" class="btn" onclick="confirmarOpcaoRelacaoPagamentos('todos')">Carregar todos os pagamentos</button>
+                    <button type="button" class="btn" onclick="cancelarModalOpcaoRelacaoPagamentos()">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalDataBasePrazo" class="pdf-modal-overlay" aria-hidden="true">
+        <div class="pdf-modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalDataBasePrazo">
+            <div class="pdf-modal-header">
+                <span id="tituloModalDataBasePrazo">Data-base para análise do prazo</span>
+                <button type="button" class="pdf-modal-close" onclick="cancelarModalDataBasePrazo()" aria-label="Fechar">×</button>
+            </div>
+            <div class="pdf-modal-body">
+                <div class="janela-data-prazo">
+                    <label for="inputModalDataBasePrazo">Informe a data-base para análise do prazo/ data do pedido:</label>
+                    <input type="text" id="inputModalDataBasePrazo" maxlength="10" placeholder="DD/MM/AAAA" inputmode="numeric" oninput="aplicarMascaraDataCompletaTempoReal(this)">
+                    <div class="pdf-modal-actions">
+                        <button type="button" class="btn btn-primario" onclick="confirmarModalDataBasePrazo()">Confirmar</button>
+                        <button type="button" class="btn" onclick="cancelarModalDataBasePrazo()">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="modalSelecionarPDF" class="pdf-modal-overlay" aria-hidden="true">
         <div class="pdf-modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalSelecionarPDF">
             <div class="pdf-modal-header">
@@ -1009,7 +1109,7 @@
                 <p class="pdf-modal-instrucao">Selecione os grupos que deseja incluir no PDF:</p>
                 <div class="pdf-opcoes-grupos">
                     <label><input type="checkbox" class="pdf-grupo-check" value="identificacao" checked> Identificação</label>
-                    <label><input type="checkbox" class="pdf-grupo-check" value="dadosPedido" checked> Dados do pedido</label>
+                    <label><input type="checkbox" class="pdf-grupo-check" value="dadosPedido" checked> Análise de prazo</label>
                     <label><input type="checkbox" class="pdf-grupo-check" value="representacaoMotivo" checked> Representação e motivo da restituição</label>
                     <label><input type="checkbox" class="pdf-grupo-check" value="demonstrativo" checked> Demonstrativo de cálculo</label>
                     <label><input type="checkbox" class="pdf-grupo-check" value="repasseEstado" checked> Repasse ao estado</label>
@@ -1032,6 +1132,12 @@
         let dadosPlanilha = {};
         let statusConexao = 'carregando';
         let metadadosSelic = { ultimaCompetencia: '', ultimaTaxa: null, competenciaProvisoria: '', taxaProvisoria: null, fonte: '' };
+        const PDFJS_LOCAL_URL = '../libs/pdfjs/pdf.min.js';
+        const PDFJS_WORKER_LOCAL_URL = '../libs/pdfjs/pdf.worker.min.js';
+        let promessaPDFJS = null;
+        let arquivoRelacaoPagamentosPendente = null;
+        let resolverOpcaoRelacaoPagamentos = null;
+        let resolverDataBasePrazo = null;
 
         function obterMesVigente() {
             const agora = new Date();
@@ -1200,10 +1306,8 @@
             atualizarRepasseEstado();
         }
 
-        function obterIdentificacaoTrimestre(linha) {
-            const trimestre = linha.querySelector('.trimestre-select')?.value || '';
-            const ano = linha.querySelector('.ano-trimestre')?.value || '';
-            return trimestre && ano ? `${trimestre}/${ano}` : (trimestre || ano);
+        function obterNumeroPagamento(linha) {
+            return (linha.querySelector('.numero-pagamento')?.value || '').trim();
         }
 
         function garantirPrefixoSEI(input) {
@@ -1488,7 +1592,7 @@
             if (el) el.innerHTML = valor;
         }
 
-        function adicionarLinha() {
+        function adicionarLinha(silencioso = false) {
             const tbody = document.querySelector('#tabelaRestituicao tbody');
             const totalRow = tbody.querySelector('.total-row');
             const indice = contadorLinhas;
@@ -1496,22 +1600,10 @@
             tr.className = 'data-row';
             tr.setAttribute('data-linha', indice);
             tr.innerHTML = `
-                <td class="white-cell">
-                    <div class="trimestre-ano">
-                        <select class="trimestre-select" onchange="atualizarAnalisePrazo(); atualizarRepasseEstado()">
-                            <option value=""></option>
-                            <option value="1º">1º</option>
-                            <option value="2º">2º</option>
-                            <option value="3º">3º</option>
-                            <option value="4º">4º</option>
-                        </select>
-                        <span>/</span>
-                        <input type="text" class="ano-trimestre" maxlength="4" inputmode="numeric" placeholder="AAAA" oninput="formatarAno(this); atualizarAnalisePrazo(); atualizarRepasseEstado()">
-                    </div>
-                </td>
-                <td class="white-cell"><input type="text" class="numero-debito" placeholder="0000000"></td>
-                <td class="white-cell"><input type="text" class="data-pagamento" placeholder="DD/MM/AAAA" maxlength="10" inputmode="numeric" oninput="aplicarMascaraDataCompletaTempoReal(this)" onblur="formatarDataCompleta(this); calcularLinha(${indice}); atualizarAnalisePrazo()"></td>
-                <td class="white-cell"><input type="text" class="valor-pago" placeholder="0,00" inputmode="numeric" oninput="aplicarMascaraMoedaTempoReal(this); calcularLinha(${indice})"></td>
+                <td class="white-cell"><input type="text" class="numero-debito" placeholder="0000000" readonly></td>
+                <td class="white-cell"><input type="text" class="numero-pagamento" placeholder="0000000" readonly oninput="atualizarAnalisePrazo(); atualizarRepasseEstado()"></td>
+                <td class="white-cell"><input type="text" class="data-pagamento" placeholder="DD/MM/AAAA" maxlength="10" inputmode="numeric" readonly oninput="aplicarMascaraDataCompletaTempoReal(this)" onblur="formatarDataCompleta(this); calcularLinha(${indice}); atualizarAnalisePrazo()"></td>
+                <td class="white-cell"><input type="text" class="valor-pago" placeholder="0,00" inputmode="numeric" readonly oninput="aplicarMascaraMoedaTempoReal(this); calcularLinha(${indice})"></td>
                 <td class="white-cell">
                     <div class="repasse-toggle-wrap">
                         <input type="checkbox" class="repasse-toggle" onchange="alternarRepasseLinha(this); calcularLinha(${indice})" title="Marcar quando houver repasse ao estado">
@@ -1527,7 +1619,8 @@
             `;
             tbody.insertBefore(tr, totalRow);
             contadorLinhas++;
-            mostrarAlerta('✅ Nova linha adicionada.', 'success');
+            if (!silencioso) mostrarAlerta('✅ Nova linha adicionada.', 'success');
+            return tr;
         }
 
         function removerLinha() {
@@ -1589,63 +1682,362 @@
             atualizarConclusao();
         }
 
+
+        function selecionarRelacaoPagamentosPDF() {
+            const input = document.getElementById('inputRelacaoPagamentosPDF');
+            if (!input) return;
+            input.value = '';
+            input.click();
+        }
+
+        function definirStatusRelacaoPagamentos(carregado) {
+            const status = document.getElementById('statusRelacaoPagamentos');
+            if (!status) return;
+            if (carregado) {
+                status.classList.add('ok');
+                status.textContent = 'CARREGADO';
+            } else {
+                status.classList.remove('ok');
+                status.textContent = '';
+            }
+        }
+
+        async function arquivoRelacaoPagamentosSelecionado(input) {
+            const arquivo = input?.files?.[0];
+            if (!arquivo) return;
+            definirStatusRelacaoPagamentos(false);
+            arquivoRelacaoPagamentosPendente = arquivo;
+
+            try {
+                const opcao = await abrirModalOpcaoRelacaoPagamentos();
+                if (!opcao) {
+                    arquivoRelacaoPagamentosPendente = null;
+                    return;
+                }
+                await carregarRelacaoPagamentosSelecionada(opcao);
+            } catch (erro) {
+                console.error('Erro ao carregar relação de pagamentos:', erro);
+                mostrarAlerta(erro.message || 'Erro ao carregar relação de pagamentos.', 'error');
+                definirStatusRelacaoPagamentos(false);
+            } finally {
+                arquivoRelacaoPagamentosPendente = null;
+                if (input) input.value = '';
+            }
+        }
+
+        function abrirModalOpcaoRelacaoPagamentos() {
+            return new Promise(resolve => {
+                resolverOpcaoRelacaoPagamentos = resolve;
+                const modal = document.getElementById('modalOpcaoRelacaoPagamentos');
+                if (!modal) {
+                    resolve(null);
+                    return;
+                }
+                modal.classList.add('aberto');
+                modal.setAttribute('aria-hidden', 'false');
+            });
+        }
+
+        function fecharModalOpcaoRelacaoPagamentos() {
+            const modal = document.getElementById('modalOpcaoRelacaoPagamentos');
+            if (!modal) return;
+            modal.classList.remove('aberto');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        function confirmarOpcaoRelacaoPagamentos(opcao) {
+            fecharModalOpcaoRelacaoPagamentos();
+            const resolver = resolverOpcaoRelacaoPagamentos;
+            resolverOpcaoRelacaoPagamentos = null;
+            if (resolver) resolver(opcao);
+        }
+
+        function cancelarModalOpcaoRelacaoPagamentos() {
+            fecharModalOpcaoRelacaoPagamentos();
+            const resolver = resolverOpcaoRelacaoPagamentos;
+            resolverOpcaoRelacaoPagamentos = null;
+            if (resolver) resolver(null);
+        }
+
+        function abrirModalDataBasePrazo(valorInicial = '') {
+            return new Promise(resolve => {
+                resolverDataBasePrazo = resolve;
+                const modal = document.getElementById('modalDataBasePrazo');
+                const input = document.getElementById('inputModalDataBasePrazo');
+                if (!modal || !input) {
+                    resolve(null);
+                    return;
+                }
+                input.value = valorInicial || '';
+                modal.classList.add('aberto');
+                modal.setAttribute('aria-hidden', 'false');
+                setTimeout(() => input.focus(), 80);
+            });
+        }
+
+        function fecharModalDataBasePrazo() {
+            const modal = document.getElementById('modalDataBasePrazo');
+            if (!modal) return;
+            modal.classList.remove('aberto');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        function confirmarModalDataBasePrazo() {
+            const input = document.getElementById('inputModalDataBasePrazo');
+            if (!input) return;
+            formatarDataCompleta(input);
+            const valor = input.value || '';
+            const regexData = /^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+            if (!regexData.test(valor)) {
+                mostrarAlerta('Informe uma data-base válida no formato DD/MM/AAAA.', 'error');
+                return;
+            }
+            fecharModalDataBasePrazo();
+            const resolver = resolverDataBasePrazo;
+            resolverDataBasePrazo = null;
+            if (resolver) resolver(valor);
+        }
+
+        function cancelarModalDataBasePrazo() {
+            fecharModalDataBasePrazo();
+            const resolver = resolverDataBasePrazo;
+            resolverDataBasePrazo = null;
+            if (resolver) resolver(null);
+        }
+
+        function carregarPDFJS() {
+            if (window.pdfjsLib) {
+                window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_LOCAL_URL;
+                return Promise.resolve(window.pdfjsLib);
+            }
+            if (promessaPDFJS) return promessaPDFJS;
+            promessaPDFJS = new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = PDFJS_LOCAL_URL;
+                script.onload = () => {
+                    if (!window.pdfjsLib) {
+                        reject(new Error('PDF.js não foi carregado corretamente.'));
+                        return;
+                    }
+                    window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_LOCAL_URL;
+                    resolve(window.pdfjsLib);
+                };
+                script.onerror = () => reject(new Error('Não foi possível carregar o PDF.js local do portal.'));
+                document.head.appendChild(script);
+            });
+            return promessaPDFJS;
+        }
+
+        function normalizarLinhaTextoPDF(texto) {
+            return String(texto || '').replace(/\s+/g, ' ').trim();
+        }
+
+        async function extrairLinhasTextoPDF(file) {
+            const pdfjsLib = await carregarPDFJS();
+            const buffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+            const linhas = [];
+
+            for (let pagina = 1; pagina <= pdf.numPages; pagina++) {
+                const page = await pdf.getPage(pagina);
+                const textContent = await page.getTextContent();
+                const itens = textContent.items.map(item => ({
+                    texto: item.str || '',
+                    x: item.transform?.[4] || 0,
+                    y: item.transform?.[5] || 0
+                })).filter(item => item.texto && item.texto.trim());
+
+                itens.sort((a, b) => Math.abs(b.y - a.y) > 2 ? b.y - a.y : a.x - b.x);
+
+                const grupos = [];
+                itens.forEach(item => {
+                    let grupo = grupos.find(g => Math.abs(g.y - item.y) <= 2.2);
+                    if (!grupo) {
+                        grupo = { y: item.y, itens: [] };
+                        grupos.push(grupo);
+                    }
+                    grupo.itens.push(item);
+                });
+
+                grupos.sort((a, b) => b.y - a.y).forEach(grupo => {
+                    grupo.itens.sort((a, b) => a.x - b.x);
+                    const texto = normalizarLinhaTextoPDF(grupo.itens.map(i => i.texto).join(' '));
+                    if (texto) linhas.push(texto);
+                });
+            }
+            return linhas;
+        }
+
+        function interpretarLinhaPagamento(texto) {
+            const linha = normalizarLinhaTextoPDF(texto);
+            if (!linha || /^Débito\s+/i.test(linha) || /^Filtros:/i.test(linha) || /^NOME:/i.test(linha) || /^Pág\s+/i.test(linha)) return null;
+
+            const regex = /^(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d{2}\/\d{2}\/\d{4})\s+([\d.]+,\d{2})(?:\s+(\d{5,}))?\s+(.+?)\s+(Espontâneo|Obrigatório)(?:\s+(.*))?$/i;
+            const m = linha.match(regex);
+            if (!m) return null;
+
+            return {
+                debito: m[1] || '',
+                nossoNumeroBto: m[2] || '',
+                nossoNumeroPgto: m[3] || '',
+                numeroPagamento: m[4] || '',
+                dataPagamento: m[5] || '',
+                valorPago: m[6] || '',
+                processo: m[7] || '',
+                receita: m[8] || '',
+                tipoPagamento: m[9] || '',
+                baixado: m[10] || ''
+            };
+        }
+
+        async function extrairPagamentosDoPDF(file) {
+            const linhas = await extrairLinhasTextoPDF(file);
+            const pagamentos = [];
+            linhas.forEach(linha => {
+                const item = interpretarLinhaPagamento(linha);
+                if (item) pagamentos.push(item);
+            });
+            return pagamentos;
+        }
+
+        function stringDataParaDate(dataStr) {
+            const m = String(dataStr || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+            if (!m) return null;
+            const dia = Number(m[1]);
+            const mes = Number(m[2]);
+            const ano = Number(m[3]);
+            const data = new Date(ano, mes - 1, dia);
+            if (data.getFullYear() !== ano || data.getMonth() !== mes - 1 || data.getDate() !== dia) return null;
+            data.setHours(0, 0, 0, 0);
+            return data;
+        }
+
+        function obterIntervaloPrazoRestituicao(dataBaseStr) {
+            const fim = stringDataParaDate(dataBaseStr);
+            if (!fim) return null;
+            const inicio = new Date(fim.getFullYear() - 5, fim.getMonth(), fim.getDate());
+            inicio.setHours(0, 0, 0, 0);
+            return { inicio, fim };
+        }
+
+        function filtrarPagamentosDentroDoPrazo(pagamentos, dataBaseStr) {
+            const intervalo = obterIntervaloPrazoRestituicao(dataBaseStr);
+            if (!intervalo) return [];
+            return pagamentos.filter(pagamento => {
+                const data = stringDataParaDate(pagamento.dataPagamento);
+                return data && data.getTime() >= intervalo.inicio.getTime() && data.getTime() <= intervalo.fim.getTime();
+            });
+        }
+
+        async function carregarRelacaoPagamentosSelecionada(opcao) {
+            if (!arquivoRelacaoPagamentosPendente) return;
+            atualizarStatus('🔄 Lendo relação de pagamentos efetuados...', true);
+
+            let dataBasePrazo = document.getElementById('dataPedido')?.value || '';
+            const regexData = /^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+
+            if (opcao === 'prazo' && !regexData.test(dataBasePrazo)) {
+                dataBasePrazo = await abrirModalDataBasePrazo(dataBasePrazo);
+                if (!dataBasePrazo) {
+                    atualizarStatus('Carregamento da relação de pagamentos cancelado.', true);
+                    definirStatusRelacaoPagamentos(false);
+                    return;
+                }
+                const campoData = document.getElementById('dataPedido');
+                if (campoData) campoData.value = dataBasePrazo;
+            }
+
+            const pagamentosExtraidos = await extrairPagamentosDoPDF(arquivoRelacaoPagamentosPendente);
+            if (!pagamentosExtraidos.length) {
+                throw new Error('Não foi possível identificar pagamentos no PDF carregado. Verifique se o arquivo é uma relação de pagamentos efetuados.');
+            }
+
+            const pagamentos = opcao === 'prazo'
+                ? filtrarPagamentosDentroDoPrazo(pagamentosExtraidos, dataBasePrazo)
+                : pagamentosExtraidos;
+
+            if (!pagamentos.length) {
+                throw new Error(opcao === 'prazo'
+                    ? 'Nenhum pagamento foi encontrado dentro do prazo de 5 anos a partir da data-base informada.'
+                    : 'Nenhum pagamento foi identificado para carregar.');
+            }
+
+            await preencherTabelaComPagamentos(pagamentos);
+            definirStatusRelacaoPagamentos(true);
+            atualizarStatus(`✅ ${pagamentos.length} pagamento(s) carregado(s) da relação de pagamentos`, true);
+            mostrarAlerta(`✅ ${pagamentos.length} pagamento(s) carregado(s).`, 'success');
+        }
+
+        async function preencherTabelaComPagamentos(pagamentos) {
+            const tbody = document.querySelector('#tabelaRestituicao tbody');
+            const linhasAtuais = Array.from(document.querySelectorAll('.data-row[data-linha]'));
+            linhasAtuais.forEach(linha => linha.remove());
+            contadorLinhas = 0;
+
+            pagamentos.forEach(pagamento => {
+                const tr = adicionarLinha(true);
+                tr.querySelector('.numero-debito').value = pagamento.debito || '';
+                tr.querySelector('.numero-pagamento').value = pagamento.numeroPagamento || '';
+                tr.querySelector('.data-pagamento').value = pagamento.dataPagamento || '';
+                tr.querySelector('.valor-pago').value = pagamento.valorPago || '';
+            });
+
+            if (!pagamentos.length) adicionarLinha(true);
+            await atualizarTodasLinhas();
+        }
+
         function atualizarRepasseEstado() {
             const linhas = Array.from(document.querySelectorAll('.data-row[data-linha]'));
-            const trimestresComRepasse = [];
             let totalRepasse = 0;
 
             linhas.forEach(linha => {
                 const repasse = moedaParaNumero(linha.querySelector('.valor-repasse')?.value || '');
-                const trimestre = obterIdentificacaoTrimestre(linha);
-                if (repasse > 0) {
-                    totalRepasse += repasse;
-                    if (trimestre) trimestresComRepasse.push(trimestre);
-                }
+                if (repasse > 0) totalRepasse += repasse;
             });
 
             const status = document.getElementById('statusRepasse');
             if (!status) return;
 
             if (totalRepasse > 0) {
-                const textoPeriodos = trimestresComRepasse.filter(Boolean).join('; ');
-                status.innerHTML = `<strong>Repasse estadual identificado.</strong><br>Total repassado ao estado: R$ ${numeroParaMoeda(totalRepasse)}${textoPeriodos ? '<br>Períodos/trimestres com repasse: ' + textoPeriodos : ''}`;
+                status.innerHTML = `<strong>Repasse estadual identificado.</strong><br>Total repassado ao estado: R$ ${numeroParaMoeda(totalRepasse)}`;
             } else {
-                status.innerHTML = '<strong>Não há repasse estadual identificado nas linhas preenchidas.</strong><br>Os valores calculados como repasse ao Estado estão zerados.';
+                status.innerHTML = '<strong>Não há repasse estadual identificado nas linhas preenchidas.</strong><br>Os valores calculados como repasse ao estado estão zerados.';
             }
         }
 
         function atualizarAnalisePrazo() {
-            const dataPedido = document.getElementById('dataPedido')?.value || '';
+            const dataBasePrazo = document.getElementById('dataPedido')?.value || '';
             const prazo = document.getElementById('prazoCincoAnos');
-            const periodos = document.getElementById('periodosPrescritos');
+            const pagamentosAfetados = document.getElementById('periodosPrescritos');
             const indicacao = document.getElementById('indicacaoPrazo');
             const regexData = /^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
 
             function definir(valor, lista = '', textoIndicacao = '') {
                 if (prazo) prazo.value = valor;
-                if (periodos) periodos.value = lista;
+                if (pagamentosAfetados) pagamentosAfetados.value = lista;
                 if (indicacao) indicacao.value = textoIndicacao || valor;
             }
 
-            if (!regexData.test(dataPedido)) {
-                definir('A verificar', '', 'Aguardando data do pedido');
+            if (!regexData.test(dataBasePrazo)) {
+                definir('A verificar', '', 'Aguardando data-base para análise do prazo');
                 return;
             }
 
-            const [diaP, mesP, anoP] = dataPedido.split('/').map(Number);
+            const [diaP, mesP, anoP] = dataBasePrazo.split('/').map(Number);
             const dataLimite = new Date(anoP - 5, mesP - 1, diaP);
-            const prescritos = [];
+            const afetados = [];
             let analisados = 0;
             let incompletos = false;
 
             document.querySelectorAll('.data-row[data-linha]').forEach(linha => {
                 const dataPagamento = linha.querySelector('.data-pagamento')?.value || '';
-                const trimestre = obterIdentificacaoTrimestre(linha);
+                const numeroPagamento = obterNumeroPagamento(linha);
+                const numeroDebito = linha.querySelector('.numero-debito')?.value || '';
                 const valorPago = moedaParaNumero(linha.querySelector('.valor-pago')?.value || '');
-                const temAlgumDado = trimestre || dataPagamento || valorPago > 0 || (linha.querySelector('.numero-debito')?.value || '');
+                const temAlgumDado = numeroDebito || numeroPagamento || dataPagamento || valorPago > 0;
                 if (!temAlgumDado) return;
 
-                if (!regexData.test(dataPagamento) || !trimestre) {
+                if (!regexData.test(dataPagamento) || !numeroPagamento) {
                     incompletos = true;
                     return;
                 }
@@ -1653,20 +2045,18 @@
                 analisados++;
                 const [dia, mes, ano] = dataPagamento.split('/').map(Number);
                 const dataPag = new Date(ano, mes - 1, dia);
-                if (dataPag < dataLimite && !prescritos.includes(trimestre)) prescritos.push(trimestre);
+                if (dataPag < dataLimite && !afetados.includes(numeroPagamento)) afetados.push(numeroPagamento);
             });
 
-            const lista = prescritos.join(', ');
+            const lista = afetados.join(', ');
             if (!analisados) {
                 definir('A verificar', '', 'Aguardando demonstrativo de cálculo');
             } else if (incompletos) {
                 definir('A verificar', lista, 'Há linhas incompletas no demonstrativo');
-            } else if (prescritos.length === 0) {
-                definir('Sim', '', 'Pagamentos informados parecem dentro do prazo');
-            } else if (prescritos.length === analisados) {
-                definir('Não', lista, 'Todos os períodos informados parecem possivelmente prescritos');
+            } else if (afetados.length === 0) {
+                definir('Não', '', 'Não foram identificados pagamentos afetados pelo decurso do prazo');
             } else {
-                definir('Parcialmente - Há períodos possivelmente prescritos', lista, 'Há períodos possivelmente prescritos');
+                definir('Sim', lista, 'Há pagamento(s) afetado(s) pelo decurso do prazo');
             }
         }
 
@@ -1700,8 +2090,8 @@
 
         function obterDadosParaPDF() {
             const linhas = Array.from(document.querySelectorAll('.data-row[data-linha]')).map(linha => ({
-                trimestre: obterIdentificacaoTrimestre(linha),
                 debito: linha.querySelector('.numero-debito')?.value || '',
+                pagamento: linha.querySelector('.numero-pagamento')?.value || '',
                 dataPagamento: linha.querySelector('.data-pagamento')?.value || '',
                 valorPago: linha.querySelector('.valor-pago')?.value || '',
                 percentualRepasse: linha.querySelector('.repasse-toggle')?.checked ? (linha.querySelector('.percentual-repasse-linha')?.value || '0%') : '0%',
@@ -1710,7 +2100,7 @@
                 taxaSelic: linha.querySelector('.taxa-selic')?.value || '',
                 valorSelic: linha.querySelector('.valor-selic')?.value || '',
                 valorRestituir: linha.querySelector('.valor-restituir')?.value || ''
-            })).filter(linha => linha.trimestre || linha.debito || linha.dataPagamento || linha.valorPago || linha.valorRepasse || linha.valorRestituir);
+            })).filter(linha => linha.debito || linha.pagamento || linha.dataPagamento || linha.valorPago || linha.valorRepasse || linha.valorRestituir);
 
             return {
                 mesReferencia: valorCampo('mesReferencia'),
@@ -1952,12 +2342,12 @@
             }
 
             if (grupos.dadosPedido) {
-                heading('DADOS DO PEDIDO');
+                heading('ANÁLISE DE PRAZO');
                 if (temDocumentoSEIPreenchido(dados.seiRequerimento)) linhaCampo('Requerimento de restituição', dados.seiRequerimento);
-                linhaCampo('Data do pedido', dados.dataPedido);
+                linhaCampo('Data-base para análise do prazo/ data do pedido', dados.dataPedido);
                 if (temDocumentoSEIPreenchido(dados.seiComprovacao)) linhaCampo('Comprovação de pagamento', dados.seiComprovacao);
-                linhaCampo('Pedido dentro do prazo de 5 anos', dados.prazoCincoAnos);
-                if (dados.periodosPrescritos) linhaCampo('Períodos/trimestres possivelmente prescritos', dados.periodosPrescritos);
+                linhaCampo('Inclui pagamentos afetados pelo decurso do prazo?', dados.prazoCincoAnos);
+                if (dados.periodosPrescritos) linhaCampo('Nº dos Pagamentos afetados pelo decurso do prazo', dados.periodosPrescritos);
             }
 
             if (grupos.representacaoMotivo) {
@@ -1979,8 +2369,8 @@
                 function desenharCabecalhoTabela() {
                     garantir(42);
                     let x = x0;
-                    const largurasVisiveis = [75, 52, 58, 48, 61, 61, 44, 57, 75];
-                    const cabecalhosVisiveis = ['Trimestre/Débito', 'Data\npagamento', 'Valor\npago (R$)', 'Repasse\nestado (%)', 'Repasse\nestado (R$)', 'Ficou no\nIbama (R$)', 'Selic\n%', 'Selic\nR$', 'Valor a\nrestituir (R$)'];
+                    const largurasVisiveis = [54, 54, 52, 52, 50, 55, 55, 39, 50, 70];
+                    const cabecalhosVisiveis = ['Nº débito', 'Nº\npagamento', 'Data\npagamento', 'Valor\npago (R$)', 'Repasse\nestado (%)', 'Repasse\nestado (R$)', 'Ficou no\nIbama (R$)', 'Selic\n%', 'Selic\nR$', 'Valor a\nrestituir (R$)'];
                     cabecalhosVisiveis.forEach((h, i) => {
                         cell(x, y - 30, largurasVisiveis[i], 30, h, { fill: [0.12, 0.31, 0.47], textColor: [1,1,1], size: 6.5, bold: true });
                         x += largurasVisiveis[i];
@@ -1998,11 +2388,10 @@
                         largurasTabela = desenharCabecalhoTabela();
                     }
                     let x = x0;
-                    const primeira = `${linha.trimestre}${linha.debito ? ' - ' + linha.debito : ''}`;
-                    const valores = [primeira, linha.dataPagamento, linha.valorPago, linha.percentualRepasse, linha.valorRepasse || '0,00', linha.valorIbama, linha.taxaSelic, linha.valorSelic, linha.valorRestituir];
+                    const valores = [linha.debito, linha.pagamento, linha.dataPagamento, linha.valorPago, linha.percentualRepasse, linha.valorRepasse || '0,00', linha.valorIbama, linha.taxaSelic, linha.valorSelic, linha.valorRestituir];
                     valores.forEach((valor, i) => {
-                        const fill = i >= 5 ? [0.90, 0.90, 0.90] : null;
-                        cell(x, y - rowH, largurasTabela[i], rowH, valor, { fill, size: 6.5, bold: i === 8 });
+                        const fill = i >= 6 ? [0.90, 0.90, 0.90] : null;
+                        cell(x, y - rowH, largurasTabela[i], rowH, valor, { fill, size: 6.5, bold: i === 9 });
                         x += largurasTabela[i];
                     });
                     y -= rowH;
@@ -2010,7 +2399,7 @@
 
                 garantir(rowH + 8);
                 let xt = x0;
-                const totalValores = ['TOTAL', '', dados.totalPago, '', dados.totalRepasse, dados.totalIbama, '', dados.totalSelic, dados.totalRestituir];
+                const totalValores = ['TOTAL', '', '', dados.totalPago, '', dados.totalRepasse, dados.totalIbama, '', dados.totalSelic, dados.totalRestituir];
                 totalValores.forEach((valor, i) => {
                     cell(xt, y - rowH, largurasTabela[i], rowH, valor, { fill: [0.88,0.88,0.88], size: 7, bold: true });
                     xt += largurasTabela[i];
@@ -2185,8 +2574,8 @@
             function desenharCabecalhoTabela() {
                 garantir(42);
                 let x = x0;
-                const largurasVisiveis = [75, 52, 58, 48, 61, 61, 44, 57, 75];
-                const cabecalhosVisiveis = ['Trimestre/Débito', 'Data\npagamento', 'Valor\npago (R$)', 'Repasse\nestado (%)', 'Repasse\nestado (R$)', 'Ficou no\nIbama (R$)', 'Selic\n%', 'Selic\nR$', 'Valor a\nrestituir (R$)'];
+                const largurasVisiveis = [54, 54, 52, 52, 50, 55, 55, 39, 50, 70];
+                const cabecalhosVisiveis = ['Nº débito', 'Nº\npagamento', 'Data\npagamento', 'Valor\npago (R$)', 'Repasse\nestado (%)', 'Repasse\nestado (R$)', 'Ficou no\nIbama (R$)', 'Selic\n%', 'Selic\nR$', 'Valor a\nrestituir (R$)'];
                 cabecalhosVisiveis.forEach((h, i) => {
                     cell(x, y - 30, largurasVisiveis[i], 30, h, { fill: [0.12, 0.31, 0.47], textColor: [1,1,1], size: 6.5, bold: true });
                     x += largurasVisiveis[i];
@@ -2204,11 +2593,10 @@
                     largurasTabela = desenharCabecalhoTabela();
                 }
                 let x = x0;
-                const primeira = `${linha.trimestre}${linha.debito ? ' - ' + linha.debito : ''}`;
-                const valores = [primeira, linha.dataPagamento, linha.valorPago, linha.percentualRepasse, linha.valorRepasse || '0,00', linha.valorIbama, linha.taxaSelic, linha.valorSelic, linha.valorRestituir];
+                const valores = [linha.debito, linha.pagamento, linha.dataPagamento, linha.valorPago, linha.percentualRepasse, linha.valorRepasse || '0,00', linha.valorIbama, linha.taxaSelic, linha.valorSelic, linha.valorRestituir];
                 valores.forEach((valor, i) => {
-                    const fill = i >= 5 ? [0.90, 0.90, 0.90] : null;
-                    cell(x, y - rowH, largurasTabela[i], rowH, valor, { fill, size: 6.5, bold: i === 8 });
+                    const fill = i >= 6 ? [0.90, 0.90, 0.90] : null;
+                    cell(x, y - rowH, largurasTabela[i], rowH, valor, { fill, size: 6.5, bold: i === 9 });
                     x += largurasTabela[i];
                 });
                 y -= rowH;
@@ -2216,7 +2604,7 @@
 
             garantir(rowH + 8);
             let xt = x0;
-            const totalValores = ['TOTAL', '', dados.totalPago, '', dados.totalRepasse, dados.totalIbama, '', dados.totalSelic, dados.totalRestituir];
+            const totalValores = ['TOTAL', '', '', dados.totalPago, '', dados.totalRepasse, dados.totalIbama, '', dados.totalSelic, dados.totalRestituir];
             totalValores.forEach((valor, i) => {
                 cell(xt, y - rowH, largurasTabela[i], rowH, valor, { fill: [0.88,0.88,0.88], size: 7, bold: true });
                 xt += largurasTabela[i];
