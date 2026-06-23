@@ -8,7 +8,7 @@
     <title>Calculadora de restituição</title>
     <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_restituicao_teste_v_26 -->
+    <!-- Versão: calculadora_restituicao_teste_v_27 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -2302,7 +2302,7 @@
                 addText('INSTITUTO BRASILEIRO DO MEIO AMBIENTE E DOS RECURSOS NATURAIS RENOVÁVEIS - IBAMA', margem, alturaPagina - 49, 8.2, 'center', larguraPagina - 2 * margem, true);
 
                 comandos.push('0.55 0.55 0.55 RG 0.45 w');
-                comandos.push(`${margem} ${(alturaPagina - 74).toFixed(2)} m ${(larguraPagina - margem).toFixed(2)} ${(alturaPagina - 74).toFixed(2)} l S`);
+                comandos.push(`${margem} ${(alturaPagina - 74).toFixed(2)} ${(larguraPagina - margem).toFixed(2)} ${(alturaPagina - 74).toFixed(2)} l S`);
 
                 const alturaTitulo = 26;
                 const yTitulo = alturaPagina - 110;
@@ -2330,8 +2330,14 @@
             function addText(texto, x, yTexto, tamanho = 9, alinhamento = 'left', largura = 0, negrito = false) {
                 const fonte = negrito ? 'F2' : 'F1';
                 let textoX = x;
-                const fatorEstimativa = negrito ? 0.54 : 0.48;
-                const textoEstimado = String(texto || '').length * tamanho * fatorEstimativa;
+                const conteudo = String(texto || '');
+                let textoEstimado;
+                try {
+                    textoEstimado = estimarLarguraTextoPDF(conteudo, tamanho, negrito);
+                } catch (_) {
+                    const fatorEstimativa = negrito ? 0.54 : 0.48;
+                    textoEstimado = conteudo.length * tamanho * fatorEstimativa;
+                }
                 if (alinhamento === 'center') textoX = x + (largura - textoEstimado) / 2;
                 if (alinhamento === 'right') textoX = x + largura - textoEstimado;
                 comandos.push(`BT /${fonte} ${tamanho} Tf ${textoX.toFixed(2)} ${yTexto.toFixed(2)} Td ${textoPDF(texto)} Tj ET`);
@@ -2703,8 +2709,14 @@
             function addText(texto, x, yTexto, tamanho = 9, alinhamento = 'left', largura = 0, negrito = false) {
                 const fonte = negrito ? 'F2' : 'F1';
                 let textoX = x;
-                const fatorEstimativa = negrito ? 0.54 : 0.48;
-                const textoEstimado = String(texto || '').length * tamanho * fatorEstimativa;
+                const conteudo = String(texto || '');
+                let textoEstimado;
+                try {
+                    textoEstimado = estimarLarguraTextoPDF(conteudo, tamanho, negrito);
+                } catch (_) {
+                    const fatorEstimativa = negrito ? 0.54 : 0.48;
+                    textoEstimado = conteudo.length * tamanho * fatorEstimativa;
+                }
                 if (alinhamento === 'center') textoX = x + (largura - textoEstimado) / 2;
                 if (alinhamento === 'right') textoX = x + largura - textoEstimado;
                 comandos.push(`BT /${fonte} ${tamanho} Tf ${textoX.toFixed(2)} ${yTexto.toFixed(2)} Td ${textoPDF(texto)} Tj ET`);
