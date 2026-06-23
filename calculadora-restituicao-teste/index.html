@@ -8,7 +8,7 @@
     <title>Calculadora de restituição</title>
     <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_restituicao_teste_v_25 -->
+    <!-- Versão: calculadora_restituicao_teste_v_26 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -1127,7 +1127,10 @@
         let metadadosSelic = { ultimaCompetencia: '', ultimaTaxa: null, competenciaProvisoria: '', taxaProvisoria: null, fonte: '' };
         const PDFJS_LOCAL_URL = '../libs/pdfjs/pdf.min.js';
         const PDFJS_WORKER_LOCAL_URL = '../libs/pdfjs/pdf.worker.min.js';
+        const BRASAO_REPUBLICA_PDF_URL = '../assets/img/pdf/brasao_republica.png';
+        const LOGO_IBAMA_PDF_URL = '../assets/img/pdf/logo_ibama.png';
         let promessaPDFJS = null;
+        let imagensCabecalhoPDFCache = null;
         let arquivoRelacaoPagamentosPendente = null;
         let resolverOpcaoRelacaoPagamentos = null;
         let resolverDataBasePrazo = null;
@@ -2217,7 +2220,53 @@
             return resultado;
         }
 
-        function montarPDFAnalise(dados, gruposSelecionados = null) {
+        function stringBinariaParaUint8Array(conteudo) {
+            const bytes = new Uint8Array(conteudo.length);
+            for (let i = 0; i < conteudo.length; i++) bytes[i] = conteudo.charCodeAt(i) & 0xff;
+            return bytes;
+        }
+
+        function carregarImagemComoJPEGParaPDF(url) {
+            return new Promise(resolve => {
+                const img = new Image();
+                img.onload = () => {
+                    try {
+                        const largura = img.naturalWidth || img.width || 200;
+                        const altura = img.naturalHeight || img.height || 200;
+                        const canvas = document.createElement('canvas');
+                        canvas.width = largura;
+                        canvas.height = altura;
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, largura, altura);
+                        ctx.drawImage(img, 0, 0, largura, altura);
+                        const dataURL = canvas.toDataURL('image/jpeg', 0.92);
+                        const dadosBinarios = atob(dataURL.split(',')[1] || '');
+                        resolve({ data: dadosBinarios, width: largura, height: altura });
+                    } catch (erro) {
+                        console.warn('Não foi possível preparar imagem para o PDF:', url, erro);
+                        resolve(null);
+                    }
+                };
+                img.onerror = () => {
+                    console.warn('Não foi possível carregar imagem do cabeçalho do PDF:', url);
+                    resolve(null);
+                };
+                img.src = url;
+            });
+        }
+
+        async function carregarImagensCabecalhoPDF() {
+            if (imagensCabecalhoPDFCache) return imagensCabecalhoPDFCache;
+            const [brasao, ibama] = await Promise.all([
+                carregarImagemComoJPEGParaPDF(BRASAO_REPUBLICA_PDF_URL),
+                carregarImagemComoJPEGParaPDF(LOGO_IBAMA_PDF_URL)
+            ]);
+            imagensCabecalhoPDFCache = { brasao, ibama };
+            return imagensCabecalhoPDFCache;
+        }
+
+        function montarPDFAnalise(dados, gruposSelecionados = null, imagensCabecalho = null) {
             const larguraPagina = 595;
             const alturaPagina = 842;
             const margem = 32;
@@ -2234,12 +2283,42 @@
                 conclusao: true
             };
 
+            function desenharImagemCabecalho(nomeImagem, x, yImagem, largura, altura) {
+                if (!nomeImagem) return;
+                comandos.push(`q ${largura.toFixed(2)} 0 0 ${altura.toFixed(2)} ${x.toFixed(2)} ${yImagem.toFixed(2)} cm /${nomeImagem} Do Q`);
+            }
+
+            function desenharCabecalhoInstitucional() {
+                const tamanhoLogo = 42;
+                const yLogo = alturaPagina - 64;
+                const xLogoEsquerda = margem + 8;
+                const xLogoDireita = larguraPagina - margem - tamanhoLogo - 8;
+
+                if (imagensCabecalho?.brasao) desenharImagemCabecalho('ImBrasao', xLogoEsquerda, yLogo, tamanhoLogo, tamanhoLogo);
+                if (imagensCabecalho?.ibama) desenharImagemCabecalho('ImIbama', xLogoDireita, yLogo, tamanhoLogo, tamanhoLogo);
+
+                comandos.push('0 0 0 rg');
+                addText('MINISTÉRIO DO MEIO AMBIENTE - MMA', margem, alturaPagina - 36, 8.7, 'center', larguraPagina - 2 * margem, true);
+                addText('INSTITUTO BRASILEIRO DO MEIO AMBIENTE E DOS RECURSOS NATURAIS RENOVÁVEIS - IBAMA', margem, alturaPagina - 49, 8.2, 'center', larguraPagina - 2 * margem, true);
+
+                comandos.push('0.55 0.55 0.55 RG 0.45 w');
+                comandos.push(`${margem} ${(alturaPagina - 74).toFixed(2)} m ${(larguraPagina - margem).toFixed(2)} ${(alturaPagina - 74).toFixed(2)} l S`);
+
+                const alturaTitulo = 26;
+                const yTitulo = alturaPagina - 110;
+                comandos.push('0.12 0.31 0.47 rg');
+                comandos.push(`${margem} ${yTitulo.toFixed(2)} ${larguraPagina - 2 * margem} ${alturaTitulo} re f`);
+                comandos.push('1 1 1 rg');
+                addText('ANÁLISE DE RESTITUIÇÃO', margem, yTitulo + 8.5, 12.5, 'center', larguraPagina - 2 * margem, true);
+                y = yTitulo - 28;
+            }
+
             function novaPagina() {
                 if (comandos.length) paginas.push(comandos);
                 comandos = [];
                 comandos.push('1 1 1 rg');
                 comandos.push(`0 0 ${larguraPagina} ${alturaPagina} re f`);
-                y = alturaPagina - 52;
+                desenharCabecalhoInstitucional();
             }
 
             function garantir(alturaNecessaria) {
@@ -2451,14 +2530,6 @@
 
             novaPagina();
 
-            const alturaTitulo = 26;
-            const yTitulo = alturaPagina - 70;
-            comandos.push('0.12 0.31 0.47 rg');
-            comandos.push(`${margem} ${yTitulo.toFixed(2)} ${larguraPagina - 2 * margem} ${alturaTitulo} re f`);
-            comandos.push('1 1 1 rg');
-            addText('ANÁLISE DE RESTITUIÇÃO', margem, yTitulo + 8.5, 12.5, 'center', larguraPagina - 2 * margem, true);
-            y = yTitulo - 28;
-
             if (grupos.identificacao) {
                 heading('IDENTIFICAÇÃO');
                 linhaCampo('Processo SEI', dados.processoSei);
@@ -2563,16 +2634,32 @@
 
             const objetos = [];
             objetos.push('<< /Type /Catalog /Pages 2 0 R >>');
-            const kids = paginas.map((_, i) => `${5 + i * 2} 0 R`).join(' ');
-            objetos.push(`<< /Type /Pages /Kids [${kids}] /Count ${paginas.length} >>`);
+            objetos.push('PAGES_PLACEHOLDER');
             objetos.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
             objetos.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
 
+            const xobjects = [];
+            if (imagensCabecalho?.brasao?.data) {
+                const objNum = objetos.length + 1;
+                xobjects.push({ name: 'ImBrasao', objNum });
+                objetos.push(`<< /Type /XObject /Subtype /Image /Width ${imagensCabecalho.brasao.width} /Height ${imagensCabecalho.brasao.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imagensCabecalho.brasao.data.length} >>\nstream\n${imagensCabecalho.brasao.data}\nendstream`);
+            }
+            if (imagensCabecalho?.ibama?.data) {
+                const objNum = objetos.length + 1;
+                xobjects.push({ name: 'ImIbama', objNum });
+                objetos.push(`<< /Type /XObject /Subtype /Image /Width ${imagensCabecalho.ibama.width} /Height ${imagensCabecalho.ibama.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imagensCabecalho.ibama.data.length} >>\nstream\n${imagensCabecalho.ibama.data}\nendstream`);
+            }
+
+            const primeiroObjetoPagina = objetos.length + 1;
+            const kids = paginas.map((_, i) => `${primeiroObjetoPagina + i * 2} 0 R`).join(' ');
+            objetos[1] = `<< /Type /Pages /Kids [${kids}] /Count ${paginas.length} >>`;
+            const recursoXObject = xobjects.length ? ` /XObject << ${xobjects.map(img => `/${img.name} ${img.objNum} 0 R`).join(' ')} >>` : '';
+
             paginas.forEach((cmds, i) => {
-                const pageObjNum = 5 + i * 2;
-                const contentObjNum = 6 + i * 2;
+                const pageObjNum = primeiroObjetoPagina + i * 2;
+                const contentObjNum = pageObjNum + 1;
                 const conteudo = cmds.join('\n');
-                objetos.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${larguraPagina} ${alturaPagina}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentObjNum} 0 R >>`);
+                objetos.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${larguraPagina} ${alturaPagina}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >>${recursoXObject} >> /Contents ${contentObjNum} 0 R >>`);
                 objetos.push(`<< /Length ${conteudo.length} >>\nstream\n${conteudo}\nendstream`);
             });
 
@@ -2848,7 +2935,7 @@
             document.querySelectorAll('.pdf-grupo-check').forEach(check => { check.checked = false; });
         }
 
-        function gerarPDFDireto(gruposSelecionados = null) {
+        async function gerarPDFDireto(gruposSelecionados = null) {
             try {
                 atualizarConclusao();
                 const dados = obterDadosParaPDF();
@@ -2860,8 +2947,9 @@
                 }
 
 
-                const pdf = montarPDFAnalise(dados, grupos);
-                const blob = new Blob([pdf], { type: 'application/pdf' });
+                const imagensCabecalho = await carregarImagensCabecalhoPDF();
+                const pdf = montarPDFAnalise(dados, grupos, imagensCabecalho);
+                const blob = new Blob([stringBinariaParaUint8Array(pdf)], { type: 'application/pdf' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
@@ -2880,9 +2968,9 @@
             }
         }
 
-        function gerarPDFSelecionado() {
+        async function gerarPDFSelecionado() {
             const grupos = obterGruposSelecionadosPDF();
-            const gerou = gerarPDFDireto(grupos);
+            const gerou = await gerarPDFDireto(grupos);
             if (gerou) fecharModalSelecionarPDF();
         }
 
