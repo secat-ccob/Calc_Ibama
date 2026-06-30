@@ -1,260 +1,3077 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Página em Construção - CALC-IBAMA</title>
-  <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Calculadora de restituição">
+    <title>Calculadora de restituição</title>
+    <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: pagina_construcao_calculadora_restituicao_v_2 -->
+    <!-- Versão: calculadora_restituicao_portal_v_28 -->
+    <style>
+        :root {
+            --cor-primaria: #1f6f54;
+            --cor-primaria-escura: #15513d;
+            --cor-secundaria: #0f4c81;
+            --cor-azul-portal: #1f4e79;
+            --cor-fundo: #f4f7f6;
+            --cor-superficie: #ffffff;
+            --cor-texto: #1f2933;
+            --cor-texto-suave: #5b6770;
+            --cor-borda: #d9e2dd;
+            --cor-cinza-celula: #e0e0e0;
+            --cor-alerta: #fff3cd;
+            --cor-sucesso: #d4edda;
+            --cor-erro: #f8d7da;
+        }
 
-  <style>
-    :root {
-      --cor-primaria: #1f6f54;
-      --cor-primaria-escura: #15513d;
-      --cor-secundaria: #0f4c81;
-      --cor-fundo: #f4f7f6;
-      --cor-superficie: #ffffff;
-      --cor-texto: #1f2933;
-      --cor-texto-suave: #5b6770;
-      --cor-borda: #d9e2dd;
-      --sombra-suave: 0 10px 30px rgba(15, 76, 81, 0.08);
-    }
+        * { box-sizing: border-box; }
 
-    * {
-      box-sizing: border-box;
-    }
+        html,
+        body { height: 100%; }
 
-    html,
-    body {
-      height: 100%;
-    }
+        body {
+            margin: 0;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            color: var(--cor-texto);
+            background:
+                radial-gradient(circle at center, rgba(31, 111, 84, 0.07) 0, rgba(31, 111, 84, 0.03) 28%, transparent 55%),
+                linear-gradient(180deg, #ffffff 0%, var(--cor-fundo) 100%);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 0;
+        }
 
-    body {
-      margin: 0;
-      height: 100vh;
-      font-family: Arial, Helvetica, sans-serif;
-      color: var(--cor-texto);
-      background:
-        radial-gradient(circle at center, rgba(31, 111, 84, 0.07) 0, rgba(31, 111, 84, 0.03) 28%, transparent 55%),
-        linear-gradient(180deg, #ffffff 0%, var(--cor-fundo) 100%);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
+        .cabecalho {
+            flex: 0 0 auto;
+            width: 100%;
+            background: var(--cor-superficie);
+            border-bottom: 1px solid var(--cor-borda);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+            z-index: 10;
+        }
 
-    .cabecalho {
-      flex: 0 0 auto;
-      width: 100%;
-      background: var(--cor-superficie);
-      border-bottom: 1px solid var(--cor-borda);
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-      z-index: 10;
-    }
+        .cabecalho-conteudo {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 0 24px 10px;
+        }
 
-    .cabecalho-conteudo {
-      max-width: 1180px;
-      margin: 0 auto;
-      padding: 0;
-    }
+        .marca-topo {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding: 12px 0;
+            background: var(--cor-azul-portal);
+            box-shadow: 0 0 0 100vmax var(--cor-azul-portal);
+            clip-path: inset(0 -100vmax);
+        }
 
-    .marca-topo {
-      display: flex;
-      align-items: baseline;
-      gap: 10px;
-      margin-bottom: 12px;
-      padding: 12px 24px;
-      background: #1f4e79;
-      box-shadow: 0 0 0 100vmax #1f4e79;
-      clip-path: inset(0 -100vmax);
-      box-sizing: border-box;
-    }
+        .marca-topo strong {
+            font-size: 1.15rem;
+            letter-spacing: 0.08em;
+            color: #ffffff;
+        }
 
-    .marca-topo strong {
-      font-size: 1.15rem;
-      letter-spacing: 0.08em;
-      color: #ffffff;
-    }
+        .marca-topo span {
+            font-size: 0.82rem;
+            color: rgba(255, 255, 255, 0.82);
+        }
 
-    .marca-topo span {
-      font-size: 0.82rem;
-      color: rgba(255, 255, 255, 0.82);
-    }
+        .menu-principal {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
 
-    .menu-principal {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      align-items: center;
-      padding: 0 24px 10px;
-      box-sizing: border-box;
-    }
+        .menu-principal a {
+            display: inline-flex;
+            align-items: center;
+            min-height: 34px;
+            padding: 8px 12px;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            color: var(--cor-texto);
+            font-size: 0.92rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+        }
 
-    .menu-principal a {
-      display: inline-flex;
-      align-items: center;
-      min-height: 34px;
-      padding: 8px 12px;
-      border: 1px solid transparent;
-      border-radius: 8px;
-      color: var(--cor-texto);
-      font-size: 0.92rem;
-      font-weight: 600;
-      text-decoration: none;
-      transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
-    }
+        .menu-principal a:hover,
+        .menu-principal a:focus {
+            background: rgba(31, 111, 84, 0.08);
+            border-color: rgba(31, 111, 84, 0.22);
+            color: var(--cor-primaria-escura);
+            outline: none;
+        }
 
-    .menu-principal a:hover,
-    .menu-principal a:focus {
-      background: rgba(31, 111, 84, 0.08);
-      border-color: rgba(31, 111, 84, 0.22);
-      color: var(--cor-primaria-escura);
-      outline: none;
-    }
+        .menu-principal a.ativo {
+            background: var(--cor-primaria);
+            color: #ffffff;
+            border-color: var(--cor-primaria);
+        }
 
-    .menu-principal a.ativo {
-      background: var(--cor-primaria);
-      color: #ffffff;
-      border-color: var(--cor-primaria);
-    }
+        .conteudo-principal {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 32px 24px;
+            overflow-y: auto;
+        }
 
-    main {
-      flex: 1 1 auto;
-      min-height: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 56px 24px;
-      overflow-y: auto;
-    }
+        .conteudo-principal .container { width: 100%; }
 
-    .painel-construcao {
-      width: min(760px, 100%);
-      min-height: 260px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-    }
+        .rodape {
+            flex: 0 0 auto;
+            width: 100%;
+            padding: 12px 24px;
+            border-top: 1px solid var(--cor-borda);
+            background: rgba(255, 255, 255, 0.88);
+            color: var(--cor-texto-suave);
+            text-align: center;
+            font-size: 0.82rem;
+            font-weight: 600;
+            z-index: 10;
+        }
 
-    .painel-construcao::before {
-      content: "";
-      position: absolute;
-      width: min(420px, 70vw);
-      height: min(420px, 70vw);
-      border-radius: 50%;
-      background: rgba(31, 111, 84, 0.045);
-      filter: blur(1px);
-      z-index: 0;
-    }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
 
-    .aviso-construcao {
-      position: relative;
-      z-index: 1;
-      width: min(620px, 100%);
-      text-align: center;
-      padding: 42px 48px;
-      border: 1px solid rgba(217, 226, 221, 0.85);
-      border-radius: 24px;
-      background: rgba(255, 255, 255, 0.72);
-      box-shadow: var(--sombra-suave);
-      backdrop-filter: blur(4px);
-    }
+        .title {
+            background-color: var(--cor-azul-portal);
+            color: white;
+            text-align: center;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 0;
+        }
 
-    .aviso-construcao h1 {
-      margin: 0;
-      font-size: clamp(2.2rem, 6vw, 4.2rem);
-      line-height: 1.05;
-      letter-spacing: 0.03em;
-      color: var(--cor-primaria-escura);
-      font-weight: 800;
-    }
+        .subtitulo-ferramenta {
+            padding: 10px 18px;
+            background: #f7faf9;
+            border-bottom: 1px solid var(--cor-borda);
+            color: var(--cor-texto-suave);
+            font-size: 13px;
+            line-height: 1.4;
+            text-align: center;
+        }
 
-    .aviso-construcao p {
-      margin: 14px auto 0;
-      font-size: clamp(0.9rem, 2vw, 1.08rem);
-      letter-spacing: 0.05em;
-      color: var(--cor-secundaria);
-      font-weight: 600;
-      text-align: center;
-    }
+        .update-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background-color: var(--cor-azul-portal);
+            color: white;
+            padding: 8px 12px;
+            font-weight: bold;
+            flex-wrap: wrap;
+        }
 
-    .rodape {
-      flex: 0 0 auto;
-      width: 100%;
-      padding: 12px 24px;
-      border-top: 1px solid var(--cor-borda);
-      background: rgba(255, 255, 255, 0.88);
-      color: var(--cor-texto-suave);
-      text-align: center;
-      font-size: 0.82rem;
-      font-weight: 600;
-      z-index: 10;
-    }
+        .update-section input {
+            padding: 4px 8px;
+            border: 1px solid #ccc;
+            background-color: white;
+            width: 100px;
+            text-align: center;
+            font-weight: bold;
+            color: black;
+        }
 
-    @media (max-width: 720px) {
-      .cabecalho-conteudo {
-        padding: 0;
-      }
+        .alert {
+            background-color: var(--cor-alerta);
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 10px;
+            margin: 10px;
+            border-radius: 4px;
+            display: none;
+        }
 
-      .marca-topo {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 2px;
-        padding: 12px 16px;
-      }
+        .success {
+            background-color: var(--cor-sucesso);
+            border-color: #c3e6cb;
+            color: #155724;
+        }
 
-      .menu-principal {
-        gap: 5px;
-        padding: 0 16px 10px;
-      }
+        .error {
+            background-color: var(--cor-erro);
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
 
-      .menu-principal a {
-        font-size: 0.86rem;
-        padding: 7px 10px;
-      }
+        .status-info {
+            background-color: #e2e3e5;
+            border: 1px solid #d6d8db;
+            color: #383d41;
+            padding: 8px;
+            margin: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
 
-      main {
-        padding: 42px 16px;
-      }
+        .form-area {
+            padding: 14px;
+            display: grid;
+            gap: 14px;
+            background: #ffffff;
+        }
 
-      .aviso-construcao {
-        padding: 34px 24px;
-        border-radius: 20px;
-      }
-    }
-  </style>
+        .bloco {
+            border: 1px solid var(--cor-borda);
+            border-radius: 8px;
+            overflow: hidden;
+            background: #ffffff;
+        }
+
+        .bloco-titulo {
+            background: #eef3f1;
+            color: var(--cor-texto);
+            padding: 9px 12px;
+            font-weight: bold;
+            font-size: 14px;
+            border-bottom: 1px solid var(--cor-borda);
+        }
+
+        .bloco-conteudo {
+            padding: 12px;
+        }
+
+        .grade-2,
+        .grade-3,
+        .grade-4 {
+            display: grid;
+            gap: 10px;
+        }
+
+        .grade-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .grade-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .grade-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+        .grade-pedido-linha1 {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .grade-pedido-linha2 {
+            display: grid;
+            grid-template-columns: minmax(340px, 0.9fr) minmax(0, 1.1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .grade-bancarios-linha1 {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .grade-bancarios-linha2 {
+            display: grid;
+            grid-template-columns: 1.25fr 0.55fr 0.85fr 0.7fr 0.95fr 0.95fr;
+            gap: 10px;
+            margin-top: 10px;
+            align-items: stretch;
+        }
+
+        .grade-bancarios-linha2 label.campo {
+            justify-content: flex-end;
+        }
+
+        .grade-bancarios-linha2 input,
+        .grade-bancarios-linha2 select {
+            height: 34px;
+        }
+
+        label.campo {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--cor-texto);
+        }
+
+        label.campo span.observacao {
+            color: var(--cor-texto-suave);
+            font-size: 11px;
+            font-weight: normal;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            border: 1px solid #cfd8d3;
+            background: #ffffff;
+            border-radius: 4px;
+            padding: 7px 8px;
+            text-align: left;
+            font-size: 14px;
+            color: var(--cor-texto);
+            font-weight: normal;
+            font-family: Arial, sans-serif;
+        }
+
+        textarea {
+            min-height: 68px;
+            resize: vertical;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: 2px solid #4CAF50;
+            border-color: transparent;
+        }
+
+        input[readonly] {
+            cursor: default;
+            background: #f0f0f0;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .tabela-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+        }
+
+        .tabela-calculo {
+            min-width: 0;
+            table-layout: fixed;
+        }
+
+        .header-row {
+            background-color: var(--cor-azul-portal);
+            color: white;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .header-row td,
+        .data-row td,
+        .total-row td {
+            padding: 5px 4px;
+            border: 1px solid #ccc;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 11px;
+            line-height: 1.15;
+        }
+
+        .data-row input {
+            border: none;
+            background: transparent;
+            width: 100%;
+            text-align: center;
+            font-size: 11px;
+            color: inherit;
+            font-weight: inherit;
+            padding: 3px 1px;
+        }
+
+        .data-row input:focus {
+            outline: 2px solid #4CAF50;
+            background: #ffffff;
+        }
+
+        .white-cell { background-color: white; }
+        .gray-cell { background-color: var(--cor-cinza-celula); }
+        .green-footer {
+            background-color: var(--cor-cinza-celula);
+            color: black;
+            font-weight: bold;
+            text-align: center;
+            border: 1px solid #ccc;
+        }
+
+        .linha-acoes {
+            white-space: nowrap;
+            width: 30px;
+        }
+
+        .btn-linha {
+            background: #f2f2f2;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 4px 7px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-excluir-linha {
+            width: 22px;
+            height: 22px;
+            min-width: 22px;
+            padding: 0;
+            border-radius: 4px;
+            border: 1px solid #9f1d1d;
+            background: #c62828;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 15px;
+            line-height: 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-excluir-linha:hover {
+            background: #a91f1f;
+        }
+
+        .buttons {
+            text-align: center;
+            padding: 15px;
+            background-color: white;
+            border-top: 1px solid var(--cor-borda);
+        }
+
+        .btn {
+            background-color: #e0e0e0;
+            color: black;
+            border: 1px solid #ccc;
+            padding: 8px 16px;
+            margin: 4px 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .btn:hover { background-color: #d0d0d0; }
+
+        .btn-primario {
+            background: var(--cor-primaria);
+            color: #ffffff;
+            border-color: var(--cor-primaria);
+        }
+
+        .btn-primario:hover { background: var(--cor-primaria-escura); }
+
+        .painel-resumo {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .resumo-card {
+            border: 1px solid var(--cor-borda);
+            border-radius: 6px;
+            padding: 9px;
+            background: #f7faf9;
+            text-align: center;
+        }
+
+        .resumo-card strong {
+            display: block;
+            font-size: 11px;
+            color: var(--cor-texto-suave);
+            margin-bottom: 5px;
+        }
+
+        .resumo-card span {
+            font-size: 15px;
+            font-weight: bold;
+            color: var(--cor-texto);
+        }
+
+        .repasse-status {
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--cor-borda);
+            background: #f7faf9;
+            font-size: 13px;
+            line-height: 1.35;
+        }
+
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+
+        .bloco-titulo {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .bloco-titulo::after {
+            content: "▾";
+            font-size: 12px;
+            color: var(--cor-texto-suave);
+        }
+
+        .bloco.recolhido .bloco-titulo::after {
+            content: "▸";
+        }
+
+        .bloco.recolhido .bloco-conteudo {
+            display: none;
+        }
+
+        .trimestre-ano {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .trimestre-ano select,
+        .trimestre-ano input {
+            border: none;
+            background: transparent;
+            text-align: center;
+            padding: 3px 1px;
+            font-size: 11px;
+        }
+
+        .trimestre-ano select { flex: 0 0 34px; }
+        .trimestre-ano input { flex: 1 1 auto; min-width: 26px; }
+
+        .repasse-toggle-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .percentual-repasse-linha {
+            max-width: 40px;
+            background: #ffffff !important;
+        }
+
+        .valor-repasse.inativo {
+            opacity: 0.55;
+        }
+
+        .tabela-wrapper {
+            overflow-x: visible;
+        }
+
+        .tabela-calculo td,
+        .tabela-calculo input,
+        .tabela-calculo select {
+            min-width: 0;
+        }
+
+        .tabela-calculo .header-row td,
+        .tabela-calculo .data-row td,
+        .tabela-calculo .total-row td {
+            padding: 4px 2px;
+            font-size: 10.5px;
+        }
+
+        .tabela-calculo .data-row input,
+        .tabela-calculo .trimestre-ano select,
+        .tabela-calculo .trimestre-ano input {
+            font-size: 10.5px;
+        }
+
+        .tabela-calculo td:nth-child(1) { width: 8.5% !important; }
+        .tabela-calculo td:nth-child(2) { width: 8.0% !important; }
+        .tabela-calculo td:nth-child(3) { width: 8.5% !important; }
+        .tabela-calculo td:nth-child(4) { width: 8.7% !important; }
+        .tabela-calculo td:nth-child(5) { width: 9.0% !important; }
+        .tabela-calculo td:nth-child(6) { width: 9.8% !important; }
+        .tabela-calculo td:nth-child(7) { width: 9.8% !important; }
+        .tabela-calculo td:nth-child(8) { width: 7.0% !important; }
+        .tabela-calculo td:nth-child(9) { width: 8.7% !important; }
+        .tabela-calculo td:nth-child(10) { width: 9.8% !important; }
+        .tabela-calculo td:nth-child(11) { width: 4.2% !important; }
+
+        .campo-oculto {
+            display: none !important;
+        }
+
+        .trimestre-ano select:focus,
+        .trimestre-ano input:focus {
+            outline: 2px solid #4CAF50;
+            background: #ffffff;
+        }
+
+        .botoes-demonstrativo {
+            text-align: center;
+            padding: 12px 0 2px;
+        }
+
+
+        .upload-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .upload-status {
+            width: 180px;
+            min-height: 34px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            background: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #666;
+            user-select: none;
+            box-sizing: border-box;
+            font-size: 13px;
+            letter-spacing: 0.03em;
+        }
+
+        .upload-status.ok {
+            background: #1f7a1f;
+            border-color: #1f7a1f;
+            color: white;
+        }
+
+        .janela-opcoes-texto {
+            margin: 0 0 14px 0;
+            font-weight: bold;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        .janela-opcoes-botoes {
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+        }
+
+        .janela-opcoes-botoes .btn {
+            width: 100%;
+            margin-left: 0;
+            margin-right: 0;
+            white-space: normal;
+        }
+
+        .janela-data-prazo {
+            display: grid;
+            gap: 8px;
+        }
+
+        .janela-data-prazo label {
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .janela-data-prazo input {
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            padding: 7px 8px;
+            font-size: 14px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+
+        @media (max-width: 900px) {
+            .grade-2,
+            .grade-3,
+            .grade-4,
+            .grade-pedido-linha1,
+            .grade-pedido-linha2,
+            .grade-bancarios-linha1,
+            .grade-bancarios-linha2,
+            .painel-resumo { grid-template-columns: 1fr; }
+        }
+
+
+        .pdf-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .pdf-modal-overlay.aberto {
+            display: flex;
+        }
+
+        .pdf-modal {
+            width: 100%;
+            max-width: 460px;
+            background: #ffffff;
+            border: 1px solid #c9d2cc;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        .pdf-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #1f4e79;
+            color: #ffffff;
+            padding: 10px 14px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .pdf-modal-close {
+            border: none;
+            background: transparent;
+            color: #ffffff;
+            font-size: 20px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0 2px;
+            font-weight: bold;
+        }
+
+        .pdf-modal-body {
+            padding: 16px 18px 14px;
+            text-align: left;
+        }
+
+        .pdf-modal-instrucao {
+            margin: 0 0 12px 0;
+            font-weight: bold;
+            font-size: 14px;
+            color: var(--cor-texto);
+        }
+
+        .pdf-opcoes-grupos {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .pdf-opcoes-grupos label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--cor-texto);
+            font-weight: 600;
+        }
+
+        .pdf-opcoes-grupos input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .pdf-modal-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            padding-top: 4px;
+        }
+
+        @media (max-width: 720px) {
+            .cabecalho-conteudo { padding: 0 16px 10px; }
+            .marca-topo {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 2px;
+            }
+            .menu-principal { gap: 5px; }
+            .menu-principal a {
+                font-size: 0.86rem;
+                padding: 7px 10px;
+            }
+            .conteudo-principal { padding: 24px 14px; }
+        }
+    </style>
 </head>
 <body>
-  <header class="cabecalho">
-    <div class="cabecalho-conteudo">
-      <div class="marca-topo">
-        <strong>CALC-IBAMA</strong>
-        <span>Ferramentas de apoio administrativo</span>
-      </div>
+    <header class="cabecalho">
+        <div class="cabecalho-conteudo">
+            <div class="marca-topo">
+                <strong>CALC-IBAMA</strong>
+                <span>Ferramentas de apoio administrativo</span>
+            </div>
 
-      <nav class="menu-principal" aria-label="Menu principal">
-        <a href="../">Início</a>
-        <a href="../simulador-amortizacao/">Simulador de amortização</a>
-        <a href="../simulador-consolidacao-debito/">Simulador de consolidação</a>
-        <a href="../calculadora-selic/">Calculadora Selic</a>
-        <a class="ativo" href="../calculadora-restituicao/">Calculadora de restituição</a>
-        <a href="../manuais/">Manuais</a>
-      </nav>
+            <nav class="menu-principal" aria-label="Menu principal">
+                <a href="../">Início</a>
+                <a href="../simulador-amortizacao/">Simulador de amortização</a>
+                <a href="../simulador-consolidacao-debito/">Simulador de consolidação</a>
+                <a href="../calculadora-selic/">Calculadora Selic</a>
+                <a class="ativo" href="./">Calculadora de restituição</a>
+                <a href="../manuais/">Manuais</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="conteudo-principal">
+        <div class="container">
+            <div class="title">Análise de Restituição</div>
+
+            <div class="update-section">
+                Mês de atualização/restituição (mm/aaaa):
+                <input type="text" id="mesReferencia" value="" maxlength="7" onblur="formatarDataMes(this); atualizarTodasLinhas()">
+            </div>
+
+            <div id="alertas" class="alert"></div>
+            <div id="statusInfo" class="status-info">🔄 Carregando base automática da Selic...</div>
+
+            <div class="form-area">
+                <section class="bloco">
+                    <div class="bloco-titulo">Identificação</div>
+                    <div class="bloco-conteudo grade-3">
+                        <label class="campo">Processo SEI
+                            <input type="text" id="processoSei" placeholder="00000.000000/0000-00" inputmode="numeric" oninput="aplicarMascaraProcessoSEI(this)">
+                        </label>
+                        <label class="campo">Interessado
+                            <input type="text" id="interessado" placeholder="Nome/Razão social" oninput="sincronizarDadosTitularPadrao()">
+                        </label>
+                        <label class="campo">CPF/CNPJ
+                            <input type="text" id="cpfCnpj" placeholder="CPF ou CNPJ" maxlength="18" inputmode="numeric" oninput="formatarCpfCnpj(this); sincronizarDadosTitularPadrao()">
+                        </label>
+                    </div>
+                </section>
+
+                <section class="bloco">
+                    <div class="bloco-titulo">Análise de prazo</div>
+                    <div class="bloco-conteudo">
+                        <div class="grade-pedido-linha1">
+                            <label class="campo">Requerimento de restituição (SEI)
+                                <input type="text" id="seiRequerimento" class="campo-sei" value="SEI ">
+                            </label>
+                            <label class="campo">Data-base para análise do prazo/ data do pedido
+                                <input type="text" id="dataPedido" maxlength="10" placeholder="DD/MM/AAAA" inputmode="numeric" oninput="aplicarMascaraDataCompletaTempoReal(this)" onblur="formatarDataCompleta(this); atualizarAnalisePrazo()">
+                            </label>
+                            <label class="campo">Comprovação de pagamento (SEI)
+                                <input type="text" id="seiComprovacao" class="campo-sei" value="SEI ">
+                            </label>
+                        </div>
+                        <div class="grade-pedido-linha2">
+                            <label class="campo">Inclui pagamentos afetados pelo decurso do prazo?
+                                <input type="text" id="prazoCincoAnos" readonly value="A verificar">
+                            </label>
+                            <label class="campo">Nº dos Pagamentos afetados pelo decurso do prazo
+                                <input type="text" id="periodosPrescritos" readonly placeholder="Aguardando dados">
+                            </label>
+                        </div>
+                        <label class="campo campo-oculto">Indicação automática
+                            <input type="text" id="indicacaoPrazo" readonly value="Aguardando dados">
+                        </label>
+                    </div>
+                </section>
+
+                <section class="bloco">
+                    <div class="bloco-titulo">Representação e motivo da restituição</div>
+                    <div class="bloco-conteudo">
+                        <div class="grade-4">
+                            <label class="campo">Representação
+                                <select id="tipoRepresentacao">
+                                    <option value="Requerente próprio">Requerente próprio</option>
+                                    <option value="Representante legal">Representante legal</option>
+                                    <option value="Procurador">Procurador</option>
+                                    <option value="Não informado">Não informado</option>
+                                </select>
+                            </label>
+                            <label class="campo">Documento da representação (SEI)
+                                <input type="text" id="seiRepresentacao" class="campo-sei" value="SEI ">
+                            </label>
+                            <label class="campo">Motivo da restituição
+                                <select id="motivoRestituicao" oninput="atualizarDescricaoMotivo(); atualizarConclusao()">
+                                    <option value="Pagamento indevido">Pagamento indevido</option>
+                                    <option value="Pagamento a maior que o devido">Pagamento a maior que o devido</option>
+                                    <option value="Pagamento em duplicidade">Pagamento em duplicidade</option>
+                                    <option value="Decisão Judicial">Decisão Judicial</option>
+                                    <option value="Outro">Outro</option>
+                                </select>
+                            </label>
+                            <label class="campo">Decisão/análise relacionada (SEI)
+                                <input type="text" id="seiDecisao" class="campo-sei" value="SEI ">
+                            </label>
+                        </div>
+                        <div style="margin-top: 10px;">
+                            <label class="campo">Descrição resumida do motivo
+                                <textarea id="descricaoMotivo" placeholder="Ativo apenas quando o motivo selecionado for Outro." disabled oninput="atualizarConclusao()"></textarea>
+                            </label>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="bloco">
+                    <div class="bloco-titulo">Demonstrativo de cálculo</div>
+                    <div class="bloco-conteudo">
+                        <div class="upload-row">
+                            <button type="button" class="btn" onclick="selecionarRelacaoPagamentosPDF()">Carregar relação dos pagamentos efetuados (PDF)</button>
+                            <div id="statusRelacaoPagamentos" class="upload-status" aria-live="polite"></div>
+                            <input type="file" id="inputRelacaoPagamentosPDF" accept="application/pdf,.pdf" style="display:none" onchange="arquivoRelacaoPagamentosSelecionado(this)">
+                        </div>
+                        <div class="repasse-status" id="statusRepasse" style="margin-bottom: 10px;">Repasse estadual: aguardando preenchimento da tabela.</div>
+
+                        <div class="tabela-wrapper">
+                            <table id="tabelaRestituicao" class="tabela-calculo">
+                                <tbody>
+                                    <tr class="header-row">
+                                        <td style="width: 8.5%;">Nº do débito</td>
+                                        <td style="width: 8.5%;">Nº pagamento</td>
+                                        <td style="width: 8.5%;">Data do pagamento</td>
+                                        <td style="width: 8.7%;">Valor pago (R$)</td>
+                                        <td style="width: 9.5%;">Percentual de repasse ao estado (%)</td>
+                                        <td style="width: 9.8%;">Valor repassado ao estado (R$)</td>
+                                        <td style="width: 9.8%;">Valor que ficou no Ibama (R$)</td>
+                                        <td style="width: 7%;">Selic (%)</td>
+                                        <td style="width: 8.7%;">Valor da Selic (R$)</td>
+                                        <td style="width: 9.8%;">Valor a restituir (R$)</td>
+                                        <td style="width: 4.2%;">Ação</td>
+                                    </tr>
+
+                                    <tr class="data-row" data-linha="0">
+                                        <td class="gray-cell"><input type="text" class="numero-debito" placeholder="0000000" readonly></td>
+                                        <td class="gray-cell"><input type="text" class="numero-pagamento" placeholder="0000000" readonly oninput="atualizarAnalisePrazo(); atualizarRepasseEstado()"></td>
+                                        <td class="gray-cell"><input type="text" class="data-pagamento" placeholder="DD/MM/AAAA" maxlength="10" inputmode="numeric" readonly oninput="aplicarMascaraDataCompletaTempoReal(this)" onblur="formatarDataCompleta(this); calcularLinha(0); atualizarAnalisePrazo()"></td>
+                                        <td class="gray-cell"><input type="text" class="valor-pago" placeholder="0,00" inputmode="numeric" readonly oninput="aplicarMascaraMoedaTempoReal(this); calcularLinha(0)"></td>
+                                        <td class="white-cell">
+                                            <div class="repasse-toggle-wrap">
+                                                <input type="text" class="percentual-repasse-linha" placeholder="00%" value="00%" inputmode="numeric" onkeydown="tratarTeclaPercentualRepasse(event, this)" oninput="formatarPercentualRepasseLinha(this); calcularLinha(0)">
+                                            </div>
+                                        </td>
+                                        <td class="gray-cell"><input type="text" class="valor-repasse inativo" readonly></td>
+                                        <td class="gray-cell"><input type="text" class="valor-ibama" readonly></td>
+                                        <td class="gray-cell"><input type="text" class="taxa-selic" readonly></td>
+                                        <td class="gray-cell"><input type="text" class="valor-selic" readonly></td>
+                                        <td class="gray-cell"><input type="text" class="valor-restituir" readonly></td>
+                                        <td class="gray-cell linha-acoes"><button type="button" class="btn-linha btn-excluir-linha" tabindex="-1" onclick="excluirOuLimparLinha(0)" title="Excluir linha">×</button></td>
+                                    </tr>
+
+                                    <tr class="data-row total-row">
+                                        <td class="green-footer">TOTAL</td>
+                                        <td class="green-footer"></td>
+                                        <td class="green-footer"></td>
+                                        <td class="green-footer"><input type="text" id="totalPago" readonly></td>
+                                        <td class="green-footer"></td>
+                                        <td class="green-footer"><input type="text" id="totalRepasse" readonly></td>
+                                        <td class="green-footer"><input type="text" id="totalIbama" readonly></td>
+                                        <td class="green-footer"></td>
+                                        <td class="green-footer"><input type="text" id="totalSelic" readonly></td>
+                                        <td class="green-footer"><input type="text" id="totalRestituir" readonly></td>
+                                        <td class="green-footer"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="painel-resumo">
+                            <div class="resumo-card"><strong>Total pago</strong><span id="resumoTotalPago">0,00</span></div>
+                            <div class="resumo-card"><strong>Total repassado ao estado</strong><span id="resumoTotalRepasse">0,00</span></div>
+                            <div class="resumo-card"><strong>Total que ficou no Ibama</strong><span id="resumoTotalIbama">0,00</span></div>
+                            <div class="resumo-card"><strong>Total Selic</strong><span id="resumoTotalSelic">0,00</span></div>
+                            <div class="resumo-card"><strong>Total a restituir</strong><span id="resumoTotalRestituir">0,00</span></div>
+                        </div>
+
+                        <div class="botoes-demonstrativo">
+                            <button class="btn" onclick="adicionarLinha()">+ Adicionar Linha</button>
+                            <button class="btn" onclick="removerLinha()">- Remover Linha</button>
+                            <button class="btn" onclick="buscarDadosOnline()">🔄 Atualizar Base</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="bloco">
+                    <div class="bloco-titulo">Dados bancários informados</div>
+                    <div class="bloco-conteudo">
+                        <div class="grade-bancarios-linha1">
+                            <label class="campo">Dados bancários (SEI)
+                                <input type="text" id="seiDadosBancarios" class="campo-sei" value="SEI ">
+                            </label>
+                            <label class="campo">Titular da conta
+                                <input type="text" id="titularConta" placeholder="Nome/Razão social">
+                            </label>
+                            <label class="campo">CPF/CNPJ do titular
+                                <input type="text" id="cpfCnpjTitular" placeholder="CPF ou CNPJ" maxlength="18" inputmode="numeric" oninput="formatarCpfCnpj(this)">
+                            </label>
+                        </div>
+                        <div class="grade-bancarios-linha2">
+                            <label class="campo">Banco
+                                <input type="text" id="banco" placeholder="Ex.: Banco do Brasil">
+                            </label>
+                            <label class="campo">Código do banco
+                                <input type="text" id="codigoBanco" placeholder="Ex.: 001" inputmode="numeric">
+                            </label>
+                            <label class="campo">Agência
+                                <input type="text" id="agencia" placeholder="Ex.: 1234">
+                            </label>
+                            <label class="campo">Dígito/código da agência
+                                <input type="text" id="digitoAgencia" placeholder="Opcional">
+                            </label>
+                            <label class="campo">Conta
+                                <input type="text" id="conta" placeholder="Número da conta">
+                            </label>
+                            <label class="campo">Tipo de conta
+                                <select id="tipoConta">
+                                    <option value="Conta corrente">Conta corrente</option>
+                                    <option value="Conta poupança">Conta poupança</option>
+                                    <option value="Conta pagamento">Conta pagamento</option>
+                                    <option value="Não informado">Não informado</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="bloco">
+                    <div class="bloco-titulo">Conclusão da análise</div>
+                    <div class="bloco-conteudo">
+                        <label class="campo">Conclusão gerada/editável
+                            <textarea id="conclusaoAnalise"></textarea>
+                        </label>
+                    </div>
+                </section>
+            </div>
+
+            <div class="buttons">
+                <button class="btn btn-primario" onclick="abrirModalSelecionarPDF()">Gerar PDF</button>
+            </div>
+        </div>
+    </main>
+
+
+    <div id="modalOpcaoRelacaoPagamentos" class="pdf-modal-overlay" aria-hidden="true">
+        <div class="pdf-modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalOpcaoRelacaoPagamentos">
+            <div class="pdf-modal-header">
+                <span id="tituloModalOpcaoRelacaoPagamentos">Relação de pagamentos</span>
+                <button type="button" class="pdf-modal-close" onclick="cancelarModalOpcaoRelacaoPagamentos()" aria-label="Fechar">×</button>
+            </div>
+            <div class="pdf-modal-body">
+                <p class="janela-opcoes-texto">Selecione uma opção</p>
+                <div class="janela-opcoes-botoes">
+                    <button type="button" class="btn btn-primario" onclick="confirmarOpcaoRelacaoPagamentos('prazo')">Carregar pagamentos dentro do prazo para restituição</button>
+                    <button type="button" class="btn" onclick="confirmarOpcaoRelacaoPagamentos('todos')">Carregar todos os pagamentos</button>
+                    <button type="button" class="btn" onclick="cancelarModalOpcaoRelacaoPagamentos()">Cancelar</button>
+                </div>
+            </div>
+        </div>
     </div>
-  </header>
 
-  <main>
-    <section class="painel-construcao" aria-label="Página em construção">
-      <div class="aviso-construcao">
-        <h1>Página em Construção!</h1>
-        <p>Esta ferramenta será disponibilizada em breve.</p>
-      </div>
-    </section>
-  </main>
+    <div id="modalDataBasePrazo" class="pdf-modal-overlay" aria-hidden="true">
+        <div class="pdf-modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalDataBasePrazo">
+            <div class="pdf-modal-header">
+                <span id="tituloModalDataBasePrazo">Data-base para análise do prazo</span>
+                <button type="button" class="pdf-modal-close" onclick="cancelarModalDataBasePrazo()" aria-label="Fechar">×</button>
+            </div>
+            <div class="pdf-modal-body">
+                <div class="janela-data-prazo">
+                    <label for="inputModalDataBasePrazo">Informe a data-base para análise do prazo/ data do pedido:</label>
+                    <input type="text" id="inputModalDataBasePrazo" maxlength="10" placeholder="DD/MM/AAAA" inputmode="numeric" oninput="aplicarMascaraDataCompletaTempoReal(this)" onkeydown="if(event.key === 'Enter'){ event.preventDefault(); event.stopPropagation(); confirmarModalDataBasePrazo(); return false; }">
+                    <div class="pdf-modal-actions">
+                        <button type="button" class="btn btn-primario" onclick="confirmarModalDataBasePrazo()">Confirmar</button>
+                        <button type="button" class="btn" onclick="cancelarModalDataBasePrazo()">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-  <footer class="rodape">
-    CALC-IBAMA · SECAT/CCOB
-  </footer>
+    <div id="modalSelecionarPDF" class="pdf-modal-overlay" aria-hidden="true">
+        <div class="pdf-modal" role="dialog" aria-modal="true" aria-labelledby="tituloModalSelecionarPDF">
+            <div class="pdf-modal-header">
+                <span id="tituloModalSelecionarPDF">Gerar PDF</span>
+                <button type="button" class="pdf-modal-close" onclick="fecharModalSelecionarPDF()" aria-label="Fechar">×</button>
+            </div>
+            <div class="pdf-modal-body">
+                <p class="pdf-modal-instrucao">Selecione os grupos que deseja incluir no PDF:</p>
+                <div class="pdf-opcoes-grupos">
+                    <label><input type="checkbox" class="pdf-grupo-check" value="identificacao" checked> Identificação</label>
+                    <label><input type="checkbox" class="pdf-grupo-check" value="dadosPedido" checked> Análise de prazo</label>
+                    <label><input type="checkbox" class="pdf-grupo-check" value="representacaoMotivo" checked> Representação e motivo da restituição</label>
+                    <label><input type="checkbox" class="pdf-grupo-check" value="demonstrativo" checked> Demonstrativo de cálculo</label>
+                    <label><input type="checkbox" class="pdf-grupo-check" value="repasseEstado" checked> Repasse ao estado</label>
+                    <label><input type="checkbox" class="pdf-grupo-check" value="dadosBancarios" checked> Dados bancários informados</label>
+                    <label><input type="checkbox" class="pdf-grupo-check" value="conclusao" checked> Conclusão da análise</label>
+                </div>
+                <div class="pdf-modal-actions">
+                    <button type="button" class="btn" onclick="marcarTodosGruposPDF()">Marcar todos</button>
+                    <button type="button" class="btn" onclick="desmarcarTodosGruposPDF()">Desmarcar todos</button>
+                    <button type="button" class="btn btn-primario" id="btnGerarPDFSelecionado">Gerar PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="rodape">CALC-IBAMA · SECAT/CCOB</footer>
+
+    <script>
+        let contadorLinhas = 1;
+        let dadosPlanilha = {};
+        let statusConexao = 'carregando';
+        let metadadosSelic = { ultimaCompetencia: '', ultimaTaxa: null, competenciaProvisoria: '', taxaProvisoria: null, fonte: '' };
+        const PDFJS_LOCAL_URL = '../libs/pdfjs/pdf.min.js';
+        const PDFJS_WORKER_LOCAL_URL = '../libs/pdfjs/pdf.worker.min.js';
+        const BRASAO_REPUBLICA_PDF_URL = '../assets/img/pdf/brasao_republica.png';
+        const LOGO_IBAMA_PDF_URL = '../assets/img/pdf/logo_ibama.png';
+        let promessaPDFJS = null;
+        let imagensCabecalhoPDFCache = null;
+        let arquivoRelacaoPagamentosPendente = null;
+        let resolverOpcaoRelacaoPagamentos = null;
+        let resolverDataBasePrazo = null;
+
+        function obterMesVigente() {
+            const agora = new Date();
+            const mes = (agora.getMonth() + 1).toString().padStart(2, '0');
+            const ano = agora.getFullYear();
+            return `${mes}/${ano}`;
+        }
+
+        function definirMesVigente() {
+            const campoMesReferencia = document.getElementById('mesReferencia');
+            if (campoMesReferencia) campoMesReferencia.value = obterMesVigente();
+        }
+
+        function atualizarStatus(mensagem, sucesso = true) {
+            const statusDiv = document.getElementById('statusInfo');
+            if (statusDiv) {
+                statusDiv.innerHTML = mensagem;
+                statusDiv.style.color = sucesso ? '#155724' : '#721c24';
+            }
+        }
+
+        function mostrarAlerta(mensagem, tipo = 'info') {
+            const alertaDiv = document.getElementById('alertas');
+            if (alertaDiv) {
+                alertaDiv.innerHTML = mensagem;
+                alertaDiv.className = 'alert ' + tipo;
+                alertaDiv.style.display = 'block';
+                setTimeout(() => { alertaDiv.style.display = 'none'; }, 5000);
+            }
+        }
+
+        function numeroParaMoeda(numero) {
+            if (isNaN(numero)) return '0,00';
+            return numero.toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+        }
+
+        function moedaParaNumero(valorMoeda) {
+            if (!valorMoeda) return 0;
+            const limpo = String(valorMoeda).replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '');
+            const numero = parseFloat(limpo);
+            return isNaN(numero) ? 0 : numero;
+        }
+
+        function formatarMoeda(input) {
+            const somenteDigitos = (input.value || '').replace(/\D/g, '');
+            if (!somenteDigitos) {
+                input.value = '';
+                return;
+            }
+            const valorNumerico = parseInt(somenteDigitos, 10) / 100;
+            input.value = numeroParaMoeda(valorNumerico);
+        }
+
+        function aplicarMascaraMoedaTempoReal(input) {
+            formatarMoeda(input);
+        }
+
+
+        function aplicarMascaraProcessoSEI(input) {
+            const digitos = (input.value || '').replace(/\D/g, '').slice(0, 17);
+            let valor = digitos;
+            if (digitos.length > 15) {
+                valor = `${digitos.slice(0, 5)}.${digitos.slice(5, 11)}/${digitos.slice(11, 15)}-${digitos.slice(15, 17)}`;
+            } else if (digitos.length > 11) {
+                valor = `${digitos.slice(0, 5)}.${digitos.slice(5, 11)}/${digitos.slice(11, 15)}`;
+            } else if (digitos.length > 5) {
+                valor = `${digitos.slice(0, 5)}.${digitos.slice(5, 11)}`;
+            }
+            input.value = valor;
+            try {
+                const len = input.value.length;
+                input.setSelectionRange(len, len);
+            } catch (_) {}
+        }
+
+        function formatarCpfCnpj(input) {
+            const digitos = (input.value || '').replace(/\D/g, '').slice(0, 14);
+            if (digitos.length <= 11) {
+                let valor = digitos;
+                if (digitos.length > 3) valor = digitos.slice(0, 3) + '.' + digitos.slice(3);
+                if (digitos.length > 6) valor = digitos.slice(0, 3) + '.' + digitos.slice(3, 6) + '.' + digitos.slice(6);
+                if (digitos.length > 9) valor = digitos.slice(0, 3) + '.' + digitos.slice(3, 6) + '.' + digitos.slice(6, 9) + '-' + digitos.slice(9);
+                input.value = valor;
+            } else {
+                input.value = digitos.slice(0, 2) + '.' + digitos.slice(2, 5) + '.' + digitos.slice(5, 8) + '/' + digitos.slice(8, 12) + '-' + digitos.slice(12);
+            }
+        }
+
+        function aplicarMascaraDataCompletaTempoReal(input) {
+            let valor = (input.value || '').replace(/\D/g, '').slice(0, 8);
+            if (valor.length > 4) valor = valor.slice(0, 2) + '/' + valor.slice(2, 4) + '/' + valor.slice(4);
+            else if (valor.length > 2) valor = valor.slice(0, 2) + '/' + valor.slice(2);
+            input.value = valor;
+        }
+
+        function formatarAno(input) {
+            input.value = (input.value || '').replace(/\D/g, '').slice(0, 4);
+        }
+
+        function formatarPercentualTempoReal(input) {
+            formatarPercentualRepasseLinha(input);
+        }
+
+        function formatarPercentualRepasseLinha(input) {
+            let digitos = (input.value || '').replace(/\D/g, '').slice(0, 3);
+            if (!digitos) {
+                input.value = '00%';
+                return;
+            }
+            let numero = parseInt(digitos, 10);
+            if (isNaN(numero)) numero = 0;
+            if (numero > 100) {
+                numero = 100;
+                mostrarAlerta('Percentual de repasse limitado a 100%.', 'error');
+            }
+            input.value = (numero < 100 ? String(numero).padStart(2, '0') : '100') + '%';
+            try {
+                const len = input.value.length;
+                input.setSelectionRange(len, len);
+            } catch (_) {}
+        }
+
+        function tratarBackspacePercentualRepasse(event, input) {
+            if (event.key !== 'Backspace') return;
+            event.preventDefault();
+            let digitos = (input.value || '').replace(/\D/g, '');
+            digitos = digitos.slice(0, -1);
+            if (!digitos) {
+                input.value = '00%';
+            } else {
+                input.value = digitos;
+                formatarPercentualRepasseLinha(input);
+            }
+            const linha = input.closest('[data-linha]');
+            if (linha) calcularLinha(parseInt(linha.getAttribute('data-linha'), 10));
+        }
+
+        function focarPercentualRepasseAdjacente(input, direcao = 1) {
+            const percentuais = Array.from(document.querySelectorAll('#tabelaRestituicao .data-row[data-linha] .percentual-repasse-linha'))
+                .filter(el => el.offsetParent !== null && !el.disabled);
+            const indiceAtual = percentuais.indexOf(input);
+            if (indiceAtual === -1) return false;
+            const destino = percentuais[indiceAtual + direcao];
+            if (!destino) return false;
+            destino.focus();
+            if (typeof destino.select === 'function') destino.select();
+            return true;
+        }
+
+        function tratarTeclaPercentualRepasse(event, input) {
+            if (event.key === 'Backspace') {
+                tratarBackspacePercentualRepasse(event, input);
+                return;
+            }
+
+            if (event.key === 'Tab') {
+                const direcao = event.shiftKey ? -1 : 1;
+                if (focarPercentualRepasseAdjacente(input, direcao)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                return;
+            }
+
+            if (event.key === 'Enter') {
+                if (focarPercentualRepasseAdjacente(input, 1)) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+            }
+        }
+
+        function ajustarTabulacaoTabelaDemonstrativo() {
+            document.querySelectorAll('#tabelaRestituicao input[readonly], #tabelaRestituicao button.btn-excluir-linha').forEach(el => {
+                el.tabIndex = -1;
+            });
+            document.querySelectorAll('#tabelaRestituicao .percentual-repasse-linha').forEach(el => {
+                el.tabIndex = 0;
+            });
+        }
+
+        function selecionarPercentualRepasse(input) {
+            if (!input || !input.classList || !input.classList.contains('percentual-repasse-linha')) return;
+            setTimeout(() => {
+                try { input.select(); } catch (_) {}
+            }, 0);
+        }
+
+        function formatarPercentualCampo(input) {
+            if (!input) return;
+            formatarPercentualRepasseLinha(input);
+        }
+
+        function obterPercentualRepasseLinha(linha) {
+            const campo = linha.querySelector('.percentual-repasse-linha');
+            const numero = parseInt(String(campo?.value || '').replace(/\D/g, ''), 10);
+            if (isNaN(numero) || numero < 0) return 0;
+            return Math.min(numero, 100);
+        }
+
+        function alternarRepasseLinha() {
+            atualizarRepasseEstado();
+        }
+
+        function obterNumeroPagamento(linha) {
+            return (linha.querySelector('.numero-pagamento')?.value || '').trim();
+        }
+
+        function garantirPrefixoSEI(input) {
+            let valor = input.value || '';
+            if (!valor.startsWith('SEI ')) {
+                valor = valor.replace(/^SEI\s*/i, '').replace(/^\s+/, '');
+                input.value = 'SEI ' + valor;
+            }
+            if (input.selectionStart < 4) input.setSelectionRange(4, 4);
+        }
+
+        function inicializarCamposSEI() {
+            document.querySelectorAll('.campo-sei').forEach(input => {
+                if (!input.value || !input.value.startsWith('SEI ')) input.value = 'SEI ';
+                input.addEventListener('focus', () => garantirPrefixoSEI(input));
+                input.addEventListener('input', () => garantirPrefixoSEI(input));
+                input.addEventListener('keydown', event => {
+                    const inicio = input.selectionStart;
+                    const fim = input.selectionEnd;
+                    if ((event.key === 'Backspace' && inicio <= 4 && fim <= 4) || (event.key === 'Delete' && inicio < 4)) {
+                        event.preventDefault();
+                    }
+                });
+                input.addEventListener('click', () => {
+                    if (input.selectionStart < 4) input.setSelectionRange(4, 4);
+                });
+            });
+        }
+
+        let titularContaEditadoManualmente = false;
+        let cpfCnpjTitularEditadoManualmente = false;
+
+        function sincronizarDadosTitularPadrao() {
+            const interessado = document.getElementById('interessado')?.value || '';
+            const cpfCnpj = document.getElementById('cpfCnpj')?.value || '';
+            const titular = document.getElementById('titularConta');
+            const cpfTitular = document.getElementById('cpfCnpjTitular');
+
+            if (titular && !titularContaEditadoManualmente) titular.value = interessado;
+            if (cpfTitular && !cpfCnpjTitularEditadoManualmente) cpfTitular.value = cpfCnpj;
+        }
+
+        function alternarBloco(titulo) {
+            const bloco = titulo.closest('.bloco');
+            if (bloco) bloco.classList.toggle('recolhido');
+        }
+
+        function atualizarDescricaoMotivo() {
+            const motivo = document.getElementById('motivoRestituicao')?.value || '';
+            const campo = document.getElementById('descricaoMotivo');
+            if (!campo) return;
+            const ativo = motivo === 'Outro';
+            campo.disabled = !ativo;
+            if (!ativo) campo.value = '';
+            campo.placeholder = ativo ? 'Descreva resumidamente o motivo da restituição.' : 'Ativo apenas quando o motivo selecionado for Outro.';
+        }
+
+        function formatarDataMes(input) {
+            let valor = input.value.replace(/\D/g, '');
+            if (valor.length >= 6) {
+                valor = valor.substring(0, 2) + '/' + valor.substring(2, 6);
+            } else if (valor.length === 5) {
+                valor = '0' + valor.substring(0, 1) + '/' + valor.substring(1, 5);
+            }
+
+            const regex = /^(0[1-9]|1[0-2])\/\d{4}$/;
+            if (regex.test(valor)) {
+                const [mes, ano] = valor.split('/').map(Number);
+                if (ano >= 1995 && ano <= 2030) input.value = valor;
+                else {
+                    input.value = '';
+                    mostrarAlerta('Mês/ano inválido. Use entre 1995 e 2030.', 'error');
+                }
+            } else if (valor.length >= 6) {
+                input.value = '';
+                mostrarAlerta('Data inválida. Use formato MM/AAAA.', 'error');
+            }
+        }
+
+        function formatarDataCompleta(input) {
+            let valor = input.value.replace(/\D/g, '');
+            if (!valor) return;
+            if (valor.length === 6) valor = valor.substring(0, 2) + '/' + valor.substring(2, 4) + '/20' + valor.substring(4, 6);
+            if (valor.length >= 8) valor = valor.substring(0, 2) + '/' + valor.substring(2, 4) + '/' + valor.substring(4, 8);
+
+            const regex = /^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+            if (!regex.test(valor)) {
+                input.value = '';
+                mostrarAlerta('Data inválida. Use formato DD/MM/AAAA.', 'error');
+                return;
+            }
+
+            const [dia, mes, ano] = valor.split('/').map(Number);
+            const data = new Date(ano, mes - 1, dia);
+            if (data.getFullYear() !== ano || data.getMonth() !== mes - 1 || data.getDate() !== dia || ano < 1995 || ano > 2030) {
+                input.value = '';
+                mostrarAlerta('Data inválida ou fora do intervalo aceito.', 'error');
+                return;
+            }
+            input.value = valor;
+        }
+
+        function dataCompletaParaMesAno(dataCompleta) {
+            const partes = String(dataCompleta || '').split('/');
+            if (partes.length !== 3) return '';
+            return `${partes[1]}/${partes[2]}`;
+        }
+
+        async function buscarDadosOnline() {
+            atualizarStatus('🔄 Carregando base automática da Selic...', true);
+            try {
+                const resposta = await fetch(`../dados/selic-rfb.json?v=${Date.now()}`, { cache: 'no-store' });
+                if (!resposta.ok) throw new Error(`Falha ao carregar arquivo local de dados: ${resposta.status}`);
+
+                const payload = await resposta.json();
+                dadosPlanilha = payload.taxas || {};
+                metadadosSelic = {
+                    ultimaCompetencia: payload.ultimaCompetencia || '',
+                    ultimaTaxa: typeof payload.ultimaTaxa === 'number' ? payload.ultimaTaxa : null,
+                    competenciaProvisoria: payload.competenciaProvisoria || '',
+                    taxaProvisoria: typeof payload.taxaProvisoria === 'number' ? payload.taxaProvisoria : null,
+                    fonte: payload.fonte || 'Base local do repositório'
+                };
+
+                const totalTaxas = Object.keys(dadosPlanilha).length;
+                if (!totalTaxas) throw new Error('Arquivo de dados sem taxas válidas');
+
+                atualizarStatus(`✅ ${totalTaxas} competências carregadas da base automática`, true);
+                statusConexao = 'online';
+                await atualizarTodasLinhas();
+                mostrarModalUltimaTaxa();
+            } catch (error) {
+                console.error('Erro ao carregar base local:', error);
+                statusConexao = 'offline';
+                atualizarStatus('⚠️ Não foi possível carregar a base automática da Selic', false);
+                mostrarAlerta('Não foi possível carregar o arquivo automático de taxas.', 'error');
+            }
+        }
+
+        function obterTaxaMes(ano, mes) {
+            const chave = `${ano}-${mes.toString().padStart(2, '0')}`;
+            if (!(chave in dadosPlanilha)) throw new Error(`Dados ausentes para ${mes.toString().padStart(2, '0')}/${ano}`);
+            return dadosPlanilha[chave];
+        }
+
+        function calcularTaxaSelicAcumulada(dataPagamentoMesAno, dataAtualizacaoMesAno) {
+            const [mesPag, anoPag] = dataPagamentoMesAno.split('/').map(Number);
+            const [mesAtualizacao, anoAtualizacao] = dataAtualizacaoMesAno.split('/').map(Number);
+
+            if (anoAtualizacao < anoPag || (anoAtualizacao === anoPag && mesAtualizacao <= mesPag)) return 0;
+
+            let somaTaxas = 0;
+            let anoAtual = anoPag;
+            let mesAtual = mesPag;
+
+            while (true) {
+                mesAtual++;
+                if (mesAtual > 12) {
+                    mesAtual = 1;
+                    anoAtual++;
+                }
+
+                if (anoAtual > anoAtualizacao || (anoAtual === anoAtualizacao && mesAtual >= mesAtualizacao)) break;
+                somaTaxas += obterTaxaMes(anoAtual, mesAtual);
+            }
+
+            somaTaxas += 1.0;
+            return somaTaxas;
+        }
+
+        async function calcularLinha(indice) {
+            const linha = document.querySelector(`[data-linha="${indice}"]`);
+            if (!linha) return;
+
+            const valorPagoInput = linha.querySelector('.valor-pago');
+            const valorRepasseInput = linha.querySelector('.valor-repasse');
+            const dataPagamentoInput = linha.querySelector('.data-pagamento');
+            const valorIbamaInput = linha.querySelector('.valor-ibama');
+            const taxaSelicInput = linha.querySelector('.taxa-selic');
+            const valorSelicInput = linha.querySelector('.valor-selic');
+            const valorRestituirInput = linha.querySelector('.valor-restituir');
+            const mesReferencia = document.getElementById('mesReferencia').value;
+
+            const valorPago = moedaParaNumero(valorPagoInput.value);
+            const percentualRepasse = obterPercentualRepasseLinha(linha);
+            const valorRepasse = valorPago > 0 ? valorPago * percentualRepasse / 100 : 0;
+            const dataPagamento = dataPagamentoInput.value;
+
+            if (valorRepasseInput) {
+                valorRepasseInput.classList.toggle('inativo', percentualRepasse <= 0);
+                valorRepasseInput.value = numeroParaMoeda(valorRepasse);
+            }
+
+            if (!valorPago || !dataPagamento || !mesReferencia) {
+                valorIbamaInput.value = '';
+                taxaSelicInput.value = '';
+                valorSelicInput.value = '';
+                valorRestituirInput.value = '';
+                calcularTotais();
+                atualizarRepasseEstado();
+                atualizarConclusao();
+                return;
+            }
+
+            const valorIbama = Math.max(valorPago - valorRepasse, 0);
+            valorIbamaInput.value = numeroParaMoeda(valorIbama);
+
+            const regexData = /^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+            const regexMes = /^(0[1-9]|1[0-2])\/\d{4}$/;
+            if (!regexData.test(dataPagamento) || !regexMes.test(mesReferencia)) {
+                taxaSelicInput.value = 'Data inválida';
+                valorSelicInput.value = '';
+                valorRestituirInput.value = '';
+                calcularTotais();
+                return;
+            }
+
+            taxaSelicInput.value = 'Calculando...';
+            taxaSelicInput.classList.add('loading');
+
+            try {
+                await new Promise(resolve => setTimeout(resolve, 120));
+                const mesAnoPagamento = dataCompletaParaMesAno(dataPagamento);
+                const taxaSelic = calcularTaxaSelicAcumulada(mesAnoPagamento, mesReferencia);
+                const valorSelic = valorIbama * (taxaSelic / 100);
+                const valorRestituir = valorIbama + valorSelic;
+
+                taxaSelicInput.value = taxaSelic.toFixed(2).replace('.', ',') + '%';
+                taxaSelicInput.classList.remove('loading');
+                valorSelicInput.value = numeroParaMoeda(valorSelic);
+                valorRestituirInput.value = numeroParaMoeda(valorRestituir);
+            } catch (error) {
+                taxaSelicInput.value = error.message && error.message.startsWith('Dados ausentes') ? 'Dados ausentes' : 'Erro';
+                taxaSelicInput.classList.remove('loading');
+                valorSelicInput.value = '';
+                valorRestituirInput.value = '';
+                mostrarAlerta(error.message && error.message.startsWith('Dados ausentes') ? error.message : 'Erro no cálculo.', 'error');
+            }
+
+            calcularTotais();
+            atualizarRepasseEstado();
+            atualizarAnalisePrazo();
+            atualizarConclusao();
+        }
+
+        function calcularTotais() {
+            let totalPago = 0;
+            let totalRepasse = 0;
+            let totalIbama = 0;
+            let totalSelic = 0;
+            let totalRestituir = 0;
+
+            document.querySelectorAll('.data-row[data-linha]').forEach(linha => {
+                totalPago += moedaParaNumero(linha.querySelector('.valor-pago')?.value || '');
+                totalRepasse += moedaParaNumero(linha.querySelector('.valor-repasse')?.value || '');
+                totalIbama += moedaParaNumero(linha.querySelector('.valor-ibama')?.value || '');
+                totalSelic += moedaParaNumero(linha.querySelector('.valor-selic')?.value || '');
+                totalRestituir += moedaParaNumero(linha.querySelector('.valor-restituir')?.value || '');
+            });
+
+            preencherTexto('totalPago', numeroParaMoeda(totalPago));
+            preencherTexto('totalRepasse', numeroParaMoeda(totalRepasse));
+            preencherTexto('totalIbama', numeroParaMoeda(totalIbama));
+            preencherTexto('totalSelic', numeroParaMoeda(totalSelic));
+            preencherTexto('totalRestituir', numeroParaMoeda(totalRestituir));
+
+            preencherHTML('resumoTotalPago', numeroParaMoeda(totalPago));
+            preencherHTML('resumoTotalRepasse', numeroParaMoeda(totalRepasse));
+            preencherHTML('resumoTotalIbama', numeroParaMoeda(totalIbama));
+            preencherHTML('resumoTotalSelic', numeroParaMoeda(totalSelic));
+            preencherHTML('resumoTotalRestituir', numeroParaMoeda(totalRestituir));
+        }
+
+        function preencherTexto(id, valor) {
+            const el = document.getElementById(id);
+            if (el) el.value = valor;
+        }
+
+        function preencherHTML(id, valor) {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = valor;
+        }
+
+        function adicionarLinha(silencioso = false) {
+            const tbody = document.querySelector('#tabelaRestituicao tbody');
+            const totalRow = tbody.querySelector('.total-row');
+            const indice = contadorLinhas;
+            const tr = document.createElement('tr');
+            tr.className = 'data-row';
+            tr.setAttribute('data-linha', indice);
+            tr.innerHTML = `
+                <td class="gray-cell"><input type="text" class="numero-debito" placeholder="0000000" readonly></td>
+                <td class="gray-cell"><input type="text" class="numero-pagamento" placeholder="0000000" readonly oninput="atualizarAnalisePrazo(); atualizarRepasseEstado()"></td>
+                <td class="gray-cell"><input type="text" class="data-pagamento" placeholder="DD/MM/AAAA" maxlength="10" inputmode="numeric" readonly oninput="aplicarMascaraDataCompletaTempoReal(this)" onblur="formatarDataCompleta(this); calcularLinha(${indice}); atualizarAnalisePrazo()"></td>
+                <td class="gray-cell"><input type="text" class="valor-pago" placeholder="0,00" inputmode="numeric" readonly oninput="aplicarMascaraMoedaTempoReal(this); calcularLinha(${indice})"></td>
+                <td class="white-cell">
+                    <div class="repasse-toggle-wrap">
+                        <input type="text" class="percentual-repasse-linha" placeholder="00%" value="00%" inputmode="numeric" onkeydown="tratarTeclaPercentualRepasse(event, this)" oninput="formatarPercentualRepasseLinha(this); calcularLinha(${indice})">
+                    </div>
+                </td>
+                <td class="gray-cell"><input type="text" class="valor-repasse inativo" readonly></td>
+                <td class="gray-cell"><input type="text" class="valor-ibama" readonly></td>
+                <td class="gray-cell"><input type="text" class="taxa-selic" readonly></td>
+                <td class="gray-cell"><input type="text" class="valor-selic" readonly></td>
+                <td class="gray-cell"><input type="text" class="valor-restituir" readonly></td>
+                <td class="gray-cell linha-acoes"><button type="button" class="btn-linha btn-excluir-linha" tabindex="-1" onclick="excluirOuLimparLinha(${indice})" title="Excluir linha">×</button></td>
+            `;
+            tbody.insertBefore(tr, totalRow);
+            contadorLinhas++;
+            ajustarTabulacaoTabelaDemonstrativo();
+            if (!silencioso) mostrarAlerta('✅ Nova linha adicionada.', 'success');
+            return tr;
+        }
+
+        function removerLinha() {
+            const linhasData = document.querySelectorAll('.data-row[data-linha]');
+            if (linhasData.length > 1) {
+                linhasData[linhasData.length - 1].remove();
+                calcularTotais();
+                atualizarRepasseEstado();
+                atualizarConclusao();
+                mostrarAlerta('✅ Linha removida.', 'success');
+            } else {
+                mostrarAlerta('⚠️ Mantenha pelo menos uma linha.', 'error');
+            }
+        }
+
+        function limparLinha(indice) {
+            const linha = document.querySelector(`[data-linha="${indice}"]`);
+            if (!linha) return;
+            linha.querySelectorAll('input').forEach(input => {
+                if (input.classList.contains('percentual-repasse-linha')) input.value = '00%';
+                else input.value = '';
+                if (input.classList.contains('valor-repasse')) input.classList.add('inativo');
+            });
+            linha.querySelectorAll('select').forEach(select => select.value = '');
+            calcularTotais();
+            atualizarRepasseEstado();
+            atualizarAnalisePrazo();
+            atualizarConclusao();
+        }
+
+
+        function excluirOuLimparLinha(indice) {
+            const linhasData = document.querySelectorAll('.data-row[data-linha]');
+            const linha = document.querySelector(`[data-linha="${indice}"]`);
+            if (!linha) return;
+
+            if (linhasData.length > 1) {
+                linha.remove();
+                calcularTotais();
+                atualizarRepasseEstado();
+                atualizarAnalisePrazo();
+                atualizarConclusao();
+                mostrarAlerta('✅ Linha excluída.', 'success');
+            } else {
+                limparLinha(indice);
+            }
+        }
+
+        async function atualizarTodasLinhas() {
+            const linhas = document.querySelectorAll('.data-row[data-linha]');
+            for (let i = 0; i < linhas.length; i++) {
+                const indice = parseInt(linhas[i].getAttribute('data-linha'), 10);
+                await calcularLinha(indice);
+            }
+            calcularTotais();
+            atualizarRepasseEstado();
+            atualizarAnalisePrazo();
+            atualizarConclusao();
+        }
+
+
+        function selecionarRelacaoPagamentosPDF() {
+            const input = document.getElementById('inputRelacaoPagamentosPDF');
+            if (!input) return;
+            input.value = '';
+            input.click();
+        }
+
+        function definirStatusRelacaoPagamentos(carregado) {
+            const status = document.getElementById('statusRelacaoPagamentos');
+            if (!status) return;
+            if (carregado) {
+                status.classList.add('ok');
+                status.textContent = 'CARREGADO';
+            } else {
+                status.classList.remove('ok');
+                status.textContent = '';
+            }
+        }
+
+        async function arquivoRelacaoPagamentosSelecionado(input) {
+            const arquivo = input?.files?.[0];
+            if (!arquivo) return;
+            definirStatusRelacaoPagamentos(false);
+            arquivoRelacaoPagamentosPendente = arquivo;
+
+            try {
+                const opcao = await abrirModalOpcaoRelacaoPagamentos();
+                if (!opcao) {
+                    arquivoRelacaoPagamentosPendente = null;
+                    return;
+                }
+                await carregarRelacaoPagamentosSelecionada(opcao);
+            } catch (erro) {
+                console.error('Erro ao carregar relação de pagamentos:', erro);
+                mostrarAlerta(erro.message || 'Erro ao carregar relação de pagamentos.', 'error');
+                definirStatusRelacaoPagamentos(false);
+            } finally {
+                arquivoRelacaoPagamentosPendente = null;
+                if (input) input.value = '';
+            }
+        }
+
+        function abrirModalOpcaoRelacaoPagamentos() {
+            return new Promise(resolve => {
+                resolverOpcaoRelacaoPagamentos = resolve;
+                const modal = document.getElementById('modalOpcaoRelacaoPagamentos');
+                if (!modal) {
+                    resolve(null);
+                    return;
+                }
+                modal.classList.add('aberto');
+                modal.setAttribute('aria-hidden', 'false');
+            });
+        }
+
+        function fecharModalOpcaoRelacaoPagamentos() {
+            const modal = document.getElementById('modalOpcaoRelacaoPagamentos');
+            if (!modal) return;
+            modal.classList.remove('aberto');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        function confirmarOpcaoRelacaoPagamentos(opcao) {
+            fecharModalOpcaoRelacaoPagamentos();
+            const resolver = resolverOpcaoRelacaoPagamentos;
+            resolverOpcaoRelacaoPagamentos = null;
+            if (resolver) resolver(opcao);
+        }
+
+        function cancelarModalOpcaoRelacaoPagamentos() {
+            fecharModalOpcaoRelacaoPagamentos();
+            const resolver = resolverOpcaoRelacaoPagamentos;
+            resolverOpcaoRelacaoPagamentos = null;
+            if (resolver) resolver(null);
+        }
+
+        function abrirModalDataBasePrazo(valorInicial = '') {
+            return new Promise(resolve => {
+                resolverDataBasePrazo = resolve;
+                const modal = document.getElementById('modalDataBasePrazo');
+                const input = document.getElementById('inputModalDataBasePrazo');
+                if (!modal || !input) {
+                    resolve(null);
+                    return;
+                }
+                input.value = valorInicial || '';
+                modal.classList.add('aberto');
+                modal.setAttribute('aria-hidden', 'false');
+                setTimeout(() => input.focus(), 80);
+            });
+        }
+
+        function fecharModalDataBasePrazo() {
+            const modal = document.getElementById('modalDataBasePrazo');
+            if (!modal) return;
+            modal.classList.remove('aberto');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        function confirmarModalDataBasePrazo() {
+            const input = document.getElementById('inputModalDataBasePrazo');
+            if (!input) return;
+            formatarDataCompleta(input);
+            const valor = input.value || '';
+            const regexData = /^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+            if (!regexData.test(valor)) {
+                mostrarAlerta('Informe uma data-base válida no formato DD/MM/AAAA.', 'error');
+                return;
+            }
+            fecharModalDataBasePrazo();
+            const resolver = resolverDataBasePrazo;
+            resolverDataBasePrazo = null;
+            if (resolver) resolver(valor);
+        }
+
+        function cancelarModalDataBasePrazo() {
+            fecharModalDataBasePrazo();
+            const resolver = resolverDataBasePrazo;
+            resolverDataBasePrazo = null;
+            if (resolver) resolver(null);
+        }
+
+        function carregarPDFJS() {
+            if (window.pdfjsLib) {
+                window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_LOCAL_URL;
+                return Promise.resolve(window.pdfjsLib);
+            }
+            if (promessaPDFJS) return promessaPDFJS;
+            promessaPDFJS = new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = PDFJS_LOCAL_URL;
+                script.onload = () => {
+                    if (!window.pdfjsLib) {
+                        reject(new Error('PDF.js não foi carregado corretamente.'));
+                        return;
+                    }
+                    window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_LOCAL_URL;
+                    resolve(window.pdfjsLib);
+                };
+                script.onerror = () => reject(new Error('Não foi possível carregar o PDF.js local do portal.'));
+                document.head.appendChild(script);
+            });
+            return promessaPDFJS;
+        }
+
+        function normalizarLinhaTextoPDF(texto) {
+            return String(texto || '').replace(/\s+/g, ' ').trim();
+        }
+
+        async function extrairLinhasTextoPDF(file) {
+            const pdfjsLib = await carregarPDFJS();
+            const buffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+            const linhas = [];
+
+            for (let pagina = 1; pagina <= pdf.numPages; pagina++) {
+                const page = await pdf.getPage(pagina);
+                const textContent = await page.getTextContent();
+                const itens = textContent.items.map(item => ({
+                    texto: item.str || '',
+                    x: item.transform?.[4] || 0,
+                    y: item.transform?.[5] || 0
+                })).filter(item => item.texto && item.texto.trim());
+
+                itens.sort((a, b) => Math.abs(b.y - a.y) > 2 ? b.y - a.y : a.x - b.x);
+
+                const grupos = [];
+                itens.forEach(item => {
+                    let grupo = grupos.find(g => Math.abs(g.y - item.y) <= 2.2);
+                    if (!grupo) {
+                        grupo = { y: item.y, itens: [] };
+                        grupos.push(grupo);
+                    }
+                    grupo.itens.push(item);
+                });
+
+                grupos.sort((a, b) => b.y - a.y).forEach(grupo => {
+                    grupo.itens.sort((a, b) => a.x - b.x);
+                    const texto = normalizarLinhaTextoPDF(grupo.itens.map(i => i.texto).join(' '));
+                    if (texto) linhas.push(texto);
+                });
+            }
+            return linhas;
+        }
+
+        function interpretarLinhaPagamento(texto) {
+            const linha = normalizarLinhaTextoPDF(texto);
+            if (!linha || /^Débito\s+/i.test(linha) || /^Filtros:/i.test(linha) || /^NOME:/i.test(linha) || /^Pág\s+/i.test(linha)) return null;
+
+            const regex = /^(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d{2}\/\d{2}\/\d{4})\s+([\d.]+,\d{2})(?:\s+(\d{5,}))?\s+(.+?)\s+(Espontâneo|Obrigatório)(?:\s+(.*))?$/i;
+            const m = linha.match(regex);
+            if (!m) return null;
+
+            return {
+                debito: m[1] || '',
+                nossoNumeroBto: m[2] || '',
+                nossoNumeroPgto: m[3] || '',
+                numeroPagamento: m[4] || '',
+                dataPagamento: m[5] || '',
+                valorPago: m[6] || '',
+                processo: m[7] || '',
+                receita: m[8] || '',
+                tipoPagamento: m[9] || '',
+                baixado: m[10] || ''
+            };
+        }
+
+        async function extrairPagamentosDoPDF(file) {
+            const linhas = await extrairLinhasTextoPDF(file);
+            const pagamentos = [];
+            linhas.forEach(linha => {
+                const item = interpretarLinhaPagamento(linha);
+                if (item) pagamentos.push(item);
+            });
+            return pagamentos;
+        }
+
+        function stringDataParaDate(dataStr) {
+            const m = String(dataStr || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+            if (!m) return null;
+            const dia = Number(m[1]);
+            const mes = Number(m[2]);
+            const ano = Number(m[3]);
+            const data = new Date(ano, mes - 1, dia);
+            if (data.getFullYear() !== ano || data.getMonth() !== mes - 1 || data.getDate() !== dia) return null;
+            data.setHours(0, 0, 0, 0);
+            return data;
+        }
+
+        function obterIntervaloPrazoRestituicao(dataBaseStr) {
+            const fim = stringDataParaDate(dataBaseStr);
+            if (!fim) return null;
+            const inicio = new Date(fim.getFullYear() - 5, fim.getMonth(), fim.getDate());
+            inicio.setHours(0, 0, 0, 0);
+            return { inicio, fim };
+        }
+
+        function filtrarPagamentosDentroDoPrazo(pagamentos, dataBaseStr) {
+            const intervalo = obterIntervaloPrazoRestituicao(dataBaseStr);
+            if (!intervalo) return [];
+            return pagamentos.filter(pagamento => {
+                const data = stringDataParaDate(pagamento.dataPagamento);
+                return data && data.getTime() >= intervalo.inicio.getTime() && data.getTime() <= intervalo.fim.getTime();
+            });
+        }
+
+        async function carregarRelacaoPagamentosSelecionada(opcao) {
+            if (!arquivoRelacaoPagamentosPendente) return;
+            atualizarStatus('🔄 Lendo relação de pagamentos efetuados...', true);
+
+            let dataBasePrazo = document.getElementById('dataPedido')?.value || '';
+            const regexData = /^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+
+            if (opcao === 'prazo' && !regexData.test(dataBasePrazo)) {
+                dataBasePrazo = await abrirModalDataBasePrazo(dataBasePrazo);
+                if (!dataBasePrazo) {
+                    atualizarStatus('Carregamento da relação de pagamentos cancelado.', true);
+                    definirStatusRelacaoPagamentos(false);
+                    return;
+                }
+                const campoData = document.getElementById('dataPedido');
+                if (campoData) campoData.value = dataBasePrazo;
+            }
+
+            const pagamentosExtraidos = await extrairPagamentosDoPDF(arquivoRelacaoPagamentosPendente);
+            if (!pagamentosExtraidos.length) {
+                throw new Error('Não foi possível identificar pagamentos no PDF carregado. Verifique se o arquivo é uma relação de pagamentos efetuados.');
+            }
+
+            const pagamentos = opcao === 'prazo'
+                ? filtrarPagamentosDentroDoPrazo(pagamentosExtraidos, dataBasePrazo)
+                : pagamentosExtraidos;
+
+            if (!pagamentos.length) {
+                throw new Error(opcao === 'prazo'
+                    ? 'Nenhum pagamento foi encontrado dentro do prazo de 5 anos a partir da data-base informada.'
+                    : 'Nenhum pagamento foi identificado para carregar.');
+            }
+
+            await preencherTabelaComPagamentos(pagamentos);
+            definirStatusRelacaoPagamentos(true);
+            atualizarStatus(`✅ ${pagamentos.length} pagamento(s) carregado(s) da relação de pagamentos`, true);
+            mostrarAlerta(`✅ ${pagamentos.length} pagamento(s) carregado(s).`, 'success');
+        }
+
+        async function preencherTabelaComPagamentos(pagamentos) {
+            const tbody = document.querySelector('#tabelaRestituicao tbody');
+            const linhasAtuais = Array.from(document.querySelectorAll('.data-row[data-linha]'));
+            linhasAtuais.forEach(linha => linha.remove());
+            contadorLinhas = 0;
+
+            pagamentos.forEach(pagamento => {
+                const tr = adicionarLinha(true);
+                tr.querySelector('.numero-debito').value = pagamento.debito || '';
+                tr.querySelector('.numero-pagamento').value = pagamento.numeroPagamento || '';
+                tr.querySelector('.data-pagamento').value = pagamento.dataPagamento || '';
+                tr.querySelector('.valor-pago').value = pagamento.valorPago || '';
+                const percentual = tr.querySelector('.percentual-repasse-linha');
+                if (percentual) percentual.value = '00%';
+            });
+
+            if (!pagamentos.length) adicionarLinha(true);
+            ajustarTabulacaoTabelaDemonstrativo();
+            await atualizarTodasLinhas();
+        }
+
+        function atualizarRepasseEstado() {
+            const linhas = Array.from(document.querySelectorAll('.data-row[data-linha]'));
+            let totalRepasse = 0;
+
+            linhas.forEach(linha => {
+                const repasse = moedaParaNumero(linha.querySelector('.valor-repasse')?.value || '');
+                if (repasse > 0) totalRepasse += repasse;
+            });
+
+            const status = document.getElementById('statusRepasse');
+            if (!status) return;
+
+            if (totalRepasse > 0) {
+                status.innerHTML = `<strong>Repasse estadual identificado.</strong><br>Total repassado ao estado: R$ ${numeroParaMoeda(totalRepasse)}`;
+            } else {
+                status.innerHTML = '<strong>Não há repasse estadual identificado nas linhas preenchidas.</strong><br>Os valores calculados como repasse ao estado estão zerados.';
+            }
+        }
+
+        function atualizarAnalisePrazo() {
+            const dataBasePrazo = document.getElementById('dataPedido')?.value || '';
+            const prazo = document.getElementById('prazoCincoAnos');
+            const pagamentosAfetados = document.getElementById('periodosPrescritos');
+            const indicacao = document.getElementById('indicacaoPrazo');
+            const regexData = /^(0[1-9]|[12]\d|3[01])\/(0[1-9]|1[0-2])\/\d{4}$/;
+
+            function definir(valor, lista = '', textoIndicacao = '') {
+                if (prazo) prazo.value = valor;
+                if (pagamentosAfetados) pagamentosAfetados.value = lista;
+                if (indicacao) indicacao.value = textoIndicacao || valor;
+            }
+
+            if (!regexData.test(dataBasePrazo)) {
+                definir('A verificar', '', 'Aguardando data-base para análise do prazo');
+                return;
+            }
+
+            const [diaP, mesP, anoP] = dataBasePrazo.split('/').map(Number);
+            const dataLimite = new Date(anoP - 5, mesP - 1, diaP);
+            const afetados = [];
+            let analisados = 0;
+            let incompletos = false;
+
+            document.querySelectorAll('.data-row[data-linha]').forEach(linha => {
+                const dataPagamento = linha.querySelector('.data-pagamento')?.value || '';
+                const numeroPagamento = obterNumeroPagamento(linha);
+                const numeroDebito = linha.querySelector('.numero-debito')?.value || '';
+                const valorPago = moedaParaNumero(linha.querySelector('.valor-pago')?.value || '');
+                const temAlgumDado = numeroDebito || numeroPagamento || dataPagamento || valorPago > 0;
+                if (!temAlgumDado) return;
+
+                if (!regexData.test(dataPagamento) || !numeroPagamento) {
+                    incompletos = true;
+                    return;
+                }
+
+                analisados++;
+                const [dia, mes, ano] = dataPagamento.split('/').map(Number);
+                const dataPag = new Date(ano, mes - 1, dia);
+                if (dataPag < dataLimite && !afetados.includes(numeroPagamento)) afetados.push(numeroPagamento);
+            });
+
+            const lista = afetados.join(', ');
+            if (!analisados) {
+                definir('A verificar', '', 'Aguardando demonstrativo de cálculo');
+            } else if (incompletos) {
+                definir('A verificar', lista, 'Há linhas incompletas no demonstrativo');
+            } else if (afetados.length === 0) {
+                definir('Não', '', 'Não foram identificados pagamentos afetados pelo decurso do prazo');
+            } else {
+                definir('Sim', lista, 'Há pagamento(s) afetado(s) pelo decurso do prazo');
+            }
+        }
+
+        function atualizarConclusao() {
+            const campoConclusao = document.getElementById('conclusaoAnalise');
+            if (!campoConclusao) return;
+
+            const totalRestituir = document.getElementById('totalRestituir')?.value || '0,00';
+            const mesReferencia = document.getElementById('mesReferencia')?.value || '';
+            const motivo = document.getElementById('motivoRestituicao')?.value || 'restituição';
+            const repasse = moedaParaNumero(document.getElementById('totalRepasse')?.value || '');
+
+            let texto = `Com base nos dados informados e no demonstrativo de cálculo, apurou-se o valor de R$ ${totalRestituir} a título de restituição, sendo que esse valor já está atualizado pela taxa Selic até ${mesReferencia || 'MM/AAAA'}, em razão de ${motivo.toLowerCase()}.`;
+            if (repasse > 0) {
+                texto += ' Os valores repassados ao estado foram deduzidos da base de restituição pelo Ibama, sem prejuízo de eventual requerimento da parcela estadual perante o órgão competente.';
+            }
+
+            if (!campoConclusao.dataset.editado) campoConclusao.value = texto;
+        }
+
+        document.addEventListener('input', function(event) {
+            if (!event.target) return;
+            if (event.target.id === 'conclusaoAnalise') event.target.dataset.editado = 'true';
+            if (event.target.id === 'titularConta') titularContaEditadoManualmente = true;
+            if (event.target.id === 'cpfCnpjTitular') cpfCnpjTitularEditadoManualmente = true;
+        });
+
+        document.addEventListener('focusin', function(event) {
+            if (event.target && event.target.classList && event.target.classList.contains('percentual-repasse-linha')) {
+                selecionarPercentualRepasse(event.target);
+            }
+        });
+
+        document.addEventListener('mouseup', function(event) {
+            if (event.target && event.target.classList && event.target.classList.contains('percentual-repasse-linha')) {
+                event.preventDefault();
+            }
+        });
+
+        document.addEventListener('click', function(event) {
+            if (event.target && event.target.classList.contains('bloco-titulo')) alternarBloco(event.target);
+        });
+
+        function obterDadosParaPDF() {
+            const linhas = Array.from(document.querySelectorAll('.data-row[data-linha]')).map(linha => ({
+                debito: linha.querySelector('.numero-debito')?.value || '',
+                pagamento: linha.querySelector('.numero-pagamento')?.value || '',
+                dataPagamento: linha.querySelector('.data-pagamento')?.value || '',
+                valorPago: linha.querySelector('.valor-pago')?.value || '',
+                percentualRepasse: (linha.querySelector('.percentual-repasse-linha')?.value || '00%').replace(/^00%$/, '0%'),
+                valorRepasse: linha.querySelector('.valor-repasse')?.value || '',
+                valorIbama: linha.querySelector('.valor-ibama')?.value || '',
+                taxaSelic: linha.querySelector('.taxa-selic')?.value || '',
+                valorSelic: linha.querySelector('.valor-selic')?.value || '',
+                valorRestituir: linha.querySelector('.valor-restituir')?.value || ''
+            })).filter(linha => linha.debito || linha.pagamento || linha.dataPagamento || linha.valorPago || linha.valorRepasse || linha.valorRestituir);
+
+            return {
+                mesReferencia: valorCampo('mesReferencia'),
+                processoSei: valorCampo('processoSei'),
+                interessado: valorCampo('interessado'),
+                cpfCnpj: valorCampo('cpfCnpj'),
+                seiRequerimento: valorCampo('seiRequerimento'),
+                dataPedido: valorCampo('dataPedido'),
+                seiComprovacao: valorCampo('seiComprovacao'),
+                seiDadosBancarios: valorCampo('seiDadosBancarios'),
+                tipoRepresentacao: valorCampo('tipoRepresentacao'),
+                seiRepresentacao: valorCampo('seiRepresentacao'),
+                motivoRestituicao: valorCampo('motivoRestituicao'),
+                seiDecisao: valorCampo('seiDecisao'),
+                descricaoMotivo: valorCampo('descricaoMotivo'),
+                prazoCincoAnos: valorCampo('prazoCincoAnos'),
+                periodosPrescritos: valorCampo('periodosPrescritos'),
+                indicacaoPrazo: valorCampo('indicacaoPrazo'),
+                linhas,
+                totalPago: valorCampo('totalPago'),
+                totalRepasse: valorCampo('totalRepasse'),
+                totalIbama: valorCampo('totalIbama'),
+                totalSelic: valorCampo('totalSelic'),
+                totalRestituir: valorCampo('totalRestituir'),
+                observacaoRepasse: valorCampo('observacaoRepasse'),
+                titularConta: valorCampo('titularConta'),
+                cpfCnpjTitular: valorCampo('cpfCnpjTitular'),
+                banco: valorCampo('banco'),
+                codigoBanco: valorCampo('codigoBanco'),
+                agencia: valorCampo('agencia'),
+                digitoAgencia: valorCampo('digitoAgencia'),
+                conta: valorCampo('conta'),
+                tipoConta: valorCampo('tipoConta'),
+                observacoesGerais: valorCampo('observacoesGerais'),
+                conclusaoAnalise: valorCampo('conclusaoAnalise')
+            };
+        }
+
+        function valorCampo(id) {
+            const el = document.getElementById(id);
+            return el ? el.value : '';
+        }
+
+        function temDocumentoSEIPreenchido(valor) {
+            return /\d/.test(String(valor || '').replace(/^\s*SEI\s*/i, ''));
+        }
+
+        function criarTextoPDF(texto) {
+            const mapaWinAnsi = {
+                '€': 128, '‚': 130, 'ƒ': 131, '„': 132, '…': 133, '†': 134, '‡': 135,
+                'ˆ': 136, '‰': 137, 'Š': 138, '‹': 139, 'Œ': 140, 'Ž': 142,
+                '‘': 145, '’': 146, '“': 147, '”': 148, '•': 149, '–': 150, '—': 151,
+                '˜': 152, '™': 153, 'š': 154, '›': 155, 'œ': 156, 'ž': 158, 'Ÿ': 159
+            };
+
+            function byteParaPDF(byte) {
+                if (byte === 40 || byte === 41 || byte === 92) return '\\' + String.fromCharCode(byte);
+                if (byte >= 32 && byte <= 126) return String.fromCharCode(byte);
+                return '\\' + byte.toString(8).padStart(3, '0');
+            }
+
+            let resultado = '(';
+            const conteudo = String(texto || '');
+            for (let i = 0; i < conteudo.length; i++) {
+                const caractere = conteudo[i];
+                const codigo = caractere.charCodeAt(0);
+                if (mapaWinAnsi[caractere] !== undefined) resultado += byteParaPDF(mapaWinAnsi[caractere]);
+                else if (codigo <= 255) resultado += byteParaPDF(codigo);
+                else resultado += ' ';
+            }
+            resultado += ')';
+            return resultado;
+        }
+
+        function stringBinariaParaUint8Array(conteudo) {
+            const bytes = new Uint8Array(conteudo.length);
+            for (let i = 0; i < conteudo.length; i++) bytes[i] = conteudo.charCodeAt(i) & 0xff;
+            return bytes;
+        }
+
+        function carregarImagemComoJPEGParaPDF(url) {
+            return new Promise(resolve => {
+                const img = new Image();
+                img.onload = () => {
+                    try {
+                        const largura = img.naturalWidth || img.width || 200;
+                        const altura = img.naturalHeight || img.height || 200;
+                        const canvas = document.createElement('canvas');
+                        canvas.width = largura;
+                        canvas.height = altura;
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, largura, altura);
+                        ctx.drawImage(img, 0, 0, largura, altura);
+                        const dataURL = canvas.toDataURL('image/jpeg', 0.92);
+                        const dadosBinarios = atob(dataURL.split(',')[1] || '');
+                        resolve({ data: dadosBinarios, width: largura, height: altura });
+                    } catch (erro) {
+                        console.warn('Não foi possível preparar imagem para o PDF:', url, erro);
+                        resolve(null);
+                    }
+                };
+                img.onerror = () => {
+                    console.warn('Não foi possível carregar imagem do cabeçalho do PDF:', url);
+                    resolve(null);
+                };
+                img.src = url;
+            });
+        }
+
+        async function carregarImagensCabecalhoPDF() {
+            if (imagensCabecalhoPDFCache) return imagensCabecalhoPDFCache;
+            const [brasao, ibama] = await Promise.all([
+                carregarImagemComoJPEGParaPDF(BRASAO_REPUBLICA_PDF_URL),
+                carregarImagemComoJPEGParaPDF(LOGO_IBAMA_PDF_URL)
+            ]);
+            imagensCabecalhoPDFCache = { brasao, ibama };
+            return imagensCabecalhoPDFCache;
+        }
+
+        function montarPDFAnalise(dados, gruposSelecionados = null, imagensCabecalho = null) {
+            const larguraPagina = 595;
+            const alturaPagina = 842;
+            const margem = 32;
+            const paginas = [];
+            let comandos = [];
+            let y = alturaPagina - 52;
+            const grupos = gruposSelecionados || {
+                identificacao: true,
+                dadosPedido: true,
+                representacaoMotivo: true,
+                demonstrativo: true,
+                repasseEstado: true,
+                dadosBancarios: true,
+                conclusao: true
+            };
+
+            function desenharImagemCabecalho(nomeImagem, x, yImagem, largura, altura) {
+                if (!nomeImagem) return;
+                comandos.push(`q ${largura.toFixed(2)} 0 0 ${altura.toFixed(2)} ${x.toFixed(2)} ${yImagem.toFixed(2)} cm /${nomeImagem} Do Q`);
+            }
+
+            function desenharCabecalhoInstitucional() {
+                const tamanhoLogo = 42;
+                const yLogo = alturaPagina - 64;
+                const xLogoEsquerda = margem + 8;
+                const xLogoDireita = larguraPagina - margem - tamanhoLogo - 8;
+
+                if (imagensCabecalho?.brasao) desenharImagemCabecalho('ImBrasao', xLogoEsquerda, yLogo, tamanhoLogo, tamanhoLogo);
+                if (imagensCabecalho?.ibama) desenharImagemCabecalho('ImIbama', xLogoDireita, yLogo, tamanhoLogo, tamanhoLogo);
+
+                comandos.push('0 0 0 rg');
+                addText('MINISTÉRIO DO MEIO AMBIENTE - MMA', margem, alturaPagina - 36, 8.7, 'center', larguraPagina - 2 * margem, true);
+                addText('INSTITUTO BRASILEIRO DO MEIO AMBIENTE E DOS RECURSOS NATURAIS RENOVÁVEIS - IBAMA', margem, alturaPagina - 49, 8.2, 'center', larguraPagina - 2 * margem, true);
+
+                comandos.push('0.55 0.55 0.55 RG 0.45 w');
+                comandos.push(`${margem} ${(alturaPagina - 74).toFixed(2)} ${(larguraPagina - margem).toFixed(2)} ${(alturaPagina - 74).toFixed(2)} l S`);
+
+                const alturaTitulo = 26;
+                const yTitulo = alturaPagina - 110;
+                comandos.push('0.12 0.31 0.47 rg');
+                comandos.push(`${margem} ${yTitulo.toFixed(2)} ${larguraPagina - 2 * margem} ${alturaTitulo} re f`);
+                comandos.push('1 1 1 rg');
+                addText('ANÁLISE DE RESTITUIÇÃO', margem, yTitulo + 8.5, 12.5, 'center', larguraPagina - 2 * margem, true);
+                y = yTitulo - 28;
+            }
+
+            function novaPagina() {
+                if (comandos.length) paginas.push(comandos);
+                comandos = [];
+                comandos.push('1 1 1 rg');
+                comandos.push(`0 0 ${larguraPagina} ${alturaPagina} re f`);
+                desenharCabecalhoInstitucional();
+            }
+
+            function garantir(alturaNecessaria) {
+                if (y - alturaNecessaria < 45) novaPagina();
+            }
+
+            function textoPDF(texto) { return criarTextoPDF(String(texto || '')); }
+
+            function addText(texto, x, yTexto, tamanho = 9, alinhamento = 'left', largura = 0, negrito = false) {
+                const fonte = negrito ? 'F2' : 'F1';
+                let textoX = x;
+                const conteudo = String(texto || '');
+                let textoEstimado;
+                try {
+                    textoEstimado = estimarLarguraTextoPDF(conteudo, tamanho, negrito);
+                } catch (_) {
+                    const fatorEstimativa = negrito ? 0.54 : 0.48;
+                    textoEstimado = conteudo.length * tamanho * fatorEstimativa;
+                }
+                if (alinhamento === 'center') textoX = x + (largura - textoEstimado) / 2;
+                if (alinhamento === 'right') textoX = x + largura - textoEstimado;
+                comandos.push(`BT /${fonte} ${tamanho} Tf ${textoX.toFixed(2)} ${yTexto.toFixed(2)} Td ${textoPDF(texto)} Tj ET`);
+            }
+
+            function cell(x, yCell, w, h, texto, opts = {}) {
+                const fill = opts.fill || null;
+                const textColor = opts.textColor || [0, 0, 0];
+                const size = opts.size || 8;
+                const bold = opts.bold || false;
+                const align = opts.align || 'center';
+                if (fill) {
+                    comandos.push(`${fill[0]} ${fill[1]} ${fill[2]} rg`);
+                    comandos.push(`${x.toFixed(2)} ${yCell.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f`);
+                }
+                comandos.push('0.72 w 0.72 0.72 0.72 RG');
+                comandos.push(`${x.toFixed(2)} ${yCell.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re S`);
+                comandos.push(`${textColor[0]} ${textColor[1]} ${textColor[2]} rg`);
+                const linhas = String(texto || '').split('\n');
+                const alturaLinha = size + 2;
+                const yInicial = yCell + (h / 2) + ((linhas.length - 1) * alturaLinha / 2) - (size / 2);
+                linhas.forEach((linha, idx) => addText(linha, x + 3, yInicial - idx * alturaLinha, size, align, w - 6, bold));
+            }
+
+            function heading(texto) {
+                garantir(30);
+                const alturaBarra = 20;
+                comandos.push('0.88 0.88 0.88 rg');
+                comandos.push(`${margem} ${(y - alturaBarra).toFixed(2)} ${(larguraPagina - 2 * margem).toFixed(2)} ${alturaBarra} re f`);
+                comandos.push('0 0 0 rg');
+                addText(texto, margem + 5, y - 13, 10, 'left', 0, true);
+                y -= 32;
+            }
+
+            function wrap(texto, maxChars) {
+                const palavras = String(texto || '').replace(/\s+/g, ' ').trim().split(' ');
+                const linhas = [];
+                let atual = '';
+                palavras.forEach(palavra => {
+                    if (!palavra) return;
+                    if ((atual + ' ' + palavra).trim().length > maxChars) {
+                        if (atual) linhas.push(atual);
+                        atual = palavra;
+                    } else atual = (atual + ' ' + palavra).trim();
+                });
+                if (atual) linhas.push(atual);
+                return linhas.length ? linhas : [''];
+            }
+
+            function paragraph(texto, maxChars = 124, tamanho = 9) {
+                const linhas = wrap(texto, maxChars);
+                garantir(linhas.length * 12 + 4);
+                linhas.forEach(linha => {
+                    addText(linha, margem, y, tamanho, 'left', 0, false);
+                    y -= 12;
+                });
+                y -= 4;
+            }
+
+            function addTextJustificado(linha, x, yTexto, tamanho = 9, largura = 0) {
+                const textoLinha = String(linha || '').trim();
+                const espacos = (textoLinha.match(/ /g) || []).length;
+                const textoEstimado = textoLinha.length * tamanho * 0.48;
+                let espacamento = 0;
+                if (espacos > 0 && largura > textoEstimado) {
+                    espacamento = (largura - textoEstimado) / espacos;
+                }
+                comandos.push(`BT /F1 ${tamanho} Tf ${espacamento.toFixed(2)} Tw ${x.toFixed(2)} ${yTexto.toFixed(2)} Td ${textoPDF(textoLinha)} Tj 0 Tw ET`);
+            }
+
+            function paragraphJustificado(texto, maxChars = 124, tamanho = 9) {
+                const linhas = wrap(texto, maxChars);
+                garantir(linhas.length * 12 + 4);
+                linhas.forEach((linha, indice) => {
+                    const podeJustificar = indice < linhas.length - 1 && linha.length > maxChars * 0.55 && (linha.match(/ /g) || []).length >= 3;
+                    if (podeJustificar) {
+                        addTextJustificado(linha, margem, y, tamanho, larguraPagina - 2 * margem);
+                    } else {
+                        addText(linha, margem, y, tamanho, 'left', 0, false);
+                    }
+                    y -= 12;
+                });
+                y -= 4;
+            }
+
+            function estimarLarguraTextoPDF(texto, tamanho = 9, negrito = false) {
+                const larguraCaracteres = {
+                    ' ': 0.278, '!': 0.278, '"': 0.355, '#': 0.556, '$': 0.556, '%': 0.889, '&': 0.667, '\'': 0.191,
+                    '(': 0.333, ')': 0.333, '*': 0.389, '+': 0.584, ',': 0.278, '-': 0.333, '.': 0.278, '/': 0.278,
+                    '0': 0.556, '1': 0.556, '2': 0.556, '3': 0.556, '4': 0.556, '5': 0.556, '6': 0.556, '7': 0.556, '8': 0.556, '9': 0.556,
+                    ':': 0.278, ';': 0.278, '<': 0.584, '=': 0.584, '>': 0.584, '?': 0.556, '@': 1.015,
+                    'A': 0.667, 'B': 0.667, 'C': 0.722, 'D': 0.722, 'E': 0.667, 'F': 0.611, 'G': 0.778, 'H': 0.722, 'I': 0.278, 'J': 0.500,
+                    'K': 0.667, 'L': 0.556, 'M': 0.833, 'N': 0.722, 'O': 0.778, 'P': 0.667, 'Q': 0.778, 'R': 0.722, 'S': 0.667, 'T': 0.611,
+                    'U': 0.722, 'V': 0.667, 'W': 0.944, 'X': 0.667, 'Y': 0.667, 'Z': 0.611,
+                    'a': 0.556, 'b': 0.556, 'c': 0.500, 'd': 0.556, 'e': 0.556, 'f': 0.278, 'g': 0.556, 'h': 0.556, 'i': 0.222, 'j': 0.222,
+                    'k': 0.500, 'l': 0.222, 'm': 0.833, 'n': 0.556, 'o': 0.556, 'p': 0.556, 'q': 0.556, 'r': 0.333, 's': 0.500, 't': 0.278,
+                    'u': 0.556, 'v': 0.500, 'w': 0.722, 'x': 0.500, 'y': 0.500, 'z': 0.500
+                };
+                let total = 0;
+                String(texto || '').split('').forEach(ch => {
+                    total += larguraCaracteres[ch] || 0.556;
+                });
+                return total * tamanho * (negrito ? 1.035 : 1);
+            }
+
+            function quebrarTextoPorLargura(texto, larguraMaxima, tamanho = 9, negrito = false) {
+                const palavras = String(texto || '').replace(/\s+/g, ' ').trim().split(' ');
+                if (!palavras.length || !palavras[0]) return [''];
+                const linhas = [];
+                let atual = '';
+                palavras.forEach(palavra => {
+                    const candidato = atual ? `${atual} ${palavra}` : palavra;
+                    if (atual && estimarLarguraTextoPDF(candidato, tamanho, negrito) > larguraMaxima) {
+                        linhas.push(atual);
+                        atual = palavra;
+                    } else {
+                        atual = candidato;
+                    }
+                });
+                if (atual) linhas.push(atual);
+                return linhas;
+            }
+
+            function linhaCampo(rotulo, valor) {
+                const textoRotulo = `${rotulo}: `;
+                const valorTexto = String(valor || 'Não informado');
+                const larguraTotal = larguraPagina - 2 * margem;
+                const larguraRotulo = estimarLarguraTextoPDF(textoRotulo, 9, true);
+                const espacoRotuloValor = 7;
+                const xValorPrimeiraLinha = Math.min(margem + larguraRotulo + espacoRotuloValor, margem + larguraTotal - 60);
+                const larguraPrimeiraLinha = Math.max((margem + larguraTotal) - xValorPrimeiraLinha, 60);
+                const palavras = String(valorTexto || '').replace(/\s+/g, ' ').trim().split(' ');
+                let primeiraLinha = '';
+                const restantesPalavras = [];
+                palavras.forEach(palavra => {
+                    const candidato = primeiraLinha ? `${primeiraLinha} ${palavra}` : palavra;
+                    if (primeiraLinha && estimarLarguraTextoPDF(candidato, 9, false) > larguraPrimeiraLinha) {
+                        restantesPalavras.push(palavra);
+                    } else if (!primeiraLinha && estimarLarguraTextoPDF(candidato, 9, false) > larguraPrimeiraLinha) {
+                        primeiraLinha = palavra;
+                    } else if (restantesPalavras.length === 0) {
+                        primeiraLinha = candidato;
+                    } else {
+                        restantesPalavras.push(palavra);
+                    }
+                });
+                const textoRestante = restantesPalavras.join(' ');
+                const demaisLinhas = textoRestante ? quebrarTextoPorLargura(textoRestante, larguraTotal, 9, false) : [];
+                const totalLinhas = 1 + demaisLinhas.length;
+                garantir(totalLinhas * 13 + 2);
+                comandos.push(`BT /F2 9 Tf ${margem.toFixed(2)} ${y.toFixed(2)} Td ${textoPDF(textoRotulo)} Tj ET`);
+                addText(primeiraLinha || '', xValorPrimeiraLinha, y, 9, 'left', 0, false);
+                y -= 13;
+                demaisLinhas.forEach(linha => {
+                    addText(linha, margem, y, 9, 'left', 0, false);
+                    y -= 13;
+                });
+            }
+
+
+            function linhaCampoSemDoisPontos(rotulo, valor) {
+                const textoRotulo = String(rotulo || '').trim() + ' ';
+                const valorTexto = String(valor || 'Não informado');
+                const larguraTotal = larguraPagina - 2 * margem;
+                const larguraRotulo = estimarLarguraTextoPDF(textoRotulo, 9, true);
+                const espacoRotuloValor = 8;
+                const xValorPrimeiraLinha = Math.min(margem + larguraRotulo + espacoRotuloValor, margem + larguraTotal - 60);
+                const larguraPrimeiraLinha = Math.max((margem + larguraTotal) - xValorPrimeiraLinha, 60);
+                const palavras = String(valorTexto || '').replace(/\s+/g, ' ').trim().split(' ');
+                let primeiraLinha = '';
+                const restantesPalavras = [];
+                palavras.forEach(palavra => {
+                    const candidato = primeiraLinha ? `${primeiraLinha} ${palavra}` : palavra;
+                    if (primeiraLinha && estimarLarguraTextoPDF(candidato, 9, false) > larguraPrimeiraLinha) {
+                        restantesPalavras.push(palavra);
+                    } else if (!primeiraLinha && estimarLarguraTextoPDF(candidato, 9, false) > larguraPrimeiraLinha) {
+                        primeiraLinha = palavra;
+                    } else if (restantesPalavras.length === 0) {
+                        primeiraLinha = candidato;
+                    } else {
+                        restantesPalavras.push(palavra);
+                    }
+                });
+                const textoRestante = restantesPalavras.join(' ');
+                const demaisLinhas = textoRestante ? quebrarTextoPorLargura(textoRestante, larguraTotal, 9, false) : [];
+                const totalLinhas = 1 + demaisLinhas.length;
+                garantir(totalLinhas * 13 + 2);
+                comandos.push(`BT /F2 9 Tf ${margem.toFixed(2)} ${y.toFixed(2)} Td ${textoPDF(textoRotulo)} Tj ET`);
+                addText(primeiraLinha || '', xValorPrimeiraLinha, y, 9, 'left', 0, false);
+                y -= 13;
+                demaisLinhas.forEach(linha => {
+                    addText(linha, margem, y, 9, 'left', 0, false);
+                    y -= 13;
+                });
+            }
+
+            novaPagina();
+
+            if (grupos.identificacao) {
+                heading('IDENTIFICAÇÃO');
+                linhaCampo('Processo SEI', dados.processoSei);
+                linhaCampo('Interessado', dados.interessado);
+                linhaCampo('CPF/CNPJ', dados.cpfCnpj);
+            }
+
+            if (grupos.dadosPedido) {
+                heading('ANÁLISE DE PRAZO');
+                if (temDocumentoSEIPreenchido(dados.seiRequerimento)) linhaCampo('Requerimento de restituição', dados.seiRequerimento);
+                linhaCampo('Data-base para análise do prazo/ data do pedido', dados.dataPedido);
+                if (temDocumentoSEIPreenchido(dados.seiComprovacao)) linhaCampo('Comprovação de pagamento', dados.seiComprovacao);
+                linhaCampoSemDoisPontos('Inclui pagamentos afetados pelo decurso do prazo?', dados.prazoCincoAnos);
+                if (dados.periodosPrescritos) linhaCampo('Nº dos Pagamentos afetados pelo decurso do prazo', dados.periodosPrescritos);
+            }
+
+            if (grupos.representacaoMotivo) {
+                heading('REPRESENTAÇÃO E MOTIVO DA RESTITUIÇÃO');
+                linhaCampo('Representação', dados.tipoRepresentacao);
+                if (temDocumentoSEIPreenchido(dados.seiRepresentacao)) linhaCampo('Documento da representação', dados.seiRepresentacao);
+                linhaCampo('Motivo da restituição', dados.motivoRestituicao);
+                if (temDocumentoSEIPreenchido(dados.seiDecisao)) linhaCampo('Decisão/análise relacionada', dados.seiDecisao);
+                if (dados.motivoRestituicao === 'Outro' && dados.descricaoMotivo) paragraph(`Descrição do motivo: ${dados.descricaoMotivo}`);
+            }
+
+            if (grupos.demonstrativo) {
+                heading('DEMONSTRATIVO DE CÁLCULO');
+                linhaCampo('Mês de atualização/restituição', dados.mesReferencia);
+
+                const x0 = margem;
+                const rowH = 28;
+
+                function desenharCabecalhoTabela() {
+                    garantir(42);
+                    let x = x0;
+                    const largurasVisiveis = [54, 54, 52, 52, 50, 55, 55, 39, 50, 70];
+                    const cabecalhosVisiveis = ['Nº débito', 'Nº\npagamento', 'Data\npagamento', 'Valor\npago (R$)', 'Repasse\nestado (%)', 'Repasse\nestado (R$)', 'Ficou no\nIbama (R$)', 'Selic\n%', 'Selic\nR$', 'Valor a\nrestituir (R$)'];
+                    cabecalhosVisiveis.forEach((h, i) => {
+                        cell(x, y - 30, largurasVisiveis[i], 30, h, { fill: [0.12, 0.31, 0.47], textColor: [1,1,1], size: 6.5, bold: true });
+                        x += largurasVisiveis[i];
+                    });
+                    y -= 30;
+                    return largurasVisiveis;
+                }
+
+                let largurasTabela = desenharCabecalhoTabela();
+                dados.linhas.forEach((linha, indiceLinha) => {
+                    garantir(rowH + 4);
+                    if (y - rowH < 45) {
+                        novaPagina();
+                        heading('DEMONSTRATIVO DE CÁLCULO - CONTINUAÇÃO');
+                        largurasTabela = desenharCabecalhoTabela();
+                    }
+                    let x = x0;
+                    const valores = [linha.debito, linha.pagamento, linha.dataPagamento, linha.valorPago, linha.percentualRepasse, linha.valorRepasse || '0,00', linha.valorIbama, linha.taxaSelic, linha.valorSelic, linha.valorRestituir];
+                    const fillLinha = indiceLinha % 2 === 0 ? [1, 1, 1] : [0.93, 0.93, 0.93];
+                    valores.forEach((valor, i) => {
+                        cell(x, y - rowH, largurasTabela[i], rowH, valor, { fill: fillLinha, size: 6.5, bold: i === 9 });
+                        x += largurasTabela[i];
+                    });
+                    y -= rowH;
+                });
+
+                garantir(rowH + 8);
+                let xt = x0;
+                const totalValores = ['TOTAL', '', '', dados.totalPago, '', dados.totalRepasse, dados.totalIbama, '', dados.totalSelic, dados.totalRestituir];
+                totalValores.forEach((valor, i) => {
+                    cell(xt, y - rowH, largurasTabela[i], rowH, valor, { fill: [0.88,0.88,0.88], size: 7, bold: true });
+                    xt += largurasTabela[i];
+                });
+                y -= rowH + 12;
+            }
+
+            if (grupos.repasseEstado) {
+                heading('REPASSE AO ESTADO');
+                if (moedaParaNumero(dados.totalRepasse) > 0) {
+                    paragraph(`Foi identificado valor repassado ao estado no total de R$ ${dados.totalRepasse || '0,00'}, conforme detalhado no demonstrativo de cálculo. Os valores repassados foram deduzidos da base de restituição pelo Ibama.`, 124);
+                } else {
+                    paragraph('Não foi identificado valor repassado ao estado.', 124);
+                }
+            }
+            
+            if (grupos.dadosBancarios) {
+                heading('DADOS BANCÁRIOS INFORMADOS');
+                if (temDocumentoSEIPreenchido(dados.seiDadosBancarios)) linhaCampo('Dados bancários (SEI)', dados.seiDadosBancarios);
+                linhaCampo('Titular da conta', dados.titularConta);
+                linhaCampo('CPF/CNPJ do titular', dados.cpfCnpjTitular);
+                linhaCampo('Banco', `${dados.banco}${dados.codigoBanco ? ' / Código: ' + dados.codigoBanco : ''}`);
+                linhaCampo('Agência', `${dados.agencia}${dados.digitoAgencia ? ' / Código/Dígito: ' + dados.digitoAgencia : ''}`);
+                linhaCampo('Conta', dados.conta);
+                linhaCampo('Tipo de conta', dados.tipoConta);
+            }
+
+            if (grupos.conclusao) {
+                const linhasConclusao = wrap(dados.conclusaoAnalise || '', 124);
+                garantir(32 + (linhasConclusao.length * 12) + 8);
+                heading('CONCLUSÃO DA ANÁLISE');
+                paragraphJustificado(dados.conclusaoAnalise || '', 124);
+            }
+
+            paginas.push(comandos);
+
+            const objetos = [];
+            objetos.push('<< /Type /Catalog /Pages 2 0 R >>');
+            objetos.push('PAGES_PLACEHOLDER');
+            objetos.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+            objetos.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+
+            const xobjects = [];
+            if (imagensCabecalho?.brasao?.data) {
+                const objNum = objetos.length + 1;
+                xobjects.push({ name: 'ImBrasao', objNum });
+                objetos.push(`<< /Type /XObject /Subtype /Image /Width ${imagensCabecalho.brasao.width} /Height ${imagensCabecalho.brasao.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imagensCabecalho.brasao.data.length} >>\nstream\n${imagensCabecalho.brasao.data}\nendstream`);
+            }
+            if (imagensCabecalho?.ibama?.data) {
+                const objNum = objetos.length + 1;
+                xobjects.push({ name: 'ImIbama', objNum });
+                objetos.push(`<< /Type /XObject /Subtype /Image /Width ${imagensCabecalho.ibama.width} /Height ${imagensCabecalho.ibama.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imagensCabecalho.ibama.data.length} >>\nstream\n${imagensCabecalho.ibama.data}\nendstream`);
+            }
+
+            const primeiroObjetoPagina = objetos.length + 1;
+            const kids = paginas.map((_, i) => `${primeiroObjetoPagina + i * 2} 0 R`).join(' ');
+            objetos[1] = `<< /Type /Pages /Kids [${kids}] /Count ${paginas.length} >>`;
+            const recursoXObject = xobjects.length ? ` /XObject << ${xobjects.map(img => `/${img.name} ${img.objNum} 0 R`).join(' ')} >>` : '';
+
+            paginas.forEach((cmds, i) => {
+                const pageObjNum = primeiroObjetoPagina + i * 2;
+                const contentObjNum = pageObjNum + 1;
+                const conteudo = cmds.join('\n');
+                objetos.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${larguraPagina} ${alturaPagina}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >>${recursoXObject} >> /Contents ${contentObjNum} 0 R >>`);
+                objetos.push(`<< /Length ${conteudo.length} >>\nstream\n${conteudo}\nendstream`);
+            });
+
+            let pdf = '%PDF-1.4\n';
+            const offsets = [0];
+            objetos.forEach((objeto, indice) => {
+                offsets.push(pdf.length);
+                pdf += `${indice + 1} 0 obj\n${objeto}\nendobj\n`;
+            });
+
+            const inicioXref = pdf.length;
+            pdf += `xref\n0 ${objetos.length + 1}\n`;
+            pdf += '0000000000 65535 f \n';
+            for (let i = 1; i < offsets.length; i++) pdf += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
+            pdf += `trailer\n<< /Size ${objetos.length + 1} /Root 1 0 R >>\nstartxref\n${inicioXref}\n%%EOF`;
+            return pdf;
+        }
+
+        function montarPDFCalculo(dados) {
+            const larguraPagina = 595;
+            const alturaPagina = 842;
+            const margem = 32;
+            const paginas = [];
+            let comandos = [];
+            let y = alturaPagina - 52;
+
+            function novaPagina() {
+                if (comandos.length) paginas.push(comandos);
+                comandos = [];
+                comandos.push('1 1 1 rg');
+                comandos.push(`0 0 ${larguraPagina} ${alturaPagina} re f`);
+                y = alturaPagina - 52;
+            }
+
+            function garantir(alturaNecessaria) {
+                if (y - alturaNecessaria < 45) novaPagina();
+            }
+
+            function textoPDF(texto) { return criarTextoPDF(String(texto || '')); }
+
+            function addText(texto, x, yTexto, tamanho = 9, alinhamento = 'left', largura = 0, negrito = false) {
+                const fonte = negrito ? 'F2' : 'F1';
+                let textoX = x;
+                const conteudo = String(texto || '');
+                let textoEstimado;
+                try {
+                    textoEstimado = estimarLarguraTextoPDF(conteudo, tamanho, negrito);
+                } catch (_) {
+                    const fatorEstimativa = negrito ? 0.54 : 0.48;
+                    textoEstimado = conteudo.length * tamanho * fatorEstimativa;
+                }
+                if (alinhamento === 'center') textoX = x + (largura - textoEstimado) / 2;
+                if (alinhamento === 'right') textoX = x + largura - textoEstimado;
+                comandos.push(`BT /${fonte} ${tamanho} Tf ${textoX.toFixed(2)} ${yTexto.toFixed(2)} Td ${textoPDF(texto)} Tj ET`);
+            }
+
+            function cell(x, yCell, w, h, texto, opts = {}) {
+                const fill = opts.fill || null;
+                const textColor = opts.textColor || [0, 0, 0];
+                const size = opts.size || 8;
+                const bold = opts.bold || false;
+                const align = opts.align || 'center';
+                if (fill) {
+                    comandos.push(`${fill[0]} ${fill[1]} ${fill[2]} rg`);
+                    comandos.push(`${x.toFixed(2)} ${yCell.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f`);
+                }
+                comandos.push('0.72 w 0.72 0.72 0.72 RG');
+                comandos.push(`${x.toFixed(2)} ${yCell.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re S`);
+                comandos.push(`${textColor[0]} ${textColor[1]} ${textColor[2]} rg`);
+                const linhas = String(texto || '').split('\n');
+                const alturaLinha = size + 2;
+                const yInicial = yCell + (h / 2) + ((linhas.length - 1) * alturaLinha / 2) - (size / 2);
+                linhas.forEach((linha, idx) => addText(linha, x + 3, yInicial - idx * alturaLinha, size, align, w - 6, bold));
+            }
+
+            function heading(texto) {
+                garantir(30);
+                const alturaBarra = 20;
+                comandos.push('0.88 0.88 0.88 rg');
+                comandos.push(`${margem} ${(y - alturaBarra).toFixed(2)} ${(larguraPagina - 2 * margem).toFixed(2)} ${alturaBarra} re f`);
+                comandos.push('0 0 0 rg');
+                addText(texto, margem + 5, y - 13, 10, 'left', 0, true);
+                y -= 32;
+            }
+
+            function estimarLarguraTextoPDF(texto, tamanho = 9, negrito = false) {
+                const larguraCaracteres = {
+                    ' ': 0.278, '!': 0.278, '"': 0.355, '#': 0.556, '$': 0.556, '%': 0.889, '&': 0.667, '\'': 0.191,
+                    '(': 0.333, ')': 0.333, '*': 0.389, '+': 0.584, ',': 0.278, '-': 0.333, '.': 0.278, '/': 0.278,
+                    '0': 0.556, '1': 0.556, '2': 0.556, '3': 0.556, '4': 0.556, '5': 0.556, '6': 0.556, '7': 0.556, '8': 0.556, '9': 0.556,
+                    ':': 0.278, ';': 0.278, '<': 0.584, '=': 0.584, '>': 0.584, '?': 0.556, '@': 1.015,
+                    'A': 0.667, 'B': 0.667, 'C': 0.722, 'D': 0.722, 'E': 0.667, 'F': 0.611, 'G': 0.778, 'H': 0.722, 'I': 0.278, 'J': 0.500,
+                    'K': 0.667, 'L': 0.556, 'M': 0.833, 'N': 0.722, 'O': 0.778, 'P': 0.667, 'Q': 0.778, 'R': 0.722, 'S': 0.667, 'T': 0.611,
+                    'U': 0.722, 'V': 0.667, 'W': 0.944, 'X': 0.667, 'Y': 0.667, 'Z': 0.611,
+                    'a': 0.556, 'b': 0.556, 'c': 0.500, 'd': 0.556, 'e': 0.556, 'f': 0.278, 'g': 0.556, 'h': 0.556, 'i': 0.222, 'j': 0.222,
+                    'k': 0.500, 'l': 0.222, 'm': 0.833, 'n': 0.556, 'o': 0.556, 'p': 0.556, 'q': 0.556, 'r': 0.333, 's': 0.500, 't': 0.278,
+                    'u': 0.556, 'v': 0.500, 'w': 0.722, 'x': 0.500, 'y': 0.500, 'z': 0.500
+                };
+                let total = 0;
+                String(texto || '').split('').forEach(ch => {
+                    total += larguraCaracteres[ch] || 0.556;
+                });
+                return total * tamanho * (negrito ? 1.035 : 1);
+            }
+
+            function quebrarTextoPorLargura(texto, larguraMaxima, tamanho = 9, negrito = false) {
+                const palavras = String(texto || '').replace(/\s+/g, ' ').trim().split(' ');
+                if (!palavras.length || !palavras[0]) return [''];
+                const linhas = [];
+                let atual = '';
+                palavras.forEach(palavra => {
+                    const candidato = atual ? `${atual} ${palavra}` : palavra;
+                    if (atual && estimarLarguraTextoPDF(candidato, tamanho, negrito) > larguraMaxima) {
+                        linhas.push(atual);
+                        atual = palavra;
+                    } else {
+                        atual = candidato;
+                    }
+                });
+                if (atual) linhas.push(atual);
+                return linhas;
+            }
+
+            function linhaCampo(rotulo, valor) {
+                const textoRotulo = `${rotulo}: `;
+                const valorTexto = String(valor || 'Não informado');
+                const larguraTotal = larguraPagina - 2 * margem;
+                const larguraRotulo = estimarLarguraTextoPDF(textoRotulo, 9, true);
+                const espacoRotuloValor = 7;
+                const xValorPrimeiraLinha = Math.min(margem + larguraRotulo + espacoRotuloValor, margem + larguraTotal - 60);
+                const larguraPrimeiraLinha = Math.max((margem + larguraTotal) - xValorPrimeiraLinha, 60);
+                const palavras = String(valorTexto || '').replace(/\s+/g, ' ').trim().split(' ');
+                let primeiraLinha = '';
+                const restantesPalavras = [];
+                palavras.forEach(palavra => {
+                    const candidato = primeiraLinha ? `${primeiraLinha} ${palavra}` : palavra;
+                    if (primeiraLinha && estimarLarguraTextoPDF(candidato, 9, false) > larguraPrimeiraLinha) {
+                        restantesPalavras.push(palavra);
+                    } else if (!primeiraLinha && estimarLarguraTextoPDF(candidato, 9, false) > larguraPrimeiraLinha) {
+                        primeiraLinha = palavra;
+                    } else if (restantesPalavras.length === 0) {
+                        primeiraLinha = candidato;
+                    } else {
+                        restantesPalavras.push(palavra);
+                    }
+                });
+                const textoRestante = restantesPalavras.join(' ');
+                const demaisLinhas = textoRestante ? quebrarTextoPorLargura(textoRestante, larguraTotal, 9, false) : [];
+                const totalLinhas = 1 + demaisLinhas.length;
+                garantir(totalLinhas * 13 + 2);
+                comandos.push(`BT /F2 9 Tf ${margem.toFixed(2)} ${y.toFixed(2)} Td ${textoPDF(textoRotulo)} Tj ET`);
+                addText(primeiraLinha || '', xValorPrimeiraLinha, y, 9, 'left', 0, false);
+                y -= 13;
+                demaisLinhas.forEach(linha => {
+                    addText(linha, margem, y, 9, 'left', 0, false);
+                    y -= 13;
+                });
+            }
+
+            novaPagina();
+
+            const alturaTitulo = 26;
+            const yTitulo = alturaPagina - 70;
+            comandos.push('0.12 0.31 0.47 rg');
+            comandos.push(`${margem} ${yTitulo.toFixed(2)} ${larguraPagina - 2 * margem} ${alturaTitulo} re f`);
+            comandos.push('1 1 1 rg');
+            addText('DEMONSTRATIVO DE CÁLCULO', margem, yTitulo + 8.5, 12.5, 'center', larguraPagina - 2 * margem, true);
+            y = yTitulo - 28;
+
+            heading('DEMONSTRATIVO DE CÁLCULO');
+            linhaCampo('Mês de atualização/restituição', dados.mesReferencia);
+
+            const x0 = margem;
+            const rowH = 28;
+
+            function desenharCabecalhoTabela() {
+                garantir(42);
+                let x = x0;
+                const largurasVisiveis = [54, 54, 52, 52, 50, 55, 55, 39, 50, 70];
+                const cabecalhosVisiveis = ['Nº débito', 'Nº\npagamento', 'Data\npagamento', 'Valor\npago (R$)', 'Repasse\nestado (%)', 'Repasse\nestado (R$)', 'Ficou no\nIbama (R$)', 'Selic\n%', 'Selic\nR$', 'Valor a\nrestituir (R$)'];
+                cabecalhosVisiveis.forEach((h, i) => {
+                    cell(x, y - 30, largurasVisiveis[i], 30, h, { fill: [0.12, 0.31, 0.47], textColor: [1,1,1], size: 6.5, bold: true });
+                    x += largurasVisiveis[i];
+                });
+                y -= 30;
+                return largurasVisiveis;
+            }
+
+            let largurasTabela = desenharCabecalhoTabela();
+            dados.linhas.forEach(linha => {
+                garantir(rowH + 4);
+                if (y - rowH < 45) {
+                    novaPagina();
+                    heading('DEMONSTRATIVO DE CÁLCULO - CONTINUAÇÃO');
+                    largurasTabela = desenharCabecalhoTabela();
+                }
+                let x = x0;
+                const valores = [linha.debito, linha.pagamento, linha.dataPagamento, linha.valorPago, linha.percentualRepasse, linha.valorRepasse || '0,00', linha.valorIbama, linha.taxaSelic, linha.valorSelic, linha.valorRestituir];
+                valores.forEach((valor, i) => {
+                    const fill = i >= 6 ? [0.90, 0.90, 0.90] : null;
+                    cell(x, y - rowH, largurasTabela[i], rowH, valor, { fill, size: 6.5, bold: i === 9 });
+                    x += largurasTabela[i];
+                });
+                y -= rowH;
+            });
+
+            garantir(rowH + 8);
+            let xt = x0;
+            const totalValores = ['TOTAL', '', '', dados.totalPago, '', dados.totalRepasse, dados.totalIbama, '', dados.totalSelic, dados.totalRestituir];
+            totalValores.forEach((valor, i) => {
+                cell(xt, y - rowH, largurasTabela[i], rowH, valor, { fill: [0.88,0.88,0.88], size: 7, bold: true });
+                xt += largurasTabela[i];
+            });
+            y -= rowH + 12;
+
+            paginas.push(comandos);
+
+            const objetos = [];
+            objetos.push('<< /Type /Catalog /Pages 2 0 R >>');
+            const kids = paginas.map((_, i) => `${5 + i * 2} 0 R`).join(' ');
+            objetos.push(`<< /Type /Pages /Kids [${kids}] /Count ${paginas.length} >>`);
+            objetos.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+            objetos.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+
+            paginas.forEach((cmds, i) => {
+                const contentObjNum = 6 + i * 2;
+                const conteudo = cmds.join('\n');
+                objetos.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${larguraPagina} ${alturaPagina}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentObjNum} 0 R >>`);
+                objetos.push(`<< /Length ${conteudo.length} >>\nstream\n${conteudo}\nendstream`);
+            });
+
+            let pdf = '%PDF-1.4\n';
+            const offsets = [0];
+            objetos.forEach((objeto, indice) => {
+                offsets.push(pdf.length);
+                pdf += `${indice + 1} 0 obj\n${objeto}\nendobj\n`;
+            });
+
+            const inicioXref = pdf.length;
+            pdf += `xref\n0 ${objetos.length + 1}\n`;
+            pdf += '0000000000 65535 f \n';
+            for (let i = 1; i < offsets.length; i++) pdf += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
+            pdf += `trailer\n<< /Size ${objetos.length + 1} /Root 1 0 R >>\nstartxref\n${inicioXref}\n%%EOF`;
+            return pdf;
+        }
+
+        function obterGruposSelecionadosPDF() {
+            const selecionados = {};
+            document.querySelectorAll('.pdf-grupo-check').forEach(check => {
+                selecionados[check.value] = check.checked;
+            });
+            return selecionados;
+        }
+
+        function existeGrupoSelecionadoPDF(grupos) {
+            return Object.values(grupos || {}).some(Boolean);
+        }
+
+        function abrirModalSelecionarPDF() {
+            atualizarConclusao();
+            const modal = document.getElementById('modalSelecionarPDF');
+            if (!modal) return;
+            modal.classList.add('aberto');
+            modal.setAttribute('aria-hidden', 'false');
+        }
+
+        function fecharModalSelecionarPDF() {
+            const modal = document.getElementById('modalSelecionarPDF');
+            if (!modal) return;
+            modal.classList.remove('aberto');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        function marcarTodosGruposPDF() {
+            document.querySelectorAll('.pdf-grupo-check').forEach(check => { check.checked = true; });
+        }
+
+        function desmarcarTodosGruposPDF() {
+            document.querySelectorAll('.pdf-grupo-check').forEach(check => { check.checked = false; });
+        }
+
+        async function gerarPDFDireto(gruposSelecionados = null) {
+            try {
+                atualizarConclusao();
+                const dados = obterDadosParaPDF();
+                const grupos = gruposSelecionados || obterGruposSelecionadosPDF();
+
+                if (!existeGrupoSelecionadoPDF(grupos)) {
+                    mostrarAlerta('Selecione ao menos um grupo para gerar o PDF.', 'error');
+                    return false;
+                }
+
+
+                const imagensCabecalho = await carregarImagensCabecalhoPDF();
+                const pdf = montarPDFAnalise(dados, grupos, imagensCabecalho);
+                const blob = new Blob([stringBinariaParaUint8Array(pdf)], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'analise_restituicao.pdf';
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                mostrarAlerta('✅ PDF gerado com sucesso.', 'success');
+                return true;
+            } catch (erro) {
+                console.error('Erro ao gerar PDF:', erro);
+                mostrarAlerta('Não foi possível gerar o PDF. Verifique os dados preenchidos e tente novamente.', 'error');
+                return false;
+            }
+        }
+
+        async function gerarPDFSelecionado() {
+            const grupos = obterGruposSelecionadosPDF();
+            const gerou = await gerarPDFDireto(grupos);
+            if (gerou) fecharModalSelecionarPDF();
+        }
+
+        window.gerarPDFSelecionado = gerarPDFSelecionado;
+
+        function criarModalUltimaTaxa() {
+            if (document.getElementById('modalUltimaTaxa')) return;
+            const modal = document.createElement('div');
+            modal.id = 'modalUltimaTaxa';
+            modal.style.display = 'none';
+            modal.style.position = 'fixed';
+            modal.style.zIndex = '9999';
+            modal.style.left = '0';
+            modal.style.top = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.overflow = 'auto';
+            modal.style.backgroundColor = 'rgba(0,0,0,0.4)';
+            modal.style.fontFamily = 'Arial, sans-serif';
+            modal.innerHTML = `
+                <div style="background-color:#fefefe;margin:15% auto;padding:20px 30px;border:1px solid #888;width:400px;border-radius:8px;box-shadow:0 4px 10px rgba(0,0,0,0.3);text-align:center;position:relative;font-weight:bold;font-size:16px;">
+                    <p id="textoUltimaTaxa" style="margin-top:20px;"></p>
+                    <button id="btnOkModal" style="background-color:#1f4e79;color:white;border:none;padding:10px 20px;border-radius:4px;cursor:pointer;font-size:14px;font-weight:bold;margin-top:15px;">OK</button>
+                </div>`;
+            document.body.appendChild(modal);
+            document.getElementById('btnOkModal').onclick = () => { modal.style.display = 'none'; };
+        }
+
+        function mostrarModalUltimaTaxa() {
+            criarModalUltimaTaxa();
+            const modal = document.getElementById('modalUltimaTaxa');
+            const textoElemento = document.getElementById('textoUltimaTaxa');
+            if (!modal || !textoElemento) return;
+            if (!metadadosSelic.ultimaCompetencia || metadadosSelic.ultimaTaxa === null || !metadadosSelic.competenciaProvisoria || metadadosSelic.taxaProvisoria === null) return;
+            textoElemento.innerHTML = `ATUALIZADO!<br><br>${metadadosSelic.ultimaTaxa.toFixed(2).replace('.', ',')}% (${metadadosSelic.ultimaCompetencia})<br>${metadadosSelic.taxaProvisoria.toFixed(2).replace('.', ',')}% (${metadadosSelic.competenciaProvisoria})`;
+            modal.style.display = 'block';
+        }
+
+        function moverFocoComoTab(event) {
+            if (event.key !== 'Enter') return;
+            const elemento = event.target;
+            if (!elemento || elemento.tagName === 'TEXTAREA') return;
+            if (elemento.tagName !== 'INPUT' && elemento.tagName !== 'SELECT') return;
+            if (elemento.type === 'button' || elemento.type === 'submit' || elemento.type === 'reset') return;
+            event.preventDefault();
+
+            const focaveis = Array.from(document.querySelectorAll(
+                'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )).filter(el => el.offsetParent !== null && !el.readOnly && el.tabIndex !== -1);
+
+            const indiceAtual = focaveis.indexOf(elemento);
+            if (indiceAtual === -1) return;
+            const proximo = focaveis[indiceAtual + 1];
+            if (proximo) {
+                proximo.focus();
+                if (typeof proximo.select === 'function' && (proximo.tagName === 'INPUT' || proximo.tagName === 'TEXTAREA')) proximo.select();
+            }
+        }
+
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                fecharModalSelecionarPDF();
+            }
+        });
+
+        document.addEventListener('keydown', moverFocoComoTab);
+
+        const botaoGerarPDFSelecionado = document.getElementById('btnGerarPDFSelecionado');
+        if (botaoGerarPDFSelecionado) {
+            botaoGerarPDFSelecionado.addEventListener('click', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                gerarPDFSelecionado();
+            });
+        }
+
+        window.onload = function() {
+            console.log('🚀 CALCULADORA DE RESTITUIÇÃO inicializando...');
+            definirMesVigente();
+            inicializarCamposSEI();
+            sincronizarDadosTitularPadrao();
+            atualizarDescricaoMotivo();
+            atualizarAnalisePrazo();
+            ajustarTabulacaoTabelaDemonstrativo();
+            atualizarConclusao();
+            buscarDadosOnline().then(() => {
+                mostrarAlerta('✅ Sistema pronto para análise de restituição.', 'success');
+            });
+        };
+    </script>
 </body>
 </html>
