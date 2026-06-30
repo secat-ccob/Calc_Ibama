@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_15 -->
+  <!-- Versão: simulador_consolidacao_debito_v_16 -->
 
   <style>
     :root {
@@ -534,6 +534,49 @@
   </footer>
 
   <script>
+    const BRASAO_REPUBLICA_PDF_URL = '../assets/img/pdf/brasao_republica.png';
+    const LOGO_IBAMA_PDF_URL = '../assets/img/pdf/logo_ibama.png';
+    let imagensCabecalhoPDFCache = null;
+
+    function carregarImagemComoJPEGParaPDF(url) {
+      return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const largura = img.naturalWidth || img.width || 200;
+            const altura = img.naturalHeight || img.height || 200;
+            const canvas = document.createElement('canvas');
+            canvas.width = largura;
+            canvas.height = altura;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, largura, altura);
+            ctx.drawImage(img, 0, 0, largura, altura);
+            const dataURL = canvas.toDataURL('image/jpeg', 0.92);
+            const dadosBinarios = atob(dataURL.split(',')[1] || '');
+            resolve({ data: dadosBinarios, width: largura, height: altura });
+          } catch (erro) {
+            console.warn('Não foi possível preparar imagem para o PDF:', url, erro);
+            resolve(null);
+          }
+        };
+        img.onerror = () => {
+          console.warn('Não foi possível carregar imagem do cabeçalho do PDF:', url);
+          resolve(null);
+        };
+        img.src = url;
+      });
+    }
+
+    async function carregarImagensCabecalhoPDF() {
+      if (imagensCabecalhoPDFCache) return imagensCabecalhoPDFCache;
+      const [brasao, ibama] = await Promise.all([
+        carregarImagemComoJPEGParaPDF(BRASAO_REPUBLICA_PDF_URL),
+        carregarImagemComoJPEGParaPDF(LOGO_IBAMA_PDF_URL)
+      ]);
+      imagensCabecalhoPDFCache = { brasao, ibama };
+      return imagensCabecalhoPDFCache;
+    }
     function ehCampoBaseManual(input) {
       return false;
     }
@@ -887,97 +930,194 @@
       return bytes;
     }
 
-    function estimarLarguraTexto(texto, tamanho) {
+    const LARGURAS_HELVETICA_PDF = {
+      ' ': 278, '!': 278, '"': 355, '#': 556, '$': 556, '%': 889, '&': 667, "'": 222,
+      '(': 333, ')': 333, '*': 389, '+': 584, ',': 278, '-': 333, '.': 278, '/': 278,
+      '0': 556, '1': 556, '2': 556, '3': 556, '4': 556, '5': 556, '6': 556, '7': 556, '8': 556, '9': 556,
+      ':': 278, ';': 278, '<': 584, '=': 584, '>': 584, '?': 556, '@': 1015,
+      'A': 667, 'B': 667, 'C': 722, 'D': 722, 'E': 667, 'F': 611, 'G': 778, 'H': 722, 'I': 278, 'J': 500,
+      'K': 667, 'L': 556, 'M': 833, 'N': 722, 'O': 778, 'P': 667, 'Q': 778, 'R': 722, 'S': 667, 'T': 611,
+      'U': 722, 'V': 667, 'W': 944, 'X': 667, 'Y': 667, 'Z': 611, '[': 278, '\\': 278, ']': 278, '^': 469, '_': 556,
+      '`': 222, 'a': 556, 'b': 556, 'c': 500, 'd': 556, 'e': 556, 'f': 278, 'g': 556, 'h': 556, 'i': 222,
+      'j': 222, 'k': 500, 'l': 222, 'm': 833, 'n': 556, 'o': 556, 'p': 556, 'q': 556, 'r': 333, 's': 500,
+      't': 278, 'u': 556, 'v': 500, 'w': 722, 'x': 500, 'y': 500, 'z': 500, '{': 334, '|': 260, '}': 334, '~': 584,
+      'Á': 667, 'À': 667, 'Â': 667, 'Ã': 667, 'É': 667, 'Ê': 667, 'Í': 278, 'Ó': 778, 'Ô': 778, 'Õ': 778, 'Ú': 722,
+      'Ç': 722, 'á': 556, 'à': 556, 'â': 556, 'ã': 556, 'é': 556, 'ê': 556, 'í': 222, 'ó': 556, 'ô': 556, 'õ': 556, 'ú': 556, 'ç': 500
+    };
+
+    const LARGURAS_HELVETICA_BOLD_PDF = {
+      ...LARGURAS_HELVETICA_PDF,
+      'A': 722, 'B': 722, 'C': 722, 'D': 722, 'E': 667, 'F': 611, 'G': 778, 'H': 722, 'I': 278, 'J': 556,
+      'K': 722, 'L': 611, 'M': 833, 'N': 722, 'O': 778, 'P': 667, 'Q': 778, 'R': 722, 'S': 667, 'T': 611,
+      'U': 722, 'V': 667, 'W': 944, 'X': 667, 'Y': 667, 'Z': 611,
+      'a': 556, 'b': 611, 'c': 556, 'd': 611, 'e': 556, 'f': 333, 'g': 611, 'h': 611, 'i': 278,
+      'j': 278, 'k': 556, 'l': 278, 'm': 889, 'n': 611, 'o': 611, 'p': 611, 'q': 611, 'r': 389, 's': 556,
+      't': 333, 'u': 611, 'v': 556, 'w': 778, 'x': 556, 'y': 556, 'z': 500,
+      'Á': 722, 'À': 722, 'Â': 722, 'Ã': 722, 'É': 667, 'Ê': 667, 'Í': 278, 'Ó': 778, 'Ô': 778, 'Õ': 778, 'Ú': 722,
+      'Ç': 722, 'á': 556, 'à': 556, 'â': 556, 'ã': 556, 'é': 556, 'ê': 556, 'í': 278, 'ó': 611, 'ô': 611, 'õ': 611, 'ú': 611, 'ç': 556
+    };
+
+    function estimarLarguraTextoPDF(texto, tamanho = 9, negrito = false) {
+      const fonte = negrito ? LARGURAS_HELVETICA_BOLD_PDF : LARGURAS_HELVETICA_PDF;
       const s = String(texto || '');
-      let peso = 0;
+      let total = 0;
       for (const c of s) {
-        if ('ilI.,:;|!'.includes(c)) peso += 0.28;
-        else if ('MW@#%'.includes(c)) peso += 0.82;
-        else if (c === ' ') peso += 0.25;
-        else peso += 0.52;
+        total += fonte[c] || (c.charCodeAt(0) > 127 ? 556 : 520);
       }
-      return peso * tamanho;
+      return (total / 1000) * tamanho;
     }
 
-    function construirPdfConsolidacao(dados) {
+    function estimarLarguraTexto(texto, tamanho) {
+      return estimarLarguraTextoPDF(texto, tamanho, false);
+    }
+
+    function stringBinariaParaBytes(binario) {
+      const s = String(binario || '');
+      const bytes = new Uint8Array(s.length);
+      for (let i = 0; i < s.length; i++) {
+        bytes[i] = s.charCodeAt(i) & 0xff;
+      }
+      return bytes;
+    }
+
+    function construirPdfConsolidacao(dados, imagensCabecalho) {
       const larguraPagina = 595.28;
       const alturaPagina = 841.89;
-      const margemX = 42;
+      const margem = 42;
+      const margemX = margem;
+      const margemInferior = 42;
       const tabelaLargura = larguraPagina - (margemX * 2);
       const colunas = [tabelaLargura * 0.40, tabelaLargura * 0.27, tabelaLargura * 0.33];
       const alturaLinha = 18;
       const x0 = margemX;
-      let yTopo = 775;
-      const conteudo = [];
+      const paginas = [];
+      let conteudo = [];
+      let y = 0;
 
       function cmd(s) {
         conteudo.push(...criarAsciiBytes(s));
       }
 
-      function textoPdf(texto, x, y, tamanho = 8, negrito = false, alinhamento = 'left', larguraCelula = 0) {
-        let xTexto = x;
-        if (alinhamento === 'center') {
-          xTexto = x + ((larguraCelula - estimarLarguraTexto(texto, tamanho)) / 2);
-        } else if (alinhamento === 'right') {
-          xTexto = x + larguraCelula - estimarLarguraTexto(texto, tamanho);
+      function textoPDF(texto) {
+        return criarPdfStringBytes(texto);
+      }
+
+      function addText(texto, x, yTexto, tamanho = 9, alinhamento = 'left', largura = 0, negrito = false) {
+        const fonte = negrito ? 'F2' : 'F1';
+        let textoX = x;
+        const conteudoTexto = String(texto || '');
+        let textoEstimado;
+        try {
+          textoEstimado = estimarLarguraTextoPDF(conteudoTexto, tamanho, negrito);
+        } catch (_) {
+          const fatorEstimativa = negrito ? 0.54 : 0.48;
+          textoEstimado = conteudoTexto.length * tamanho * fatorEstimativa;
         }
-        cmd(`BT /${negrito ? 'F2' : 'F1'} ${tamanho} Tf 1 0 0 1 ${xTexto.toFixed(2)} ${y.toFixed(2)} Tm `);
-        conteudo.push(...criarPdfStringBytes(texto));
+        if (alinhamento === 'center') textoX = x + (largura - textoEstimado) / 2;
+        if (alinhamento === 'right') textoX = x + largura - textoEstimado;
+        cmd(`BT /${fonte} ${tamanho} Tf ${textoX.toFixed(2)} ${yTexto.toFixed(2)} Td `);
+        conteudo.push(...textoPDF(conteudoTexto));
         cmd(' Tj ET\n');
       }
 
-      function preencherRetangulo(x, y, w, h, cinza) {
-        cmd(`q ${cinza} g ${x.toFixed(2)} ${y.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f Q\n`);
+      function desenharImagemCabecalho(nomeImagem, x, yImagem, largura, altura) {
+        if (!nomeImagem) return;
+        cmd(`q ${largura.toFixed(2)} 0 0 ${altura.toFixed(2)} ${x.toFixed(2)} ${yImagem.toFixed(2)} cm /${nomeImagem} Do Q\n`);
       }
 
-      function contornarRetangulo(x, y, w, h) {
-        cmd(`q 0 G 0.55 w ${x.toFixed(2)} ${y.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re S Q\n`);
+      function desenharCabecalhoInstitucional(tituloDocumento) {
+        const tamanhoLogo = 42;
+        const yLogo = alturaPagina - 64;
+        const xLogoEsquerda = margem + 8;
+        const xLogoDireita = larguraPagina - margem - tamanhoLogo - 8;
+
+        if (imagensCabecalho?.brasao) desenharImagemCabecalho('ImBrasao', xLogoEsquerda, yLogo, tamanhoLogo, tamanhoLogo);
+        if (imagensCabecalho?.ibama) desenharImagemCabecalho('ImIbama', xLogoDireita, yLogo, tamanhoLogo, tamanhoLogo);
+
+        cmd('0 0 0 rg\n');
+        addText('MINISTÉRIO DO MEIO AMBIENTE - MMA', margem, alturaPagina - 36, 8.7, 'center', larguraPagina - 2 * margem, true);
+        addText('INSTITUTO BRASILEIRO DO MEIO AMBIENTE E DOS RECURSOS NATURAIS RENOVÁVEIS - IBAMA', margem, alturaPagina - 49, 8.2, 'center', larguraPagina - 2 * margem, true);
+
+        const alturaTitulo = 26;
+        const yTitulo = alturaPagina - 110;
+        cmd('0.12 0.31 0.47 rg\n');
+        cmd(`${margem} ${yTitulo.toFixed(2)} ${larguraPagina - 2 * margem} ${alturaTitulo} re f\n`);
+        cmd('1 1 1 rg\n');
+        addText(tituloDocumento, margem, yTitulo + 8.5, 12.5, 'center', larguraPagina - 2 * margem, true);
+        cmd('0 0 0 rg\n');
+
+        y = yTitulo - 28;
       }
 
-      function celula(x, yTop, w, h, cinza, texto, opcoes = {}) {
-        const y = yTop - h;
-        preencherRetangulo(x, y, w, h, cinza);
-        contornarRetangulo(x, y, w, h);
-        if (texto !== undefined && texto !== null && texto !== '') {
-          const tamanho = opcoes.tamanho || 8;
-          const baseline = y + ((h - tamanho) / 2) + 2.4;
-          const padding = opcoes.padding || 5;
-          let xTexto = x + padding;
-          let larguraTexto = w - (padding * 2);
-          textoPdf(texto, xTexto, baseline, tamanho, !!opcoes.negrito, opcoes.alinhamento || 'left', larguraTexto);
+      function novaPagina() {
+        conteudo = [];
+        paginas.push(conteudo);
+        desenharCabecalhoInstitucional('Simulador de consolidação do débito');
+      }
+
+      function garantirEspaco(alturaNecessaria = alturaLinha) {
+        if (y - alturaNecessaria < margemInferior) {
+          novaPagina();
         }
       }
 
-      textoPdf('Simulador de consolidação do débito', margemX, 805, 13, true, 'center', tabelaLargura);
-
-      if (dados.numeroDebito) {
-        celula(x0, yTopo, colunas[0], alturaLinha, '0.85', 'Nº do débito:', { negrito: true });
-        celula(x0 + colunas[0], yTopo, colunas[1] + colunas[2], alturaLinha, '1', dados.numeroDebito, { alinhamento: 'left' });
-        yTopo -= alturaLinha;
+      function preencherRetangulo(x, yBase, w, h, cinza) {
+        cmd(`q ${cinza} g ${x.toFixed(2)} ${yBase.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f Q\n`);
       }
 
-      const rotuloData = dados.dataConsolidacao ? 'Consolidação do débito em:' : 'Consolidação do débito:';
-      celula(x0, yTopo, colunas[0], alturaLinha, '0.85', rotuloData, { negrito: true });
-      celula(x0 + colunas[0], yTopo, colunas[1] + colunas[2], alturaLinha, '1', dados.dataConsolidacao || '', { alinhamento: 'left' });
-      yTopo -= alturaLinha;
+      function contornarRetangulo(x, yBase, w, h) {
+        cmd(`q 0 G 0.55 w ${x.toFixed(2)} ${yBase.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re S Q\n`);
+      }
 
-      celula(x0, yTopo, colunas[0], alturaLinha, '0.97', 'Descrição', { negrito: true });
-      celula(x0 + colunas[0], yTopo, colunas[1], alturaLinha, '0.97', 'Percentual', { negrito: true, alinhamento: 'center' });
-      celula(x0 + colunas[0] + colunas[1], yTopo, colunas[2], alturaLinha, '0.97', 'Valores', { negrito: true, alinhamento: 'right' });
-      yTopo -= alturaLinha;
+      function celula(x, yTop, w, h, cinza, texto, opcoes = {}) {
+        const yBase = yTop - h;
+        preencherRetangulo(x, yBase, w, h, cinza);
+        contornarRetangulo(x, yBase, w, h);
+        if (texto !== undefined && texto !== null && texto !== '') {
+          const tamanho = opcoes.tamanho || 8;
+          const baseline = yBase + ((h - tamanho) / 2) + 2.4;
+          const padding = opcoes.padding || 5;
+          let xTexto = x + padding;
+          let larguraTexto = w - (padding * 2);
+          addText(texto, xTexto, baseline, tamanho, opcoes.alinhamento || 'left', larguraTexto, !!opcoes.negrito);
+        }
+      }
+
+      novaPagina();
+
+      if (dados.numeroDebito) {
+        garantirEspaco(alturaLinha);
+        celula(x0, y, colunas[0], alturaLinha, '0.85', 'Nº do débito:', { negrito: true });
+        celula(x0 + colunas[0], y, colunas[1] + colunas[2], alturaLinha, '1', dados.numeroDebito, { alinhamento: 'left' });
+        y -= alturaLinha;
+      }
+
+      garantirEspaco(alturaLinha);
+      const rotuloData = dados.dataConsolidacao ? 'Consolidação do débito em:' : 'Consolidação do débito:';
+      celula(x0, y, colunas[0], alturaLinha, '0.85', rotuloData, { negrito: true });
+      celula(x0 + colunas[0], y, colunas[1] + colunas[2], alturaLinha, '1', dados.dataConsolidacao || '', { alinhamento: 'left' });
+      y -= alturaLinha;
+
+      garantirEspaco(alturaLinha);
+      celula(x0, y, colunas[0], alturaLinha, '0.97', 'Descrição', { negrito: true });
+      celula(x0 + colunas[0], y, colunas[1], alturaLinha, '0.97', 'Percentual', { negrito: true, alinhamento: 'center' });
+      celula(x0 + colunas[0] + colunas[1], y, colunas[2], alturaLinha, '0.97', 'Valores', { negrito: true, alinhamento: 'right' });
+      y -= alturaLinha;
 
       dados.linhas.forEach((linha) => {
+        garantirEspaco(alturaLinha);
         const cinza = linha.destaque ? '0.88' : '0.97';
-        celula(x0, yTopo, colunas[0], alturaLinha, cinza, linha.descricao, { negrito: linha.destaque });
-        celula(x0 + colunas[0], yTopo, colunas[1], alturaLinha, cinza, linha.percentual, { alinhamento: 'center' });
-        celula(x0 + colunas[0] + colunas[1], yTopo, colunas[2], alturaLinha, cinza, linha.valor, { alinhamento: 'right', negrito: linha.valorNegrito });
-        yTopo -= alturaLinha;
+        celula(x0, y, colunas[0], alturaLinha, cinza, linha.descricao, { negrito: linha.destaque });
+        celula(x0 + colunas[0], y, colunas[1], alturaLinha, cinza, linha.percentual, { alinhamento: 'center' });
+        celula(x0 + colunas[0] + colunas[1], y, colunas[2], alturaLinha, cinza, linha.valor, { alinhamento: 'right', negrito: linha.valorNegrito });
+        y -= alturaLinha;
       });
 
-      const stream = new Uint8Array(conteudo);
+      const streamPaginas = paginas.map((pagina) => new Uint8Array(pagina));
       const partes = [];
       let tamanhoTotal = 0;
       const offsets = [0];
+      const objetosImagem = [];
 
       function adicionarBytes(bytes) {
         const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
@@ -996,25 +1136,65 @@
         adicionarAscii('\nendobj\n');
       }
 
+      const qtdPaginas = streamPaginas.length;
+      const primeiroObjetoPagina = 3;
+      const primeiroObjetoConteudo = primeiroObjetoPagina + qtdPaginas;
+      const objetoFonteNormal = primeiroObjetoConteudo + qtdPaginas;
+      const objetoFonteNegrito = objetoFonteNormal + 1;
+      let proximoObjeto = objetoFonteNegrito + 1;
+
+      if (imagensCabecalho?.brasao) {
+        objetosImagem.push({ nome: 'ImBrasao', numero: proximoObjeto++, imagem: imagensCabecalho.brasao });
+      }
+      if (imagensCabecalho?.ibama) {
+        objetosImagem.push({ nome: 'ImIbama', numero: proximoObjeto++, imagem: imagensCabecalho.ibama });
+      }
+
+      const recursosXObject = objetosImagem.length
+        ? ` /XObject << ${objetosImagem.map(img => `/${img.nome} ${img.numero} 0 R`).join(' ')} >>`
+        : '';
+      const recursosPagina = `<< /Font << /F1 ${objetoFonteNormal} 0 R /F2 ${objetoFonteNegrito} 0 R >>${recursosXObject} >>`;
+      const kids = Array.from({ length: qtdPaginas }, (_, i) => `${primeiroObjetoPagina + i} 0 R`).join(' ');
+
       adicionarAscii('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
       adicionarObjeto(1, criarAsciiBytes('<< /Type /Catalog /Pages 2 0 R >>'));
-      adicionarObjeto(2, criarAsciiBytes('<< /Type /Pages /Kids [3 0 R] /Count 1 >>'));
-      adicionarObjeto(3, criarAsciiBytes(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${larguraPagina} ${alturaPagina}] /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> /Contents 4 0 R >>`));
-      const objStream = [];
-      objStream.push(...criarAsciiBytes(`<< /Length ${stream.length} >>\nstream\n`));
-      objStream.push(...stream);
-      objStream.push(...criarAsciiBytes('\nendstream'));
-      adicionarObjeto(4, objStream);
-      adicionarObjeto(5, criarAsciiBytes('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>'));
-      adicionarObjeto(6, criarAsciiBytes('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>'));
+      adicionarObjeto(2, criarAsciiBytes(`<< /Type /Pages /Kids [${kids}] /Count ${qtdPaginas} >>`));
+
+      for (let i = 0; i < qtdPaginas; i++) {
+        const objPagina = primeiroObjetoPagina + i;
+        const objConteudo = primeiroObjetoConteudo + i;
+        adicionarObjeto(objPagina, criarAsciiBytes(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${larguraPagina} ${alturaPagina}] /Resources ${recursosPagina} /Contents ${objConteudo} 0 R >>`));
+      }
+
+      streamPaginas.forEach((stream, i) => {
+        const objStream = [];
+        objStream.push(...criarAsciiBytes(`<< /Length ${stream.length} >>\nstream\n`));
+        objStream.push(...stream);
+        objStream.push(...criarAsciiBytes('\nendstream'));
+        adicionarObjeto(primeiroObjetoConteudo + i, objStream);
+      });
+
+      adicionarObjeto(objetoFonteNormal, criarAsciiBytes('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>'));
+      adicionarObjeto(objetoFonteNegrito, criarAsciiBytes('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>'));
+
+      objetosImagem.forEach((item) => {
+        const bytesImagem = stringBinariaParaBytes(item.imagem.data);
+        const cabecalho = criarAsciiBytes(`<< /Type /XObject /Subtype /Image /Width ${item.imagem.width} /Height ${item.imagem.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${bytesImagem.length} >>\nstream\n`);
+        const rodape = criarAsciiBytes('\nendstream');
+        const objImagem = new Uint8Array(cabecalho.length + bytesImagem.length + rodape.length);
+        objImagem.set(cabecalho, 0);
+        objImagem.set(bytesImagem, cabecalho.length);
+        objImagem.set(rodape, cabecalho.length + bytesImagem.length);
+        adicionarObjeto(item.numero, objImagem);
+      });
 
       const inicioXref = tamanhoTotal;
-      adicionarAscii('xref\n0 7\n');
+      adicionarAscii(`xref\n0 ${proximoObjeto}\n`);
       adicionarAscii('0000000000 65535 f \n');
-      for (let i = 1; i <= 6; i++) {
+      for (let i = 1; i < proximoObjeto; i++) {
         adicionarAscii(String(offsets[i]).padStart(10, '0') + ' 00000 n \n');
       }
-      adicionarAscii(`trailer\n<< /Size 7 /Root 1 0 R >>\nstartxref\n${inicioXref}\n%%EOF`);
+      adicionarAscii(`trailer\n<< /Size ${proximoObjeto} /Root 1 0 R >>\nstartxref\n${inicioXref}\n%%EOF`);
 
       const pdf = new Uint8Array(tamanhoTotal);
       let pos = 0;
@@ -1025,7 +1205,7 @@
       return pdf;
     }
 
-    function gerarPdfConsolidacao() {
+    async function gerarPdfConsolidacao() {
       const dataInput = document.getElementById('dataConsolidacao');
       if (dataInput && dataInput.value.trim() && !ensureInputDate(dataInput)) {
         return;
@@ -1033,7 +1213,8 @@
 
       atualizarCalculos();
       const dados = coletarDadosPdf();
-      const pdf = construirPdfConsolidacao(dados);
+      const imagensCabecalho = await carregarImagensCabecalhoPDF();
+      const pdf = construirPdfConsolidacao(dados, imagensCabecalho);
       const blob = new Blob([pdf], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
