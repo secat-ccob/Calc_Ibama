@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_18 -->
+    <!-- Versão: calculadora_selic_portal_v_19 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -596,6 +596,50 @@
             }
         }
         
+        const BRASAO_REPUBLICA_PDF_URL = '../assets/img/pdf/brasao_republica.png';
+        const LOGO_IBAMA_PDF_URL = '../assets/img/pdf/logo_ibama.png';
+        let imagensCabecalhoPDFCache = null;
+
+        function carregarImagemComoJPEGParaPDF(url) {
+            return new Promise(resolve => {
+                const img = new Image();
+                img.onload = () => {
+                    try {
+                        const largura = img.naturalWidth || img.width || 200;
+                        const altura = img.naturalHeight || img.height || 200;
+                        const canvas = document.createElement('canvas');
+                        canvas.width = largura;
+                        canvas.height = altura;
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, largura, altura);
+                        ctx.drawImage(img, 0, 0, largura, altura);
+                        const dataURL = canvas.toDataURL('image/jpeg', 0.92);
+                        const dadosBinarios = atob(dataURL.split(',')[1] || '');
+                        resolve({ data: dadosBinarios, width: largura, height: altura });
+                    } catch (erro) {
+                        console.warn('Não foi possível preparar imagem para o PDF:', url, erro);
+                        resolve(null);
+                    }
+                };
+                img.onerror = () => {
+                    console.warn('Não foi possível carregar imagem do cabeçalho do PDF:', url);
+                    resolve(null);
+                };
+                img.src = url;
+            });
+        }
+
+        async function carregarImagensCabecalhoPDF() {
+            if (imagensCabecalhoPDFCache) return imagensCabecalhoPDFCache;
+            const [brasao, ibama] = await Promise.all([
+                carregarImagemComoJPEGParaPDF(BRASAO_REPUBLICA_PDF_URL),
+                carregarImagemComoJPEGParaPDF(LOGO_IBAMA_PDF_URL)
+            ]);
+            imagensCabecalhoPDFCache = { brasao, ibama };
+            return imagensCabecalhoPDFCache;
+        }
+
         function criarTextoPDF(texto) {
             const mapaWinAnsi = {
                 '€': 128, '‚': 130, 'ƒ': 131, '„': 132, '…': 133, '†': 134, '‡': 135,
@@ -638,18 +682,75 @@
             return criarTextoPDF(String(texto || ''));
         }
 
+        function estimarLarguraTextoPDF(texto, tamanho = 9, negrito = false) {
+            const conteudo = String(texto || '');
+            const larguras = {
+                ' ': 0.28, '.': 0.28, ',': 0.28, ':': 0.28, ';': 0.28, '-': 0.33, '/': 0.28,
+                'I': 0.28, 'J': 0.33, 'L': 0.56, 'M': 0.83, 'W': 0.94,
+                'i': 0.22, 'j': 0.22, 'l': 0.22, 'm': 0.83, 'w': 0.72,
+                '0': 0.56, '1': 0.56, '2': 0.56, '3': 0.56, '4': 0.56,
+                '5': 0.56, '6': 0.56, '7': 0.56, '8': 0.56, '9': 0.56
+            };
+
+            let soma = 0;
+            for (const caractere of conteudo) {
+                if (larguras[caractere] !== undefined) {
+                    soma += larguras[caractere];
+                } else if (/[A-ZÁÉÍÓÚÀÂÊÔÃÕÇ]/.test(caractere)) {
+                    soma += negrito ? 0.70 : 0.66;
+                } else if (/[a-záéíóúàâêôãõç]/.test(caractere)) {
+                    soma += negrito ? 0.56 : 0.52;
+                } else {
+                    soma += negrito ? 0.58 : 0.52;
+                }
+            }
+            return soma * tamanho;
+        }
+
         function adicionarTextoPDF(comandos, texto, x, y, tamanho = 10, alinhamento = 'left', largura = 0, negrito = false) {
             const fonte = negrito ? 'F2' : 'F1';
             let textoX = x;
-            const textoEstimado = String(texto || '').length * tamanho * 0.48;
-
-            if (alinhamento === 'center') {
-                textoX = x + (largura - textoEstimado) / 2;
-            } else if (alinhamento === 'right') {
-                textoX = x + largura - textoEstimado - 3;
+            const conteudo = String(texto || '');
+            let textoEstimado;
+            try {
+                textoEstimado = estimarLarguraTextoPDF(conteudo, tamanho, negrito);
+            } catch (_) {
+                const fatorEstimativa = negrito ? 0.54 : 0.48;
+                textoEstimado = conteudo.length * tamanho * fatorEstimativa;
             }
 
+            if (alinhamento === 'center') textoX = x + (largura - textoEstimado) / 2;
+            if (alinhamento === 'right') textoX = x + largura - textoEstimado;
+
             comandos.push(`BT /${fonte} ${tamanho} Tf ${textoX.toFixed(2)} ${y.toFixed(2)} Td ${escaparComandoPDF(texto)} Tj ET`);
+        }
+
+        function desenharImagemCabecalho(comandos, nomeImagem, x, yImagem, largura, altura) {
+            if (!nomeImagem) return;
+            comandos.push(`q ${largura.toFixed(2)} 0 0 ${altura.toFixed(2)} ${x.toFixed(2)} ${yImagem.toFixed(2)} cm /${nomeImagem} Do Q`);
+        }
+
+        function desenharCabecalhoInstitucional(comandos, larguraPagina, alturaPagina, margem, imagensCabecalho, tituloDocumento) {
+            const tamanhoLogo = 42;
+            const yLogo = alturaPagina - 64;
+            const xLogoEsquerda = margem + 8;
+            const xLogoDireita = larguraPagina - margem - tamanhoLogo - 8;
+
+            if (imagensCabecalho?.brasao) desenharImagemCabecalho(comandos, 'ImBrasao', xLogoEsquerda, yLogo, tamanhoLogo, tamanhoLogo);
+            if (imagensCabecalho?.ibama) desenharImagemCabecalho(comandos, 'ImIbama', xLogoDireita, yLogo, tamanhoLogo, tamanhoLogo);
+
+            comandos.push('0 0 0 rg');
+            adicionarTextoPDF(comandos, 'MINISTÉRIO DO MEIO AMBIENTE - MMA', margem, alturaPagina - 36, 8.7, 'center', larguraPagina - 2 * margem, true);
+            adicionarTextoPDF(comandos, 'INSTITUTO BRASILEIRO DO MEIO AMBIENTE E DOS RECURSOS NATURAIS RENOVÁVEIS - IBAMA', margem, alturaPagina - 49, 8.2, 'center', larguraPagina - 2 * margem, true);
+
+            const alturaTitulo = 26;
+            const yTitulo = alturaPagina - 110;
+            comandos.push('0.12 0.31 0.47 rg');
+            comandos.push(`${margem} ${yTitulo.toFixed(2)} ${larguraPagina - 2 * margem} ${alturaTitulo} re f`);
+            comandos.push('1 1 1 rg');
+            adicionarTextoPDF(comandos, tituloDocumento, margem, yTitulo + 8.5, 12.5, 'center', larguraPagina - 2 * margem, true);
+
+            return yTitulo - 28;
         }
 
         function desenharCelulaPDF(comandos, x, y, largura, altura, texto, opcoes = {}) {
@@ -699,29 +800,19 @@
             };
         }
 
-        function montarPDFSimples(dados) {
-            const larguraPagina = 595;
-            const alturaPagina = 842;
-            const margem = 36;
+        function criarPaginaPDF(larguraPagina, alturaPagina, margem, imagensCabecalho, mesReferencia) {
             const comandos = [];
-
             comandos.push('1 1 1 rg');
             comandos.push(`0 0 ${larguraPagina} ${alturaPagina} re f`);
 
-            // Título
-            comandos.push('0.12 0.31 0.47 rg');
-            comandos.push(`${margem} ${alturaPagina - 72} ${larguraPagina - 2 * margem} 38 re f`);
-            comandos.push('1 1 1 rg');
-            adicionarTextoPDF(comandos, 'Calculadora de Taxa Selic Acumulada', margem, alturaPagina - 50, 14, 'center', larguraPagina - 2 * margem, true);
-
-            // Mês de atualização
+            let y = desenharCabecalhoInstitucional(comandos, larguraPagina, alturaPagina, margem, imagensCabecalho, 'TAXA SELIC ACUMULADA');
             comandos.push('0 0 0 rg');
-            adicionarTextoPDF(comandos, `Mês de atualização (mm/aaaa): ${dados.mesReferencia}`, margem, alturaPagina - 95, 11, 'left', 0, true);
+            adicionarTextoPDF(comandos, `Mês de atualização (mm/aaaa): ${mesReferencia}`, margem, y, 11, 'left', 0, true);
 
-            const inicioY = alturaPagina - 135;
-            const alturaCabecalho = 34;
-            const alturaLinha = 28;
-            const larguras = [105, 90, 110, 115, 103];
+            return { comandos, yTabela: y - 40 };
+        }
+
+        function desenharCabecalhoTabelaPDF(comandos, y, margem, larguras, alturaCabecalho) {
             const cabecalhos = [
                 'Valor original (R$)',
                 'Vencimento\n(mm/aaaa)',
@@ -732,7 +823,7 @@
 
             let x = margem;
             cabecalhos.forEach((cabecalho, indice) => {
-                desenharCelulaPDF(comandos, x, inicioY, larguras[indice], alturaCabecalho, cabecalho, {
+                desenharCelulaPDF(comandos, x, y, larguras[indice], alturaCabecalho, cabecalho, {
                     preenchimento: [0.12, 0.31, 0.47],
                     corTexto: [1, 1, 1],
                     tamanho: 9,
@@ -741,25 +832,55 @@
                 });
                 x += larguras[indice];
             });
+        }
 
-            let y = inicioY - alturaLinha;
+        async function montarPDFSimples(dados) {
+            const imagensCabecalho = await carregarImagensCabecalhoPDF();
+            const larguraPagina = 595;
+            const alturaPagina = 842;
+            const margem = 36;
+            const alturaCabecalho = 34;
+            const alturaLinha = 28;
+            const limiteInferior = 58;
+            const larguras = [105, 90, 110, 115, 103];
+            const paginas = [];
+
+            function novaPagina() {
+                const pagina = criarPaginaPDF(larguraPagina, alturaPagina, margem, imagensCabecalho, dados.mesReferencia);
+                desenharCabecalhoTabelaPDF(pagina.comandos, pagina.yTabela, margem, larguras, alturaCabecalho);
+                pagina.y = pagina.yTabela - alturaLinha;
+                paginas.push(pagina);
+                return pagina;
+            }
+
+            let paginaAtual = novaPagina();
+
             dados.linhas.forEach(linha => {
-                x = margem;
+                if (paginaAtual.y < limiteInferior) {
+                    paginaAtual = novaPagina();
+                }
+
+                let x = margem;
                 const valores = [linha.valorOriginal, linha.vencimento, linha.taxaSelic, linha.valorSelic, linha.valorAtualizado];
                 valores.forEach((valor, indice) => {
                     const preenchimento = indice >= 2 ? [0.88, 0.88, 0.88] : null;
-                    desenharCelulaPDF(comandos, x, y, larguras[indice], alturaLinha, valor, {
+                    desenharCelulaPDF(paginaAtual.comandos, x, paginaAtual.y, larguras[indice], alturaLinha, valor, {
                         preenchimento,
                         tamanho: 9,
                         alinhamento: 'center'
                     });
                     x += larguras[indice];
                 });
-                y -= alturaLinha;
+                paginaAtual.y -= alturaLinha;
             });
 
             if (dados.linhas.length >= 2) {
-                y -= 24;
+                const alturaTotais = 24 + (3 * alturaLinha);
+                if (paginaAtual.y - alturaTotais < limiteInferior) {
+                    paginaAtual = novaPagina();
+                }
+
+                paginaAtual.y -= 24;
                 const xLabel = margem + larguras[0] + larguras[1] + larguras[2];
                 const larguraLabel = larguras[3];
                 const larguraValor = larguras[4];
@@ -770,31 +891,58 @@
                 ];
 
                 totais.forEach(([rotulo, valor]) => {
-                    desenharCelulaPDF(comandos, xLabel, y, larguraLabel, alturaLinha, rotulo, {
+                    desenharCelulaPDF(paginaAtual.comandos, xLabel, paginaAtual.y, larguraLabel, alturaLinha, rotulo, {
                         preenchimento: [0.88, 0.88, 0.88],
                         tamanho: 10,
                         alinhamento: 'center',
                         negrito: true
                     });
-                    desenharCelulaPDF(comandos, xLabel + larguraLabel, y, larguraValor, alturaLinha, valor, {
+                    desenharCelulaPDF(paginaAtual.comandos, xLabel + larguraLabel, paginaAtual.y, larguraValor, alturaLinha, valor, {
                         preenchimento: [0.88, 0.88, 0.88],
                         tamanho: 10,
                         alinhamento: 'center',
                         negrito: true
                     });
-                    y -= alturaLinha;
+                    paginaAtual.y -= alturaLinha;
                 });
             }
 
-            const conteudo = comandos.join('\n');
             const objetos = [];
-
-            objetos.push('<< /Type /Catalog /Pages 2 0 R >>');
-            objetos.push('<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
-            objetos.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${larguraPagina} ${alturaPagina}] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>`);
+            objetos.push('');
+            objetos.push('');
             objetos.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
             objetos.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
-            objetos.push(`<< /Length ${conteudo.length} >>\nstream\n${conteudo}\nendstream`);
+
+            let brasaoObjId = null;
+            let ibamaObjId = null;
+
+            if (imagensCabecalho?.brasao) {
+                brasaoObjId = objetos.length + 1;
+                objetos.push(`<< /Type /XObject /Subtype /Image /Width ${imagensCabecalho.brasao.width} /Height ${imagensCabecalho.brasao.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imagensCabecalho.brasao.data.length} >>\nstream\n${imagensCabecalho.brasao.data}\nendstream`);
+            }
+
+            if (imagensCabecalho?.ibama) {
+                ibamaObjId = objetos.length + 1;
+                objetos.push(`<< /Type /XObject /Subtype /Image /Width ${imagensCabecalho.ibama.width} /Height ${imagensCabecalho.ibama.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${imagensCabecalho.ibama.data.length} >>\nstream\n${imagensCabecalho.ibama.data}\nendstream`);
+            }
+
+            const recursosImagem = [];
+            if (brasaoObjId) recursosImagem.push(`/ImBrasao ${brasaoObjId} 0 R`);
+            if (ibamaObjId) recursosImagem.push(`/ImIbama ${ibamaObjId} 0 R`);
+            const xObjectResource = recursosImagem.length ? `/XObject << ${recursosImagem.join(' ')} >>` : '';
+            const idsPaginas = [];
+
+            paginas.forEach(pagina => {
+                const conteudo = pagina.comandos.join('\n');
+                const paginaObjId = objetos.length + 1;
+                const conteudoObjId = objetos.length + 2;
+                idsPaginas.push(paginaObjId);
+                objetos.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${larguraPagina} ${alturaPagina}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> ${xObjectResource} >> /Contents ${conteudoObjId} 0 R >>`);
+                objetos.push(`<< /Length ${conteudo.length} >>\nstream\n${conteudo}\nendstream`);
+            });
+
+            objetos[0] = '<< /Type /Catalog /Pages 2 0 R >>';
+            objetos[1] = `<< /Type /Pages /Kids [${idsPaginas.map(id => `${id} 0 R`).join(' ')}] /Count ${idsPaginas.length} >>`;
 
             let pdf = '%PDF-1.4\n';
             const offsets = [0];
@@ -811,30 +959,39 @@
             }
             pdf += `trailer\n<< /Size ${objetos.length + 1} /Root 1 0 R >>\nstartxref\n${inicioXref}\n%%EOF`;
 
-            return pdf;
+            const bytes = new Uint8Array(pdf.length);
+            for (let i = 0; i < pdf.length; i++) {
+                bytes[i] = pdf.charCodeAt(i) & 0xff;
+            }
+
+            return bytes;
         }
 
-        function gerarPDFDireto() {
+        async function gerarPDFDireto() {
             const dados = obterDadosParaPDF();
             if (!dados.linhas.length) {
                 mostrarAlerta('Preencha ao menos uma linha antes de gerar o PDF.', 'error');
                 return;
             }
 
-            const pdf = montarPDFSimples(dados);
-            const blob = new Blob([pdf], { type: 'application/pdf' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            const data = new Date().toISOString().slice(0, 10);
+            try {
+                const pdf = await montarPDFSimples(dados);
+                const blob = new Blob([pdf], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
 
-            link.href = url;
-            link.download = 'atualização_Selic.pdf';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+                link.href = url;
+                link.download = 'atualização_Selic.pdf';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
 
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-            mostrarAlerta('✅ PDF gerado com sucesso.', 'success');
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                mostrarAlerta('✅ PDF gerado com sucesso.', 'success');
+            } catch (erro) {
+                console.error('Erro ao gerar PDF:', erro);
+                mostrarAlerta('Erro ao gerar PDF.', 'error');
+            }
         }
 
         async function buscarDadosOnline() {
