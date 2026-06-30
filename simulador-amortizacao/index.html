@@ -6,7 +6,7 @@
   <title>Simulador de amortização</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_amortizacao_portal_v_5 -->
+  <!-- Versão: simulador_amortizacao_portal_v_6 -->
 
   <style>
     :root {
@@ -2207,6 +2207,8 @@ class MiniPdf {
     this.objects = [];
     this.pages = [];
     this.fontObjId = null;
+    this.fontBoldObjId = null;
+    this.images = {};
   }
 
   _addObject(str) {
@@ -2231,6 +2233,24 @@ class MiniPdf {
     return bytes.map(b => b.toString(16).padStart(2,'0')).join('');
   }
 
+  _binaryStringToHex(data) {
+    const input = String(data || '');
+    let out = '';
+    for (let i = 0; i < input.length; i++) {
+      out += (input.charCodeAt(i) & 255).toString(16).padStart(2, '0');
+    }
+    return out;
+  }
+
+  addImage(name, imageData) {
+    if (!name || !imageData || !imageData.data || !imageData.width || !imageData.height) return;
+    this.images[name] = imageData;
+  }
+
+  hasImage(name) {
+    return !!(name && this.images && this.images[name]);
+  }
+
   addPage({width=595.28, height=841.89} = {}) {
     const content = [];
     const page = { width, height, content };
@@ -2238,9 +2258,15 @@ class MiniPdf {
     return page;
   }
 
-  text(page, x, y, s, size=10) {
+  text(page, x, y, s, size=10, opts={}) {
     const hex = this._encodePdfWinAnsiHex(s);
-    page.content.push(`BT /F1 ${size} Tf ${x.toFixed(2)} ${y.toFixed(2)} Td <${hex}> Tj ET\n`);
+    const fonte = opts && opts.bold ? 'F2' : 'F1';
+    page.content.push(`BT /${fonte} ${size} Tf ${x.toFixed(2)} ${y.toFixed(2)} Td <${hex}> Tj ET\n`);
+  }
+
+  image(page, name, x, y, w, h) {
+    if (!this.hasImage(name)) return;
+    page.content.push(`q ${w.toFixed(2)} 0 0 ${h.toFixed(2)} ${x.toFixed(2)} ${y.toFixed(2)} cm /${name} Do Q\n`);
   }
 
   line(page, x1,y1,x2,y2, w=1) {
@@ -2264,8 +2290,24 @@ class MiniPdf {
     // Header
     let out = '%PDF-1.4\n';
 
-    // Font object
+    // Font objects
     this.fontObjId = this._addObject(`<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>`);
+    this.fontBoldObjId = this._addObject(`<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>`);
+
+    // Image objects
+    const imageObjIds = {};
+    for (const [name, img] of Object.entries(this.images || {})) {
+      if (!img || !img.data || !img.width || !img.height) continue;
+      const hexData = this._binaryStringToHex(img.data) + '>';
+      imageObjIds[name] = this._addObject(
+        `<< /Type /XObject /Subtype /Image /Width ${Number(img.width)} /Height ${Number(img.height)} ` +
+        `/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter [/ASCIIHexDecode /DCTDecode] /Length ${hexData.length} >>\n` +
+        `stream\n${hexData}\nendstream`
+      );
+    }
+
+    const xObjectEntries = Object.entries(imageObjIds).map(([name, id]) => `/${name} ${id} 0 R`).join(' ');
+    const xObjectResource = xObjectEntries ? `/XObject << ${xObjectEntries} >> ` : '';
 
     // Pages: create content streams and page objs
     const pageObjIds = [];
@@ -2274,7 +2316,7 @@ class MiniPdf {
       const contentObj = this._addObject(`<< /Length ${stream.length} >>\nstream\n${stream}endstream`);
       const pageObj = this._addObject(
         `<< /Type /Page /Parent 0 0 R /MediaBox [0 0 ${p.width.toFixed(2)} ${p.height.toFixed(2)}] ` +
-        `/Resources << /Font << /F1 ${this.fontObjId} 0 R >> >> ` +
+        `/Resources << /Font << /F1 ${this.fontObjId} 0 R /F2 ${this.fontBoldObjId} 0 R >> ${xObjectResource}>> ` +
         `/Contents ${contentObj} 0 R >>`
       );
       pageObjIds.push(pageObj);
@@ -2312,13 +2354,141 @@ class MiniPdf {
   }
 }
 
+const BRASAO_REPUBLICA_PDF_URL = '../assets/img/pdf/brasao_republica.png';
+const LOGO_IBAMA_PDF_URL = '../assets/img/pdf/logo_ibama.png';
+let imagensCabecalhoPDFCache = null;
+let _pdfTextMeasureCanvas = null;
+let _pdfTextMeasureCtx = null;
 
-function pdfReportTcfaAcumulado(sim) {
+function carregarImagemComoJPEGParaPDF(url) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const largura = img.naturalWidth || img.width || 200;
+        const altura = img.naturalHeight || img.height || 200;
+        const canvas = document.createElement('canvas');
+        canvas.width = largura;
+        canvas.height = altura;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, largura, altura);
+        ctx.drawImage(img, 0, 0, largura, altura);
+        const dataURL = canvas.toDataURL('image/jpeg', 0.92);
+        const dadosBinarios = atob(dataURL.split(',')[1] || '');
+        resolve({ data: dadosBinarios, width: largura, height: altura });
+      } catch (erro) {
+        console.warn('Não foi possível preparar imagem para o PDF:', url, erro);
+        resolve(null);
+      }
+    };
+    img.onerror = () => {
+      console.warn('Não foi possível carregar imagem do cabeçalho do PDF:', url);
+      resolve(null);
+    };
+    img.src = url;
+  });
+}
+
+async function carregarImagensCabecalhoPDF() {
+  if (imagensCabecalhoPDFCache) return imagensCabecalhoPDFCache;
+  const [brasao, ibama] = await Promise.all([
+    carregarImagemComoJPEGParaPDF(BRASAO_REPUBLICA_PDF_URL),
+    carregarImagemComoJPEGParaPDF(LOGO_IBAMA_PDF_URL)
+  ]);
+  imagensCabecalhoPDFCache = { brasao, ibama };
+  return imagensCabecalhoPDFCache;
+}
+
+async function configurarImagensCabecalhoNoPDF(pdf) {
+  const imagens = await carregarImagensCabecalhoPDF();
+  if (imagens && imagens.brasao) pdf.addImage('ImBrasao', imagens.brasao);
+  if (imagens && imagens.ibama) pdf.addImage('ImIbama', imagens.ibama);
+  return imagens;
+}
+
+function estimarLarguraTextoPDF(conteudo, tamanho, negrito = false) {
+  try {
+    if (!_pdfTextMeasureCanvas) {
+      _pdfTextMeasureCanvas = document.createElement('canvas');
+      _pdfTextMeasureCtx = _pdfTextMeasureCanvas.getContext('2d');
+    }
+    if (_pdfTextMeasureCtx) {
+      const px = Number(tamanho || 9) * (96 / 72);
+      _pdfTextMeasureCtx.font = `${negrito ? '700' : '400'} ${px}px Helvetica, Arial, sans-serif`;
+      return _pdfTextMeasureCtx.measureText(String(conteudo || '')).width * (72 / 96);
+    }
+  } catch (_) {}
+  const fatorEstimativa = negrito ? 0.54 : 0.48;
+  return String(conteudo || '').length * Number(tamanho || 9) * fatorEstimativa;
+}
+
+function addTextPDF(pdf, page, texto, x, yTexto, tamanho = 9, alinhamento = 'left', largura = 0, negrito = false) {
+  let textoX = x;
+  const conteudo = String(texto || '');
+  let textoEstimado;
+  try {
+    textoEstimado = estimarLarguraTextoPDF(conteudo, tamanho, negrito);
+  } catch (_) {
+    const fatorEstimativa = negrito ? 0.54 : 0.48;
+    textoEstimado = conteudo.length * tamanho * fatorEstimativa;
+  }
+  if (alinhamento === 'center') textoX = x + (largura - textoEstimado) / 2;
+  if (alinhamento === 'right') textoX = x + largura - textoEstimado;
+  pdf.text(page, textoX, yTexto, conteudo, tamanho, { bold: negrito });
+}
+
+function desenharImagemCabecalhoPDF(pdf, page, nomeImagem, x, yImagem, largura, altura) {
+  if (!nomeImagem || !pdf.hasImage(nomeImagem)) return;
+  pdf.image(page, nomeImagem, x, yImagem, largura, altura);
+}
+
+function desenharCabecalhoInstitucionalPDF(pdf, page, tituloDocumento) {
+  const larguraPagina = page.width;
+  const alturaPagina = page.height;
+  const margem = 40;
+  const tamanhoLogo = 42;
+  const yLogo = alturaPagina - 64;
+  const xLogoEsquerda = margem + 8;
+  const xLogoDireita = larguraPagina - margem - tamanhoLogo - 8;
+
+  desenharImagemCabecalhoPDF(pdf, page, 'ImBrasao', xLogoEsquerda, yLogo, tamanhoLogo, tamanhoLogo);
+  desenharImagemCabecalhoPDF(pdf, page, 'ImIbama', xLogoDireita, yLogo, tamanhoLogo, tamanhoLogo);
+
+  pdf.fillColor(page, 0, 0, 0);
+  addTextPDF(pdf, page, 'MINISTÉRIO DO MEIO AMBIENTE - MMA', margem, alturaPagina - 36, 8.7, 'center', larguraPagina - 2 * margem, true);
+  addTextPDF(pdf, page, 'INSTITUTO BRASILEIRO DO MEIO AMBIENTE E DOS RECURSOS NATURAIS RENOVÁVEIS - IBAMA', margem, alturaPagina - 49, 8.2, 'center', larguraPagina - 2 * margem, true);
+
+  const alturaTitulo = 26;
+  const yTitulo = alturaPagina - 110;
+  pdf.fillColor(page, 0.12, 0.31, 0.47);
+  pdf.rect(page, margem, yTitulo, larguraPagina - 2 * margem, alturaTitulo, 1, 1);
+  pdf.fillColor(page, 1, 1, 1);
+  addTextPDF(pdf, page, tituloDocumento, margem, yTitulo + 8.5, 12.5, 'center', larguraPagina - 2 * margem, true);
+  pdf.fillColor(page, 0, 0, 0);
+
+  return yTitulo - 28;
+}
+
+function addPdfPageWithInstitutionalHeader(pdf, options = {}, tituloDocumento = 'Simulação de amortização') {
+  const page = pdf.addPage(options);
+  const y = desenharCabecalhoInstitucionalPDF(pdf, page, tituloDocumento);
+  return { page, y };
+}
+
+async function pdfReportTcfaAcumulado(sim) {
   const pdf = new MiniPdf();
+  await configurarImagensCabecalhoNoPDF(pdf);
   // A4 landscape
   const W = 841.89, H = 595.28;
-  let page = pdf.addPage({width: W, height: H});
-  let y = H - 40;
+  let page, y;
+  function novaPagina() {
+    const nova = addPdfPageWithInstitutionalHeader(pdf, { width: W, height: H }, 'Simulação de amortização');
+    page = nova.page;
+    y = nova.y;
+    return page;
+  }
+  novaPagina();
 
   // Helpers para evitar sobreposição
   const approxTextW = (s, fontSize) => String(s ?? '').length * fontSize * 0.50;
@@ -2383,21 +2553,6 @@ function pdfReportTcfaAcumulado(sim) {
     return lines;
   }
 
-
-  // Title bar (apenas na 1ª página)
-  pdf.strokeColor(page, 0,0,0);
-  pdf.fillColor(page, 0.121,0.306,0.475);
-  pdf.rect(page, 40, y, W-80, 22, 1, 1);
-  pdf.fillColor(page, 1,1,1);
-  const titulo = 'Simulação de amortização';
-  const tituloSize = 12;
-  const estW = titulo.length * tituloSize * 0.50;
-  const boxW = (W - 80);
-  const xTitulo = 40 + Math.max(0, (boxW - estW) / 2);
-  pdf.text(page, xTitulo, y+7, titulo, tituloSize);
-
-  y -= 34;
-  pdf.fillColor(page, 0,0,0);
 
   const hdr = getPdfHeaderData();
   const cnpjShow = hdr.cnpj || '00.000.000/0000-00';
@@ -2501,8 +2656,7 @@ function pdfReportTcfaAcumulado(sim) {
 
   // Função para iniciar nova página (sem barra de título) e repetir cabeçalho da tabela
   function newTablePage() {
-    page = pdf.addPage({width: W, height: H});
-    y = H - 50;
+    novaPagina();
 
     // Cabeçalho da tabela
     pdf.fillColor(page, 0.121,0.306,0.475);
@@ -2580,8 +2734,7 @@ function pdfReportTcfaAcumulado(sim) {
     // garantir espaço; se não couber, nova página
     const neededH = (lines.length * footerLineH) + 10;
     if (y - neededH < 30) {
-      page = pdf.addPage({width: W, height: H});
-      y = H - 50;
+      novaPagina();
     }
     y -= footerGap;
   }
@@ -2597,16 +2750,23 @@ function pdfReportTcfaAcumulado(sim) {
   return pdf.build();
 }
 
-function pdfReportFromSimulation(sim) {
+async function pdfReportFromSimulation(sim) {
   if (sim.tipododebito === 'TCFA_ACUMULADO') {
-    return pdfReportTcfaAcumulado(sim);
+    return await pdfReportTcfaAcumulado(sim);
   }
 
   const pdf = new MiniPdf();
-  let page = pdf.addPage();
+  await configurarImagensCabecalhoNoPDF(pdf);
 
   const W = 595.28, H = 841.89;
-  let y = H - 40;
+  let page, y;
+  function novaPagina() {
+    const nova = addPdfPageWithInstitutionalHeader(pdf, { width: W, height: H }, 'Simulação de amortização');
+    page = nova.page;
+    y = nova.y;
+    return page;
+  }
+  novaPagina();
 
   const explicSimples = "*Cálculo proporcional: baseia-se na relação entre o valor depositado (ou pago) e o valor consolidado na data do depósito ou pagamento. Após aplicação dessa proporção sobre o saldo do débito, obtém-se o saldo remanescente, ao qual são aplicadas as taxas da data pretendida para determinar o valor consolidado correspondente.";
   const pdfMeasureCanvas = document.createElement('canvas');
@@ -2634,22 +2794,6 @@ function pdfReportFromSimulation(sim) {
     if (line) lines.push(line);
     return lines;
   }
-
-  // Title bar
-  pdf.strokeColor(page, 0,0,0);
-  pdf.fillColor(page, 0.121,0.306,0.475); // #1f4e79 approx
-  pdf.rect(page, 40, y, W-80, 22, 1, 1);
-  pdf.fillColor(page, 1,1,1);
-  // Título centralizado (estimativa simples de largura do texto)
-  const titulo = 'Simulação de amortização';
-  const tituloSize = 12;
-  const estW = titulo.length * tituloSize * 0.50; // aproximação para Helvetica
-  const boxW = (W - 80);
-  const xTitulo = 40 + Math.max(0, (boxW - estW) / 2);
-  pdf.text(page, xTitulo, y+7, titulo, tituloSize);
-
-  y -= 34;
-  pdf.fillColor(page, 0,0,0);
 
   // Header info
   const zeroDepositUpdateMode = isZeroDepositUpdateMode(sim);
@@ -2731,8 +2875,7 @@ function pdfReportFromSimulation(sim) {
 
     const neededH = (rowH * (rows.length + 1)) + 10;
     if (y - neededH < 80) {
-      page = pdf.addPage();
-      y = H - 60;
+      novaPagina();
       pdf.fillColor(page, 0,0,0);
       pdf.text(page, 40, y, `Memória de cálculo (consolidação em ${dataCons})`, 10);
       y -= 24;
@@ -2772,8 +2915,7 @@ function pdfReportFromSimulation(sim) {
     } else {
       const neededFooterH = (lines.length * footerLineH) + 10;
       if (y - neededFooterH < 30) {
-        page = pdf.addPage();
-        y = H - 60;
+        novaPagina();
       } else {
         y -= footerGap;
       }
@@ -2815,8 +2957,8 @@ function pdfReportFromSimulation(sim) {
     for (const it of items) {
       if (y < 80) {
         // new page
-        y = H - 60;
-        const p2 = pdf.addPage();
+        novaPagina();
+        const p2 = page;
         // simple continuation
         // NOTE: para simplificar, não duplicamos cabeçalhos novamente aqui.
         // Em um refinamento futuro, repetir cabeçalho e títulos.
@@ -4191,7 +4333,7 @@ html += `</tbody></table></div>`;
   sim.numerododebito = _pdfHdr.numerododebito;
   sim.tipododebitoLabel = _pdfHdr.tipododebitoLabel;
   _pdfHdrGlobal = _pdfHdr;
-  const blob = pdfReportFromSimulation(sim);
+  const blob = await pdfReportFromSimulation(sim);
   sim._pdfBlob = blob;
   const url = URL.createObjectURL(blob);
   sim._pdfUrl = url;
@@ -4228,11 +4370,18 @@ function downloadSimPdf(simId) {
    Estratégia: reconstruir um PDF único gerando uma página por simulação.
 ========================== */
 
-function gerarPdfConsolidadoTcfaAcumulado(sims) {
+async function gerarPdfConsolidadoTcfaAcumulado(sims) {
   const pdf = new MiniPdf();
+  await configurarImagensCabecalhoNoPDF(pdf);
   const W = 841.89, H = 595.28;
-  let page = pdf.addPage({width: W, height: H});
-  let y = H - 40;
+  let page, y;
+  function novaPagina() {
+    const nova = addPdfPageWithInstitutionalHeader(pdf, { width: W, height: H }, 'Simulação de amortização');
+    page = nova.page;
+    y = nova.y;
+    return page;
+  }
+  novaPagina();
 
   const pdfMeasureCanvas = document.createElement('canvas');
   const pdfMeasureCtx = pdfMeasureCanvas.getContext ? pdfMeasureCanvas.getContext('2d') : null;
@@ -4274,15 +4423,6 @@ function gerarPdfConsolidadoTcfaAcumulado(sims) {
     return lines;
   }
 
-  pdf.fillColor(page, 0.121,0.306,0.475);
-  pdf.rect(page, 40, y, W-80, 22, 1, 1);
-  pdf.fillColor(page, 1,1,1);
-  const titulo = 'Simulação de amortização';
-  const titleW = measurePdfTextW(titulo, 12);
-  pdf.text(page, 40 + Math.max(0, ((W - 80) - titleW) / 2), y+7, titulo, 12);
-  pdf.fillColor(page, 0,0,0);
-  y -= 34;
-
   const hdr = getPdfHeaderData();
   const cnpjShow = hdr.cnpj || '00.000.000/0000-00';
   const debShow = (hdr.numerododebito && hdr.numerododebito.trim()) ? hdr.numerododebito.trim() : 'Não identificado';
@@ -4310,8 +4450,7 @@ function gerarPdfConsolidadoTcfaAcumulado(sims) {
   const fmtPct = (p) => (Number(p||0).toFixed(2).replace('.', ',') + '%');
 
   function newTablePage() {
-    page = pdf.addPage({width: W, height: H});
-    y = H - 50;
+    novaPagina();
     pdf.fillColor(page, 0.121,0.306,0.475);
     pdf.rect(page, x0, y, colWs.reduce((a,b)=>a+b,0), rowH, 1, 1);
     pdf.fillColor(page, 1,1,1);
@@ -4350,8 +4489,7 @@ function gerarPdfConsolidadoTcfaAcumulado(sims) {
   }
   function ensureSectionIntroSpace() {
     if (y < 130) {
-      page = pdf.addPage({width: W, height: H});
-      y = H - 50;
+      novaPagina();
     }
   }
 
@@ -4416,8 +4554,7 @@ function gerarPdfConsolidadoTcfaAcumulado(sims) {
 
     if (idx < sims.length - 1) {
       if (y < 70) {
-        page = pdf.addPage({width: W, height: H});
-        y = H - 50;
+        novaPagina();
       } else {
         y -= 14;
         pdf.line(page, 40, y, W-40, y);
@@ -4446,8 +4583,7 @@ function gerarPdfConsolidadoTcfaAcumulado(sims) {
   } else {
     const neededH = (lines.length * footerLineH) + 10;
     if (y - neededH < 30) {
-      page = pdf.addPage({width: W, height: H});
-      y = H - 50;
+      novaPagina();
     } else {
       y -= footerGap;
     }
@@ -4472,7 +4608,7 @@ function gerarPdfConsolidadoTcfaAcumulado(sims) {
   showAlert('PDF consolidado gerado.', 'success');
 }
 
-function gerarPdfConsolidado() {
+async function gerarPdfConsolidado() {
   _pdfHdrGlobal = getPdfHeaderData();
   const sims = state.simulations.filter(s => s && s._calculated);
   if (sims.length === 0) {
@@ -4481,14 +4617,23 @@ function gerarPdfConsolidado() {
   }
 
   if ((sims[0]?.tipododebito || '') === 'TCFA_ACUMULADO') {
-    gerarPdfConsolidadoTcfaAcumulado(sims);
+    await gerarPdfConsolidadoTcfaAcumulado(sims);
     return;
   }
 
   const pdf = new MiniPdf();
-  let page = pdf.addPage();
+  await configurarImagensCabecalhoNoPDF(pdf);
   const W = 595.28, H = 841.89;
-  let y = H - 40;
+  let page, y;
+  function startNewPage() {
+    const nova = addPdfPageWithInstitutionalHeader(pdf, { width: W, height: H }, 'Simulação de amortização');
+    page = nova.page;
+    y = nova.y;
+    lastDividerY = null;
+    pdf.fillColor(page, 0,0,0);
+  }
+  let lastDividerY = null;
+  startNewPage();
 
   const explicSimples = "*Cálculo proporcional: baseia-se na relação entre o valor depositado (ou pago) e o valor consolidado na data do depósito ou pagamento. Após aplicação dessa proporção sobre o saldo do débito, obtém-se o saldo remanescente, ao qual são aplicadas as taxas da data pretendida para determinar o valor consolidado correspondente.";
   const pdfMeasureCanvas = document.createElement('canvas');
@@ -4517,17 +4662,6 @@ function gerarPdfConsolidado() {
     return lines;
   }
 
-  // Barra de título
-  pdf.fillColor(page, 0.121,0.306,0.475);
-  pdf.rect(page, 40, y, W-80, 22, 1, 1);
-  pdf.fillColor(page, 1,1,1);
-  const titulo = 'Simulação de amortização';
-  const titleX = 40 + (W-80)/2 - (titulo.length * 5.2)/2;
-  pdf.text(page, Math.max(45, titleX), y+7, titulo, 12);
-  pdf.fillColor(page, 0,0,0);
-
-  y -= 38;
-
   // Identificação (sempre ler dos campos visíveis no momento da geração)
   const hdr = getPdfHeaderData();
   const idLines = [
@@ -4543,7 +4677,6 @@ function gerarPdfConsolidado() {
     y -= 14;
   }
 
-  let lastDividerY = null;
   y -= 6;
   pdf.line(page, 40, y, W-40, y, 1);
   lastDividerY = y;
@@ -4558,19 +4691,12 @@ function gerarPdfConsolidado() {
   const footerReservedH = (footerLines.length * footerLineH) + footerGap;
   const rowH = 15;
   const headerH = 16;
-  const pageTopY = H - 48;
   const depositSlotsPerPage = 3;
   const dividerToDepositGap = 12;
   const noDepositDataTableTopGap = 18;
   const noDepositDataTableBottomGap = 4;
   const bottomLimitNoFooter = 48;
 
-  function startNewPage() {
-    page = pdf.addPage();
-    y = pageTopY;
-    lastDividerY = null;
-    pdf.fillColor(page, 0,0,0);
-  }
 
   function getDepositRows(sim) {
     const zeroDepositUpdateMode = isZeroDepositUpdateMode(sim);
@@ -4676,8 +4802,7 @@ function gerarPdfConsolidado() {
   } else {
     const neededFooterH = (footerLines.length * footerLineH) + 10;
     if (y - neededFooterH < 30) {
-      page = pdf.addPage();
-      y = H - 60;
+      startNewPage();
     } else {
       y -= footerGap;
     }
