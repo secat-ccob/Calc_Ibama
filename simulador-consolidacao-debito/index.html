@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_17 -->
+  <!-- Versão: simulador_consolidacao_debito_v_18 -->
 
   <style>
     :root {
@@ -474,7 +474,7 @@
             </tr>
             <tr class="linha-comum">
               <td class="rotulo">(-)Somatório da amortização Sapiens Dívida</td>
-              <td class="percentual percentual-vazio">-</td>
+              <td class="percentual"><input id="percentualSomatorioAmortizacaoSapiensDivida" class="campo-tabela campo-percentual" type="text" inputmode="decimal" value="0,00%" autocomplete="off" /></td>
               <td class="valor"><input id="somatorioAmortizacaoSapiensDivida" class="campo-tabela campo-moeda" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
             </tr>
             <tr class="linha-comum">
@@ -577,13 +577,25 @@
       imagensCabecalhoPDFCache = { brasao, ibama };
       return imagensCabecalhoPDFCache;
     }
+
+    let modoSomatorioSapiensDivida = 'valor';
+
     function ehCampoBaseManual(input) {
       return false;
     }
 
     function registrarEdicaoCampo(input) {
       // Vinculação manual entre Valor Principal, Saldo Parcial e Saldo Atualizado cancelada.
-      // Saldo Parcial e Saldo Atualizado voltaram a ser campos calculados/readOnly.
+      // Saldo Parcial e Saldo Atualizado permanecem campos calculados/readOnly.
+      if (!input || !input.id) return;
+
+      if (input.id === 'percentualSomatorioAmortizacaoSapiensDivida') {
+        modoSomatorioSapiensDivida = 'percentual';
+      }
+
+      if (input.id === 'somatorioAmortizacaoSapiensDivida') {
+        modoSomatorioSapiensDivida = 'valor';
+      }
     }
 
     function showAlert(msg, type = 'erro') {
@@ -801,12 +813,18 @@
       if (el) el.value = numeroParaMoeda(roundMoneyValue(valor));
     }
 
+    function setPercentual(id, valorPercentual) {
+      const el = document.getElementById(id);
+      if (el) el.value = numeroParaPercentual(Number(valorPercentual || 0));
+    }
+
     function atualizarCalculos() {
       let valorPrincipal = moedaParaNumero(document.getElementById('valorPrincipal').value);
       const somatorioAmortizacao = moedaParaNumero(document.getElementById('somatorioAmortizacao').value);
       const pctDesconto = percentualParaFracao(document.getElementById('percentualDesconto').value);
       const compensacaoEstadual = moedaParaNumero(document.getElementById('compensacaoEstadual').value);
-      const somatorioAmortizacaoSapiensDivida = moedaParaNumero(document.getElementById('somatorioAmortizacaoSapiensDivida').value);
+      let somatorioAmortizacaoSapiensDivida = moedaParaNumero(document.getElementById('somatorioAmortizacaoSapiensDivida').value);
+      const pctSomatorioAmortizacaoSapiensDivida = percentualParaFracao(document.getElementById('percentualSomatorioAmortizacaoSapiensDivida').value);
       const correcaoMonetaria = moedaParaNumero(document.getElementById('correcaoMonetaria').value);
       const pctMulta = percentualParaFracao(document.getElementById('percentualMulta').value);
       const pctJuros = percentualParaFracao(document.getElementById('percentualJuros').value);
@@ -815,6 +833,11 @@
 
       let valorDesconto = roundMoneyValue(valorPrincipal * pctDesconto);
       let saldoParcial = roundMoneyValue(valorPrincipal - somatorioAmortizacao - valorDesconto - compensacaoEstadual);
+
+      if (modoSomatorioSapiensDivida === 'percentual') {
+        somatorioAmortizacaoSapiensDivida = roundMoneyValue(saldoParcial * pctSomatorioAmortizacaoSapiensDivida);
+      }
+
       let saldoAtualizado = roundMoneyValue(saldoParcial - somatorioAmortizacaoSapiensDivida + correcaoMonetaria);
 
 
@@ -828,6 +851,12 @@
       setValor('valorPrincipal', valorPrincipal);
       setValor('valorDesconto', valorDesconto);
       setValor('saldoParcial', saldoParcial);
+      if (modoSomatorioSapiensDivida === 'percentual') {
+        setValor('somatorioAmortizacaoSapiensDivida', somatorioAmortizacaoSapiensDivida);
+      } else {
+        const percentualCalculadoSapiens = saldoParcial !== 0 ? (somatorioAmortizacaoSapiensDivida / saldoParcial) * 100 : 0;
+        setPercentual('percentualSomatorioAmortizacaoSapiensDivida', percentualCalculadoSapiens);
+      }
       setValor('saldoAtualizado', saldoAtualizado);
       setValor('valorMulta', valorMulta);
       setValor('valorJuros', valorJuros);
@@ -855,7 +884,7 @@
           { descricao: '(-)Desconto', percentual: valorCampo('percentualDesconto'), valor: valorCampo('valorDesconto'), destaque: false, valorNegrito: true },
           { descricao: '(-)Compensação Estadual', percentual: '-', valor: valorCampo('compensacaoEstadual'), destaque: false, valorNegrito: false },
           { descricao: '(=)Saldo Parcial', percentual: '-', valor: valorCampo('saldoParcial'), destaque: true, valorNegrito: false },
-          { descricao: '(-)Somatório da amortização Sapiens Dívida', percentual: '-', valor: valorCampo('somatorioAmortizacaoSapiensDivida'), destaque: false, valorNegrito: false },
+          { descricao: '(-)Somatório da amortização Sapiens Dívida', percentual: valorCampo('percentualSomatorioAmortizacaoSapiensDivida'), valor: valorCampo('somatorioAmortizacaoSapiensDivida'), destaque: false, valorNegrito: false },
           { descricao: '(+)Correção Monetária', percentual: '-', valor: valorCampo('correcaoMonetaria'), destaque: false, valorNegrito: false },
           { descricao: '(=)Saldo Atualizado', percentual: '-', valor: valorCampo('saldoAtualizado'), destaque: true, valorNegrito: false },
           { descricao: '(+)Multa', percentual: valorCampo('percentualMulta'), valor: valorCampo('valorMulta'), destaque: false, valorNegrito: true },
