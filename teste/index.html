@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_23 -->
+  <!-- Versão: simulador_consolidacao_debito_v_24 -->
 
   <style>
     :root {
@@ -423,7 +423,8 @@
       letter-spacing: 1px;
     }
 
-    .upload-status.alterado {
+    .upload-status.alterado,
+    .upload-status.corrigido {
       background: #fff3cd;
       border-color: #ffeaa7;
       color: #856404;
@@ -1059,13 +1060,16 @@
       statusMemoriaPDF = status || 'vazio';
       const el = document.getElementById('statusMemoriaPDF');
       if (!el) return;
-      el.classList.remove('ok', 'alterado');
+      el.classList.remove('ok', 'alterado', 'corrigido');
       if (statusMemoriaPDF === 'carregado') {
         el.classList.add('ok');
         el.textContent = 'CARREGADO';
       } else if (statusMemoriaPDF === 'alterado') {
         el.classList.add('alterado');
         el.textContent = 'CARREGADO / ALTERADO';
+      } else if (statusMemoriaPDF === 'corrigido') {
+        el.classList.add('corrigido');
+        el.textContent = 'CARREGADO / CORRIGIDO';
       } else {
         el.textContent = '';
       }
@@ -1076,7 +1080,7 @@
     }
 
     function marcarMemoriaPDFAlterada() {
-      if (statusMemoriaPDF === 'carregado') atualizarStatusMemoriaPDF('alterado');
+      if (statusMemoriaPDF === 'carregado' || statusMemoriaPDF === 'corrigido') atualizarStatusMemoriaPDF('alterado');
     }
 
     function monitorarAlteracaoDeDadosCarregados(event) {
@@ -1330,12 +1334,23 @@
         valorPrincipal: extrairValorPorLinha(linhas, /^Valor Principal\b/i),
         somatorioAmortizacao: extrairValorPorLinha(linhas, /\(-\)\s*Somatório da amortização/i),
         percentualDesconto: extrairPercentualPorLinha(linhas, /\(-\)\s*Desconto/i),
+        valorDesconto: extrairValorPorLinha(linhas, /\(-\)\s*Desconto/i),
         compensacaoEstadual: extrairValorPorLinha(linhas, /\(-\)\s*Compensação Estadual/i),
+        saldoParcial: extrairValorPorLinha(linhas, /\(=\)\s*Saldo Parcial/i),
+        somatorioSapiens: 0,
+        percentualSapiens: 0,
         correcaoMonetaria: extrairValorPorLinha(linhas, /\(\+\)\s*Correção Monetária/i),
+        saldoAtualizado: extrairValorPorLinha(linhas, /\(=\)\s*Saldo Atual(?:izado)?\b/i),
         percentualMulta: extrairPercentualPorLinha(linhas, /\(\+\)\s*Multa/i),
+        valorMulta: extrairValorPorLinha(linhas, /\(\+\)\s*Multa/i),
         percentualJuros: extrairPercentualPorLinha(linhas, /\(\+\)\s*Juros/i),
+        valorJuros: extrairValorPorLinha(linhas, /\(\+\)\s*Juros/i),
         percentualSelic: extrairPercentualPorLinha(linhas, /\(\+\)\s*SELIC/i),
-        percentualEncargos: extrairPercentualPorLinha(linhas, /\(\+\)\s*Encargos Legais/i)
+        valorSelic: extrairValorPorLinha(linhas, /\(\+\)\s*SELIC/i),
+        totalParcial: extrairValorPorLinha(linhas, /\(=\)\s*Total Parcial/i),
+        percentualEncargos: extrairPercentualPorLinha(linhas, /\(\+\)\s*Encargos Legais/i),
+        valorEncargos: extrairValorPorLinha(linhas, /\(\+\)\s*Encargos Legais/i),
+        valorConsolidado: extrairValorPorLinha(linhas, /\(=\)\s*Valor Consolidado/i)
       };
     }
 
@@ -1345,16 +1360,24 @@
       setValor('valorPrincipal', dados.valorPrincipal || 0);
       setValor('somatorioAmortizacao', dados.somatorioAmortizacao || 0);
       setPercentual('percentualDesconto', dados.percentualDesconto || 0);
+      setValor('valorDesconto', dados.valorDesconto || 0);
       setValor('compensacaoEstadual', dados.compensacaoEstadual || 0);
-      setPercentual('percentualSomatorioAmortizacaoSapiensDivida', 0);
-      setValor('somatorioAmortizacaoSapiensDivida', 0);
+      setValor('saldoParcial', dados.saldoParcial || 0);
+      setPercentual('percentualSomatorioAmortizacaoSapiensDivida', dados.percentualSapiens || 0);
+      setValor('somatorioAmortizacaoSapiensDivida', dados.somatorioSapiens || 0);
       modoSomatorioSapiensDivida = 'valor';
       setValor('correcaoMonetaria', dados.correcaoMonetaria || 0);
+      setValor('saldoAtualizado', dados.saldoAtualizado || 0);
       setPercentual('percentualMulta', dados.percentualMulta || 0);
+      setValor('valorMulta', dados.valorMulta || 0);
       setPercentual('percentualJuros', dados.percentualJuros || 0);
+      setValor('valorJuros', dados.valorJuros || 0);
       setPercentual('percentualSelic', dados.percentualSelic || 0);
+      setValor('valorSelic', dados.valorSelic || 0);
+      setValor('totalParcial', dados.totalParcial || 0);
       setPercentual('percentualEncargos', dados.percentualEncargos || 0);
-      atualizarCalculos();
+      setValor('valorEncargos', dados.valorEncargos || 0);
+      setValor('valorConsolidado', dados.valorConsolidado || 0);
     }
 
     function parseLinhaComposicaoAcumulado(texto) {
@@ -1385,13 +1408,36 @@
       };
     }
 
+    function parseTotaisComposicaoAcumulado(texto) {
+      const conteudo = limparTextoPDF(texto);
+      if (!/^TOTAIS\b/i.test(conteudo)) return null;
+      const valores = conteudo.match(/-?\d[\d.]*,\d{2}|-?,\d{1,2}/g) || [];
+      if (valores.length < 11) return null;
+      return {
+        valorOriginal: parseNumeroFlexivel(valores[0]),
+        saldo: parseNumeroFlexivel(valores[1]),
+        compensacaoRegular: parseNumeroFlexivel(valores[2]),
+        compensacaoManual: parseNumeroFlexivel(valores[3]),
+        correcaoValor: parseNumeroFlexivel(valores[4]),
+        saldoAtualizado: parseNumeroFlexivel(valores[5]),
+        multaValor: parseNumeroFlexivel(valores[6]),
+        jurosValor: parseNumeroFlexivel(valores[7]),
+        selicValor: parseNumeroFlexivel(valores[8]),
+        encargosValor: parseNumeroFlexivel(valores[9]),
+        valorConsolidado: parseNumeroFlexivel(valores[10])
+      };
+    }
+
     function parseMemoriaTcfaAcumulado(modelo) {
       validarTipoMemoriaPDF('TCFA_ACUMULADO', modelo.detectedType);
       const linhas = modelo.linhas || [];
       const rows = [];
+      let totaisComposicao = null;
       linhas.forEach(l => {
         const row = parseLinhaComposicaoAcumulado(l.text);
         if (row) rows.push(row);
+        const totais = parseTotaisComposicaoAcumulado(l.text);
+        if (totais) totaisComposicao = totais;
       });
       if (!rows.length) throw new Error('Não foi possível ler a composição do débito no PDF carregado.');
       const dataConsolidacao = extrairDataConsolidacao(linhas) || (modelo.fullText.match(/Composição do débito\s*-\s*Acumulação em:\s*(\d{2}\/\d{2}\/\d{4})/i)?.[1] || '');
@@ -1399,11 +1445,25 @@
         numeroDebito: extrairNumeroDebito(modelo.fullText),
         dataConsolidacao,
         rows,
+        totaisComposicao,
+        _preservarValoresCarregados: true,
+        valorPrincipal: extrairValorPorLinha(linhas, /^Valor Principal\b/i),
         somatorioAmortizacao: extrairValorPorLinha(linhas, /\(-\)\s*Somatório da amortização/i),
         percentualDesconto: extrairPercentualPorLinha(linhas, /\(-\)\s*Desconto/i),
+        valorDesconto: extrairValorPorLinha(linhas, /\(-\)\s*Desconto/i),
+        compensacaoEstadual: extrairValorPorLinha(linhas, /\(-\)\s*Compensação Estadual/i),
+        saldoParcial: extrairValorPorLinha(linhas, /\(=\)\s*Saldo Parcial/i),
         somatorioSapiens: 0,
         percentualSapiens: 0,
-        percentualEncargos: extrairPercentualPorLinha(linhas, /\(\+\)\s*Encargos Legais/i) || 20
+        correcaoMonetaria: extrairValorPorLinha(linhas, /\(\+\)\s*Correção Monetária/i),
+        saldoAtualizado: extrairValorPorLinha(linhas, /\(=\)\s*Saldo Atual(?:izado)?\b/i),
+        valorMulta: extrairValorPorLinha(linhas, /\(\+\)\s*Multa/i),
+        valorJuros: extrairValorPorLinha(linhas, /\(\+\)\s*Juros/i),
+        valorSelic: extrairValorPorLinha(linhas, /\(\+\)\s*SELIC/i),
+        totalParcial: extrairValorPorLinha(linhas, /\(=\)\s*Total Parcial/i),
+        percentualEncargos: extrairPercentualPorLinha(linhas, /\(\+\)\s*Encargos Legais/i) || 20,
+        valorEncargos: extrairValorPorLinha(linhas, /\(\+\)\s*Encargos Legais/i),
+        valorConsolidado: extrairValorPorLinha(linhas, /\(=\)\s*Valor Consolidado/i)
       };
     }
 
@@ -1419,17 +1479,24 @@
       row.valorConsolidado = roundMoneyValue(totalParcialLinha + row.encargosValor);
     }
 
-    function somarComposicaoAcumulado() {
+    function somarComposicaoAcumulado(opcoes = {}) {
       const total = {
         valorOriginal: 0, saldo: 0, compensacaoRegular: 0, compensacaoManual: 0,
         correcaoValor: 0, saldoAtualizado: 0, multaValor: 0, jurosValor: 0,
         selicValor: 0, encargosValor: 0, valorConsolidado: 0
       };
       (dadosTcfaAcumulado?.rows || []).forEach(row => {
-        recalcularLinhaComposicao(row);
+        if (opcoes.recalcular) recalcularLinhaComposicao(row);
         Object.keys(total).forEach(k => { total[k] = roundMoneyValue(total[k] + Number(row[k] || 0)); });
       });
       return total;
+    }
+
+    function obterTotalComposicaoAtual() {
+      if (dadosTcfaAcumulado?._preservarValoresCarregados && dadosTcfaAcumulado?.totaisComposicao) {
+        return { ...dadosTcfaAcumulado.totaisComposicao };
+      }
+      return somarComposicaoAcumulado();
     }
 
     function formatarPctNumero(n) {
@@ -1441,7 +1508,7 @@
       const tbody = document.getElementById('tbodyComposicaoAcumulado');
       const corpoConsolidacao = document.getElementById('tbodyConsolidacaoAcumulado');
       if (!tbody || !corpoConsolidacao) return;
-      const total = somarComposicaoAcumulado();
+      const total = obterTotalComposicaoAtual();
       tbody.innerHTML = '';
       dadosTcfaAcumulado.rows.forEach((row, idx) => {
         const tr = document.createElement('tr');
@@ -1495,7 +1562,7 @@
       corpoConsolidacao.innerHTML = montarHtmlConsolidacaoAcumulado();
       bindCamposConsolidacaoAcumulado();
       bindCamposPercentuaisComposicao();
-      atualizarConsolidacaoAcumulado();
+      if (!dadosTcfaAcumulado._preservarValoresCarregados) atualizarConsolidacaoAcumulado();
     }
 
     function montarHtmlConsolidacaoAcumulado() {
@@ -1503,20 +1570,20 @@
         <tr class="linha-topo"><th>Nº do débito acumulado:</th><td class="valor" colspan="2"><input id="numeroDebitoAcumulado" class="campo-tabela campo-numero" type="text" inputmode="numeric" placeholder="opcional" autocomplete="off" value="${onlyDigits(dadosTcfaAcumulado?.numeroDebito || '')}"></td></tr>
         <tr class="linha-topo"><th>Consolidação do débito em (data):</th><td class="valor" colspan="2"><input id="dataConsolidacaoAcumulado" class="campo-tabela campo-data" type="text" inputmode="numeric" placeholder="opcional" maxlength="10" autocomplete="off" value="${dadosTcfaAcumulado?.dataConsolidacao || ''}"></td></tr>
         <tr><th class="rotulo">Descrição</th><th class="percentual">Percentual</th><th class="valor">Valores</th></tr>
-        <tr class="linha-destaque"><td class="rotulo">Valor Principal</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumValorPrincipal" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
+        <tr class="linha-destaque"><td class="rotulo">Valor Principal</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumValorPrincipal" class="campo-tabela" type="text" value="${numeroParaMoeda(dadosTcfaAcumulado?.valorPrincipal || 0)}" readonly tabindex="-1"></td></tr>
         <tr class="linha-comum"><td class="rotulo">(-)Somatório da amortização</td><td class="percentual percentual-vazio">-</td><td class="valor"><input id="acumSomatorioAmortizacao" class="campo-tabela campo-moeda-acum" type="text" inputmode="numeric" value="${numeroParaMoeda(dadosTcfaAcumulado?.somatorioAmortizacao || 0)}"></td></tr>
-        <tr class="linha-comum"><td class="rotulo">(-)Desconto</td><td class="percentual"><input id="acumPercentualDesconto" class="campo-tabela campo-percentual-acum" type="text" inputmode="decimal" value="${formatarPctNumero(dadosTcfaAcumulado?.percentualDesconto || 0)}"></td><td class="valor valor-nao-editavel"><input id="acumValorDesconto" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
-        <tr class="linha-comum"><td class="rotulo">(-)Compensação Estadual</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumCompensacaoEstadual" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
-        <tr class="linha-destaque"><td class="rotulo">(=)Saldo Parcial</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumSaldoParcial" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
+        <tr class="linha-comum"><td class="rotulo">(-)Desconto</td><td class="percentual"><input id="acumPercentualDesconto" class="campo-tabela campo-percentual-acum" type="text" inputmode="decimal" value="${formatarPctNumero(dadosTcfaAcumulado?.percentualDesconto || 0)}"></td><td class="valor valor-nao-editavel"><input id="acumValorDesconto" class="campo-tabela" type="text" value="${numeroParaMoeda(dadosTcfaAcumulado?.valorDesconto || 0)}" readonly tabindex="-1"></td></tr>
+        <tr class="linha-comum"><td class="rotulo">(-)Compensação Estadual</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumCompensacaoEstadual" class="campo-tabela" type="text" value="${numeroParaMoeda(dadosTcfaAcumulado?.compensacaoEstadual || 0)}" readonly tabindex="-1"></td></tr>
+        <tr class="linha-destaque"><td class="rotulo">(=)Saldo Parcial</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumSaldoParcial" class="campo-tabela" type="text" value="${numeroParaMoeda(dadosTcfaAcumulado?.saldoParcial || 0)}" readonly tabindex="-1"></td></tr>
         <tr class="linha-comum"><td class="rotulo">(-)Somatório da amortização Sapiens Dívida</td><td class="percentual"><input id="acumPercentualSapiens" class="campo-tabela campo-percentual-acum" type="text" inputmode="decimal" value="${formatarPctNumero(dadosTcfaAcumulado?.percentualSapiens || 0)}"></td><td class="valor"><input id="acumSomatorioSapiens" class="campo-tabela campo-moeda-acum" type="text" inputmode="numeric" value="${numeroParaMoeda(dadosTcfaAcumulado?.somatorioSapiens || 0)}"></td></tr>
-        <tr class="linha-comum"><td class="rotulo">(+)Correção Monetária</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumCorrecaoMonetaria" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
-        <tr class="linha-destaque"><td class="rotulo">(=)Saldo Atualizado</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumSaldoAtualizado" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
-        <tr class="linha-comum"><td class="rotulo">(+)Multa</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumValorMulta" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
-        <tr class="linha-comum"><td class="rotulo">(+)Juros</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumValorJuros" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
-        <tr class="linha-comum"><td class="rotulo">(+)SELIC</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumValorSelic" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
-        <tr class="linha-destaque"><td class="rotulo">(=)Total Parcial</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumTotalParcial" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
-        <tr class="linha-comum"><td class="rotulo">(+)Encargos Legais</td><td class="percentual"><input id="acumPercentualEncargos" class="campo-tabela campo-percentual-acum" type="text" inputmode="decimal" value="${formatarPctNumero(dadosTcfaAcumulado?.percentualEncargos || 0)}"></td><td class="valor valor-nao-editavel"><input id="acumValorEncargos" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
-        <tr class="linha-destaque"><td class="rotulo">(=)Valor Consolidado</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumValorConsolidado" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
+        <tr class="linha-comum"><td class="rotulo">(+)Correção Monetária</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumCorrecaoMonetaria" class="campo-tabela" type="text" value="${numeroParaMoeda(dadosTcfaAcumulado?.correcaoMonetaria || 0)}" readonly tabindex="-1"></td></tr>
+        <tr class="linha-destaque"><td class="rotulo">(=)Saldo Atualizado</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumSaldoAtualizado" class="campo-tabela" type="text" value="${numeroParaMoeda(dadosTcfaAcumulado?.saldoAtualizado || 0)}" readonly tabindex="-1"></td></tr>
+        <tr class="linha-comum"><td class="rotulo">(+)Multa</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumValorMulta" class="campo-tabela" type="text" value="${numeroParaMoeda(dadosTcfaAcumulado?.valorMulta || 0)}" readonly tabindex="-1"></td></tr>
+        <tr class="linha-comum"><td class="rotulo">(+)Juros</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumValorJuros" class="campo-tabela" type="text" value="${numeroParaMoeda(dadosTcfaAcumulado?.valorJuros || 0)}" readonly tabindex="-1"></td></tr>
+        <tr class="linha-comum"><td class="rotulo">(+)SELIC</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumValorSelic" class="campo-tabela" type="text" value="${numeroParaMoeda(dadosTcfaAcumulado?.valorSelic || 0)}" readonly tabindex="-1"></td></tr>
+        <tr class="linha-destaque"><td class="rotulo">(=)Total Parcial</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumTotalParcial" class="campo-tabela" type="text" value="${numeroParaMoeda(dadosTcfaAcumulado?.totalParcial || 0)}" readonly tabindex="-1"></td></tr>
+        <tr class="linha-comum"><td class="rotulo">(+)Encargos Legais</td><td class="percentual"><input id="acumPercentualEncargos" class="campo-tabela campo-percentual-acum" type="text" inputmode="decimal" value="${formatarPctNumero(dadosTcfaAcumulado?.percentualEncargos || 0)}"></td><td class="valor valor-nao-editavel"><input id="acumValorEncargos" class="campo-tabela" type="text" value="${numeroParaMoeda(dadosTcfaAcumulado?.valorEncargos || 0)}" readonly tabindex="-1"></td></tr>
+        <tr class="linha-destaque"><td class="rotulo">(=)Valor Consolidado</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumValorConsolidado" class="campo-tabela" type="text" value="${numeroParaMoeda(dadosTcfaAcumulado?.valorConsolidado || 0)}" readonly tabindex="-1"></td></tr>
       `;
     }
 
@@ -1529,7 +1596,11 @@
         input.addEventListener('blur', () => {
           const idx = Number(input.dataset.idx);
           const campo = input.dataset.campo;
-          if (dadosTcfaAcumulado?.rows?.[idx] && campo) dadosTcfaAcumulado.rows[idx][campo] = parseNumeroFlexivel(input.value);
+          if (dadosTcfaAcumulado?.rows?.[idx] && campo) {
+            dadosTcfaAcumulado._preservarValoresCarregados = false;
+            dadosTcfaAcumulado.rows[idx][campo] = parseNumeroFlexivel(input.value);
+            recalcularLinhaComposicao(dadosTcfaAcumulado.rows[idx]);
+          }
           marcarMemoriaPDFAlterada();
           renderizarTcfaAcumulado();
         });
@@ -1586,7 +1657,7 @@
 
     function atualizarConsolidacaoAcumulado() {
       if (!dadosTcfaAcumulado) return;
-      const total = somarComposicaoAcumulado();
+      const total = obterTotalComposicaoAtual();
       const valorPrincipal = total.valorOriginal;
       const somatorio = moedaParaNumero(valorCampo('acumSomatorioAmortizacao'));
       const pctDesconto = percentualParaFracao(valorCampo('acumPercentualDesconto'));
@@ -1629,9 +1700,7 @@
       if (!dadosTcfaAcumulado || !Array.isArray(dadosTcfaAcumulado.rows)) return false;
       dadosTcfaAcumulado.rows.forEach(row => {
         const valorOriginal = Number(row.valorOriginal || 0);
-        const compensacaoRegular = Number(row.compensacaoRegular || 0);
-        const compensacaoManual = Number(row.compensacaoManual || 0);
-        row.saldo = roundMoneyValue(valorOriginal - compensacaoRegular - compensacaoManual);
+        row.saldo = roundMoneyValue(valorOriginal);
         recalcularLinhaComposicao(row);
       });
       renderizarTcfaAcumulado();
@@ -1640,7 +1709,33 @@
 
     function obterAssinaturaDadosReprocessamento() {
       try {
-        return JSON.stringify(obterDadosPDF());
+        const tipo = getTipoDebitoSelecionado();
+        if (tipo === 'TCFA_ACUMULADO') {
+          const campos = [
+            'numeroDebitoAcumulado', 'dataConsolidacaoAcumulado', 'acumValorPrincipal',
+            'acumSomatorioAmortizacao', 'acumPercentualDesconto', 'acumValorDesconto',
+            'acumCompensacaoEstadual', 'acumSaldoParcial', 'acumPercentualSapiens',
+            'acumSomatorioSapiens', 'acumCorrecaoMonetaria', 'acumSaldoAtualizado',
+            'acumValorMulta', 'acumValorJuros', 'acumValorSelic', 'acumTotalParcial',
+            'acumPercentualEncargos', 'acumValorEncargos', 'acumValorConsolidado'
+          ];
+          return JSON.stringify({
+            tipo,
+            campos: Object.fromEntries(campos.map(id => [id, valorCampo(id)])),
+            totalAtual: obterTotalComposicaoAtual(),
+            rows: (dadosTcfaAcumulado?.rows || []).map(r => ({ ...r }))
+          });
+        }
+
+        const campos = [
+          'numeroDebito', 'dataConsolidacao', 'valorPrincipal', 'somatorioAmortizacao',
+          'percentualDesconto', 'valorDesconto', 'compensacaoEstadual', 'saldoParcial',
+          'percentualSomatorioAmortizacaoSapiensDivida', 'somatorioAmortizacaoSapiensDivida',
+          'correcaoMonetaria', 'saldoAtualizado', 'percentualMulta', 'valorMulta',
+          'percentualJuros', 'valorJuros', 'percentualSelic', 'valorSelic', 'totalParcial',
+          'percentualEncargos', 'valorEncargos', 'valorConsolidado'
+        ];
+        return JSON.stringify({ tipo, campos: Object.fromEntries(campos.map(id => [id, valorCampo(id)])) });
       } catch (_) {
         return '';
       }
@@ -1660,14 +1755,15 @@
           showToast('Carregue a memória de cálculo para o preenchimento automático.', 'error');
           return;
         }
+        dadosTcfaAcumulado._preservarValoresCarregados = false;
         reprocessarComposicaoAcumuladoAPartirDosPercentuais();
       } else {
         atualizarCalculos();
       }
 
       const assinaturaDepois = obterAssinaturaDadosReprocessamento();
-      if (statusMemoriaPDF === 'carregado' && assinaturaAntes && assinaturaDepois && assinaturaAntes !== assinaturaDepois) {
-        atualizarStatusMemoriaPDF('alterado');
+      if (statusMemoriaPDF !== 'vazio' && assinaturaAntes && assinaturaDepois && assinaturaAntes !== assinaturaDepois) {
+        atualizarStatusMemoriaPDF('corrigido');
       }
       showToast('Cálculos reprocessados com sucesso.', 'success');
     }
@@ -1968,8 +2064,7 @@
       const tipo = getTipoDebitoSelecionado();
 
       if (tipo === 'TCFA_ACUMULADO' && dadosTcfaAcumulado) {
-        atualizarConsolidacaoAcumulado();
-        const totalComposicao = somarComposicaoAcumulado();
+        const totalComposicao = obterTotalComposicaoAtual();
         return {
           tipoDebito: 'TCFA_ACUMULADO',
           numeroDebito: valorCampo('numeroDebitoAcumulado'),
@@ -1994,8 +2089,6 @@
           ]
         };
       }
-
-      atualizarCalculos();
 
       return {
         tipoDebito: tipo || 'AI',
@@ -2417,8 +2510,6 @@
         showToast('Carregue a memória de cálculo para o preenchimento automático.', 'error');
         return;
       }
-      if (tipo === 'TCFA_ACUMULADO') atualizarConsolidacaoAcumulado();
-      else atualizarCalculos();
       const dados = coletarDadosPdf();
       const imagensCabecalho = await carregarImagensCabecalhoPDF();
       const pdf = construirPdfConsolidacao(dados, imagensCabecalho);
