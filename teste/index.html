@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_21 -->
+  <!-- Versão: simulador_consolidacao_debito_v_22 -->
 
   <style>
     :root {
@@ -486,37 +486,53 @@
 
     .tabela-composicao-acumulado {
       width: 100%;
-      min-width: 1365px;
+      min-width: 980px;
       border-collapse: collapse;
       table-layout: fixed;
       margin: 0;
     }
 
-    .tabela-composicao-acumulado col.col-comp-debito { width: 68px; }
-    .tabela-composicao-acumulado col.col-comp-trimestre { width: 70px; }
-    .tabela-composicao-acumulado col.col-comp-vencimento { width: 76px; }
-    .tabela-composicao-acumulado col.col-comp-valor-original { width: 78px; }
-    .tabela-composicao-acumulado col.col-comp-saldo { width: 72px; }
-    .tabela-composicao-acumulado col.col-comp-compensacao { width: 70px; }
-    .tabela-composicao-acumulado col.col-comp-percentual { width: 58px; }
-    .tabela-composicao-acumulado col.col-comp-valor { width: 76px; }
-    .tabela-composicao-acumulado col.col-comp-saldo-atualizado { width: 88px; }
-    .tabela-composicao-acumulado col.col-comp-consolidado { width: 94px; }
+    .tabela-composicao-acumulado col.col-comp-debito { width: 58px; }
+    .tabela-composicao-acumulado col.col-comp-trimestre { width: 38px; }
+    .tabela-composicao-acumulado col.col-comp-vencimento { width: 54px; }
+    .tabela-composicao-acumulado col.col-comp-valor-original { width: 58px; }
+    .tabela-composicao-acumulado col.col-comp-saldo { width: 56px; }
+    .tabela-composicao-acumulado col.col-comp-compensacao { width: 43px; }
+    .tabela-composicao-acumulado col.col-comp-percentual { width: 43px; }
+    .tabela-composicao-acumulado col.col-comp-valor { width: 56px; }
+    .tabela-composicao-acumulado col.col-comp-saldo-atualizado { width: 62px; }
+    .tabela-composicao-acumulado col.col-comp-consolidado { width: 72px; }
 
     .tabela-composicao-acumulado th,
     .tabela-composicao-acumulado td {
       border: 1px solid #333;
-      padding: 4px 3px;
-      font-size: 10px;
-      line-height: 1.15;
+      padding: 3px 2px;
+      font-size: 9.2px;
+      line-height: 1.08;
       text-align: center;
       vertical-align: middle;
       color: #000;
+      overflow-wrap: normal;
+      word-break: normal;
     }
 
     .tabela-composicao-acumulado th {
       background: #d9d9d9;
       font-weight: bold;
+    }
+
+    .tabela-composicao-acumulado .linha-grupo-composicao th {
+      background: #d9d9d9;
+      font-size: 9.4px;
+      padding-top: 4px;
+      padding-bottom: 4px;
+    }
+
+    .tabela-composicao-acumulado .linha-subgrupo-composicao th {
+      background: #d9d9d9;
+      font-size: 9px;
+      padding-top: 3px;
+      padding-bottom: 3px;
     }
 
     .tabela-composicao-acumulado td {
@@ -538,7 +554,6 @@
 
     .tabela-composicao-acumulado th .simbolo-percentual {
       display: block;
-      margin-top: 2px;
       line-height: 1;
       font-weight: bold;
     }
@@ -556,8 +571,9 @@
       text-align: center;
       font: inherit;
       font-weight: bold;
-      padding: 2px 1px;
+      padding: 1px 0;
       outline: none;
+      font-size: 9.2px;
     }
 
     .campo-composicao-percentual:focus {
@@ -822,26 +838,34 @@
                 <col class="col-comp-consolidado">
               </colgroup>
               <thead>
-                <tr>
-                  <th>Débito</th>
-                  <th>Trimestre/Ano</th>
-                  <th>Vencimento</th>
-                  <th>Valor Original</th>
-                  <th>Saldo</th>
-                  <th>Comp. Regular</th>
-                  <th>Comp. Manual</th>
-                  <th>Correção<span class="simbolo-percentual">%</span></th>
-                  <th>Valor IPCA</th>
-                  <th>Saldo Atualizado</th>
-                  <th>Multa<span class="simbolo-percentual">%</span></th>
-                  <th>Multa</th>
-                  <th>Juros<span class="simbolo-percentual">%</span></th>
-                  <th>Juros</th>
-                  <th>SELIC<span class="simbolo-percentual">%</span></th>
-                  <th>SELIC</th>
-                  <th>Encargo<span class="simbolo-percentual">%</span></th>
-                  <th>Encargo</th>
-                  <th>Valor Consolidado</th>
+                <tr class="linha-grupo-composicao">
+                  <th rowspan="2">Débito</th>
+                  <th rowspan="2">Trim.</th>
+                  <th rowspan="2">Venc.</th>
+                  <th rowspan="2">Valor<br>Original</th>
+                  <th rowspan="2">Saldo</th>
+                  <th colspan="2">Compensação</th>
+                  <th colspan="3">Correção Monetária</th>
+                  <th colspan="2">Multa</th>
+                  <th colspan="2">Juros</th>
+                  <th colspan="2">SELIC</th>
+                  <th colspan="2">Encargo Legal</th>
+                  <th rowspan="2">Valor<br>Consolidado</th>
+                </tr>
+                <tr class="linha-subgrupo-composicao">
+                  <th>Regular</th>
+                  <th>Manual</th>
+                  <th><span class="simbolo-percentual">%</span></th>
+                  <th>Valor<br>IPCA</th>
+                  <th>Saldo<br>Atualizado</th>
+                  <th><span class="simbolo-percentual">%</span></th>
+                  <th>Valor</th>
+                  <th><span class="simbolo-percentual">%</span></th>
+                  <th>Valor</th>
+                  <th><span class="simbolo-percentual">%</span></th>
+                  <th>Valor</th>
+                  <th><span class="simbolo-percentual">%</span></th>
+                  <th>Valor</th>
                 </tr>
               </thead>
               <tbody id="tbodyComposicaoAcumulado"></tbody>
@@ -2107,7 +2131,7 @@
         const totalColComp = colComp.reduce((a, b) => a + b, 0);
         const escalaComp = tabelaLargura / totalColComp;
         const colsC = colComp.map(v => v * escalaComp);
-        const headersC = ['Débito', 'Trim.', 'Venc.', 'Valor\nOriginal', 'Saldo', 'Comp.\nReg.', 'Comp.\nMan.', 'Corr.\n%', 'IPCA', 'Saldo\nAtual.', 'Multa\n%', 'Multa', 'Juros\n%', 'Juros', 'SELIC\n%', 'SELIC', 'Enc.\n%', 'Encargo', 'Valor\nConsol.'];
+        const headersC = ['Débito', 'Trim.', 'Venc.', 'Valor\nOriginal', 'Saldo', 'Comp.\nReg.', 'Comp.\nMan.', '%', 'Valor\nIPCA', 'Saldo\nAtual.', '%', 'Multa', '%', 'Juros', '%', 'SELIC', '%', 'Encargo', 'Valor\nConsol.'];
         const alturaCabC = 22;
         const alturaLinhaC = 13;
 
