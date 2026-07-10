@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="robots" content="noindex, nofollow" />
-<title>Página de Testes - CALC-IBAMA</title>
+  <title>Simulador de consolidação - CALC-IBAMA</title>
+  <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: pagina_testes_calc_ibama_v_1 -->
+  <!-- Versão: simulador_consolidacao_debito_v_20 -->
 
   <style>
     :root {
@@ -121,62 +121,420 @@
     main {
       flex: 1 1 auto;
       min-height: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 56px 24px;
+      padding: 24px;
       overflow-y: auto;
     }
 
-    .painel-construcao {
-      width: min(760px, 100%);
-      min-height: 260px;
+    .ferramenta-consolidacao {
+      width: min(1000px, 100%);
+      margin: 0 auto;
+      background-color: #ffffff;
+      border: 1px solid #ccc;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .titulo-ferramenta {
+      background-color: #1f4e79;
+      color: #ffffff;
+      text-align: center;
+      padding: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      margin: 0;
+    }
+
+    .status-info {
+      background-color: #e2e3e5;
+      border: 1px solid #d6d8db;
+      color: #383d41;
+      padding: 8px 10px;
+      margin: 10px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .alerta {
+      display: none;
+      background-color: #fff3cd;
+      border: 1px solid #ffeaa7;
+      color: #856404;
+      padding: 10px;
+      margin: 10px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+
+    .alerta.erro {
+      display: block;
+      background-color: #f8d7da;
+      border-color: #f5c6cb;
+      color: #721c24;
+    }
+
+    .conteudo-ferramenta {
+      padding: 12px;
+    }
+
+
+    .acoes-pdf {
+      display: flex;
+      justify-content: center;
+      padding: 14px 0 2px;
+    }
+
+    .btn {
+      background-color: #e0e0e0;
+      color: #000000;
+      border: 1px solid #ccc;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .btn:hover {
+      background-color: #d0d0d0;
+    }
+
+    .btn-primary {
+      background-color: #1f4e79;
+      color: #ffffff;
+      border-color: #1f4e79;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(0.95);
+    }
+
+    .tabela-consolidacao {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0;
+      table-layout: fixed;
+    }
+
+    .tabela-consolidacao col.col-descricao {
+      width: 35%;
+    }
+
+    .tabela-consolidacao col.col-percentual {
+      width: 35%;
+    }
+
+    .tabela-consolidacao col.col-valores {
+      width: 30%;
+    }
+
+    .tabela-consolidacao th,
+    .tabela-consolidacao td {
+      border: 1px solid #333;
+      padding: 5px 6px;
+      font-size: 12px;
+      vertical-align: middle;
+    }
+
+    .tabela-consolidacao th {
+      background-color: #d9d9d9;
+      color: #000000;
+      font-weight: bold;
+      text-align: left;
+    }
+
+    .tabela-consolidacao .linha-topo th {
+      background-color: #d9d9d9;
+      font-size: 12px;
+    }
+
+    .tabela-consolidacao .rotulo {
+      width: 35%;
+      font-weight: bold;
+      background-color: #f7f7f7;
+      text-align: left;
+    }
+
+    .tabela-consolidacao .percentual {
+      width: 35%;
+      background-color: #ffffff;
+      text-align: center;
+    }
+
+    .tabela-consolidacao .valor {
+      width: 30%;
+      background-color: #ffffff;
+      text-align: right;
+    }
+
+    .tabela-consolidacao th.percentual,
+    .tabela-consolidacao th.valor {
+      background-color: #f7f7f7;
+    }
+
+    .tabela-consolidacao tbody tr.linha-comum td {
+      background-color: #f7f7f7;
+    }
+
+    .tabela-consolidacao tbody tr.linha-destaque td {
+      background-color: #e0e0e0;
+    }
+
+    .tabela-consolidacao .valor-nao-editavel .campo-tabela {
+      font-weight: bold;
+    }
+
+    .tabela-consolidacao .percentual-vazio {
+      text-align: center;
+    }
+
+    .campo-tabela {
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: #000000;
+      font: inherit;
+      padding: 2px 3px;
+      outline: none;
+      text-align: right;
+    }
+
+    .campo-tabela:focus {
+      outline: 2px solid #4CAF50;
+      outline-offset: 0;
+      background: #ffffff;
+    }
+
+    .campo-tabela[readonly] {
+      cursor: default;
+      font-weight: bold;
+    }
+
+    .campo-numero,
+    .campo-data {
+      text-align: left;
+      font-weight: normal;
+    }
+
+    .campo-percentual {
+      text-align: center;
+    }
+
+    .linha-destaque .rotulo {
+      font-weight: bold;
+    }
+
+
+
+    .painel-tipo-upload {
+      padding: 12px 12px 4px;
+      background: #ffffff;
+    }
+
+    .separador-tipo-tabela {
+      height: 1px;
+      background: #ccc;
+      margin: 0 12px;
+    }
+
+    .painel-upload-memoria {
+      padding: 12px;
+      background: #ffffff;
+    }
+
+    .linha-controle {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .linha-controle label.rotulo-controle {
+      font-weight: bold;
+      font-size: 13px;
+      color: #000;
+    }
+
+    .radio-group {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .radio-group label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: normal;
+      font-size: 13px;
+      color: #000;
+    }
+
+    .btnbar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .upload-status {
+      width: 180px;
+      min-height: 34px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      background: #e0e0e0;
       display: flex;
       align-items: center;
       justify-content: center;
-      position: relative;
-    }
-
-    .painel-construcao::before {
-      content: "";
-      position: absolute;
-      width: min(420px, 70vw);
-      height: min(420px, 70vw);
-      border-radius: 50%;
-      background: rgba(31, 111, 84, 0.045);
-      filter: blur(1px);
-      z-index: 0;
-    }
-
-    .aviso-construcao {
-      position: relative;
-      z-index: 1;
-      width: min(620px, 100%);
-      text-align: center;
-      padding: 42px 48px;
-      border: 1px solid rgba(217, 226, 221, 0.85);
-      border-radius: 24px;
-      background: rgba(255, 255, 255, 0.72);
-      box-shadow: var(--sombra-suave);
-      backdrop-filter: blur(4px);
-    }
-
-    .aviso-construcao h1 {
-      margin: 0;
-      font-size: clamp(2.2rem, 6vw, 4.2rem);
-      line-height: 1.05;
+      font-weight: bold;
+      color: #666;
+      user-select: none;
+      box-sizing: border-box;
+      font-size: 13px;
       letter-spacing: 0.03em;
-      color: var(--cor-primaria-escura);
-      font-weight: 800;
     }
 
-    .aviso-construcao p {
-      margin: 14px auto 0;
-      font-size: clamp(0.9rem, 2vw, 1.08rem);
-      letter-spacing: 0.05em;
-      color: var(--cor-secundaria);
-      font-weight: 600;
+    .upload-status.ok {
+      background: #1f7a1f;
+      border-color: #1f7a1f;
+      color: #fff;
+      letter-spacing: 1px;
+    }
+
+    #toastContainer {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 420px;
+    }
+
+    .toast {
+      border-radius: 6px;
+      padding: 12px 42px 12px 12px;
+      border: 1px solid #ccc;
+      background: #fff3cd;
+      color: #856404;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+      font-size: 13px;
+      line-height: 1.35;
+      position: relative;
+      white-space: pre-wrap;
+      cursor: default;
+      user-select: text;
+    }
+
+    .toast.error {
+      background-color: #f8d7da;
+      border-color: #f5c6cb;
+      color: #721c24;
+    }
+
+    .toast.success {
+      background-color: #d4edda;
+      border-color: #c3e6cb;
+      color: #155724;
+    }
+
+    .toast .toast-close {
+      position: absolute;
+      right: 10px;
+      top: 8px;
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      border: 1px solid rgba(0,0,0,0.2);
+      background: rgba(255,255,255,0.65);
+      cursor: pointer;
+      font-weight: bold;
+      line-height: 20px;
       text-align: center;
+      padding: 0;
+    }
+
+    .mensagem-acumulado {
+      margin: 12px;
+      padding: 14px;
+      border: 1px solid #d6d8db;
+      background: #e2e3e5;
+      color: #383d41;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .subtitulo-tabela {
+      background-color: #1f4e79;
+      color: #ffffff;
+      padding: 8px 10px;
+      font-weight: bold;
+      font-size: 13px;
+      margin: 0;
+      text-align: center;
+    }
+
+    .tabela-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      margin-bottom: 14px;
+    }
+
+    .tabela-composicao-acumulado {
+      width: 100%;
+      min-width: 980px;
+      border-collapse: collapse;
+      table-layout: fixed;
+      margin: 0;
+    }
+
+    .tabela-composicao-acumulado th,
+    .tabela-composicao-acumulado td {
+      border: 1px solid #333;
+      padding: 4px 3px;
+      font-size: 10px;
+      line-height: 1.15;
+      text-align: center;
+      vertical-align: middle;
+      color: #000;
+    }
+
+    .tabela-composicao-acumulado th {
+      background: #d9d9d9;
+      font-weight: bold;
+    }
+
+    .tabela-composicao-acumulado td {
+      background: #f7f7f7;
+    }
+
+    .tabela-composicao-acumulado .linha-total-composicao td {
+      background: #e0e0e0;
+      font-weight: bold;
+    }
+
+    .campo-composicao-percentual {
+      width: 100%;
+      border: none;
+      background: transparent;
+      text-align: center;
+      font: inherit;
+      padding: 1px;
+      outline: none;
+    }
+
+    .campo-composicao-percentual:focus {
+      outline: 2px solid #4CAF50;
+      background: #ffffff;
+    }
+
+    @media (max-width: 720px) {
+      .linha-controle { grid-template-columns: 1fr; }
+      .upload-status { width: 100%; }
     }
 
     .rodape {
@@ -215,12 +573,41 @@
       }
 
       main {
-        padding: 42px 16px;
+        padding: 18px 14px;
       }
 
-      .aviso-construcao {
-        padding: 34px 24px;
-        border-radius: 20px;
+      .tabela-consolidacao {
+        table-layout: auto;
+      }
+
+      .tabela-consolidacao th,
+      .tabela-consolidacao td {
+        font-size: 11px;
+        padding: 5px 4px;
+      }
+
+      .tabela-consolidacao col.col-descricao {
+        width: 44%;
+      }
+
+      .tabela-consolidacao col.col-percentual {
+        width: 24%;
+      }
+
+      .tabela-consolidacao col.col-valores {
+        width: 32%;
+      }
+
+      .tabela-consolidacao .rotulo {
+        width: 44%;
+      }
+
+      .tabela-consolidacao .percentual {
+        width: 24%;
+      }
+
+      .tabela-consolidacao .valor {
+        width: 32%;
       }
     }
   </style>
@@ -236,18 +623,191 @@
       <nav class="menu-principal" aria-label="Menu principal">
         <a href="../">Início</a>
         <a href="../simulador-amortizacao/">Simulador de amortização</a>
-        <a href="../simulador-consolidacao-debito/">Simulador de consolidação do débito</a>
+        <a class="ativo" href="../simulador-consolidacao-debito/">Simulador de consolidação</a>
         <a href="../calculadora-selic/">Calculadora Selic</a>
-        <a href="../calculadora-restituicao/">Calculadora de Restituição</a>
+        <a href="../calculadora-restituicao/">Calculadora de restituição</a>
         <a href="../manuais/">Manuais</a>
       </nav>
     </div>
   </header>
 
   <main>
-    <section class="painel-construcao" aria-label="Página em construção">
-      <div class="aviso-construcao">
-        <h1>Página de Testes</h1>
+    <section class="ferramenta-consolidacao" aria-label="Simulador de consolidação">
+      <h1 class="titulo-ferramenta">Simulador de consolidação</h1>
+
+      <div id="alerta" class="alerta"></div>
+      <div class="painel-tipo-upload no-print">
+        <div class="linha-controle">
+          <label class="rotulo-controle">Tipo do débito</label>
+          <div class="radio-group" id="grupoTipoDebito">
+            <label><input type="radio" name="tipoDebito" value="AI" autocomplete="off"> Auto de Infração</label>
+            <label><input type="radio" name="tipoDebito" value="TCFA_SIMPLES" autocomplete="off"> TCFA simples</label>
+            <label><input type="radio" name="tipoDebito" value="TCFA_ACUMULADO" autocomplete="off"> TCFA acumulado</label>
+          </div>
+        </div>
+      </div>
+      <div class="separador-tipo-tabela no-print" aria-hidden="true"></div>
+      <div class="painel-upload-memoria no-print" id="painelUploadMemoria" style="display:none;">
+        <div class="btnbar">
+          <button type="button" class="btn" id="btnCarregarMemoriaPDF">Carregar memória de cálculo para preenchimento automático (PDF)</button>
+          <input type="file" id="inputMemoriaCalculoPDF" accept="application/pdf,.pdf" style="display:none;">
+          <div class="upload-status" id="statusMemoriaPDF" aria-live="polite"></div>
+        </div>
+      </div>
+      <div id="toastContainer"></div>
+      <div class="conteudo-ferramenta" id="areaTabelaSimples" style="display:none;">
+        <table class="tabela-consolidacao" aria-label="Tabela de consolidação do débito">
+          <colgroup>
+            <col class="col-descricao" />
+            <col class="col-percentual" />
+            <col class="col-valores" />
+          </colgroup>
+          <tbody>
+            <tr class="linha-topo">
+              <th>Nº do débito:</th>
+              <td class="valor" colspan="2">
+                <input id="numeroDebito" class="campo-tabela campo-numero" type="text" inputmode="numeric" placeholder="opcional" autocomplete="off" />
+              </td>
+            </tr>
+            <tr class="linha-topo">
+              <th>Consolidação do débito em (data):</th>
+              <td class="valor" colspan="2">
+                <input id="dataConsolidacao" class="campo-tabela campo-data" type="text" inputmode="numeric" placeholder="opcional" maxlength="10" autocomplete="off" />
+              </td>
+            </tr>
+            <tr>
+              <th class="rotulo">Descrição</th>
+              <th class="percentual">Percentual</th>
+              <th class="valor">Valores</th>
+            </tr>
+            <tr class="linha-destaque">
+              <td class="rotulo">Valor Principal</td>
+              <td class="percentual percentual-vazio">-</td>
+              <td class="valor"><input id="valorPrincipal" class="campo-tabela campo-moeda" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
+            </tr>
+            <tr class="linha-comum">
+              <td class="rotulo">(-)Somatório da amortização</td>
+              <td class="percentual percentual-vazio">-</td>
+              <td class="valor"><input id="somatorioAmortizacao" class="campo-tabela campo-moeda" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
+            </tr>
+            <tr class="linha-comum">
+              <td class="rotulo">(-)Desconto</td>
+              <td class="percentual"><input id="percentualDesconto" class="campo-tabela campo-percentual" type="text" inputmode="decimal" value="0,00%" autocomplete="off" /></td>
+              <td class="valor valor-calculado valor-nao-editavel"><input id="valorDesconto" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+            </tr>
+            <tr class="linha-comum">
+              <td class="rotulo">(-)Compensação Estadual</td>
+              <td class="percentual percentual-vazio">-</td>
+              <td class="valor"><input id="compensacaoEstadual" class="campo-tabela campo-moeda" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
+            </tr>
+            <tr class="linha-destaque">
+              <td class="rotulo">(=)Saldo Parcial</td>
+              <td class="percentual percentual-vazio">-</td>
+              <td class="valor valor-calculado"><input id="saldoParcial" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+            </tr>
+            <tr class="linha-comum">
+              <td class="rotulo">(-)Somatório da amortização Sapiens Dívida</td>
+              <td class="percentual"><input id="percentualSomatorioAmortizacaoSapiensDivida" class="campo-tabela campo-percentual" type="text" inputmode="decimal" value="0,00%" autocomplete="off" /></td>
+              <td class="valor"><input id="somatorioAmortizacaoSapiensDivida" class="campo-tabela campo-moeda" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
+            </tr>
+            <tr class="linha-comum">
+              <td class="rotulo">(+)Correção Monetária</td>
+              <td class="percentual percentual-vazio">-</td>
+              <td class="valor"><input id="correcaoMonetaria" class="campo-tabela campo-moeda" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
+            </tr>
+            <tr class="linha-destaque">
+              <td class="rotulo">(=)Saldo Atualizado</td>
+              <td class="percentual percentual-vazio">-</td>
+              <td class="valor valor-calculado"><input id="saldoAtualizado" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+            </tr>
+            <tr class="linha-comum">
+              <td class="rotulo">(+)Multa</td>
+              <td class="percentual"><input id="percentualMulta" class="campo-tabela campo-percentual" type="text" inputmode="decimal" value="0,00%" autocomplete="off" /></td>
+              <td class="valor valor-calculado valor-nao-editavel"><input id="valorMulta" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+            </tr>
+            <tr class="linha-comum">
+              <td class="rotulo">(+)Juros</td>
+              <td class="percentual"><input id="percentualJuros" class="campo-tabela campo-percentual" type="text" inputmode="decimal" value="0,00%" autocomplete="off" /></td>
+              <td class="valor valor-calculado valor-nao-editavel"><input id="valorJuros" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+            </tr>
+            <tr class="linha-comum">
+              <td class="rotulo">(+)SELIC</td>
+              <td class="percentual"><input id="percentualSelic" class="campo-tabela campo-percentual" type="text" inputmode="decimal" value="0,00%" autocomplete="off" /></td>
+              <td class="valor valor-calculado valor-nao-editavel"><input id="valorSelic" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+            </tr>
+            <tr class="linha-destaque">
+              <td class="rotulo">(=)Total Parcial</td>
+              <td class="percentual percentual-vazio">-</td>
+              <td class="valor valor-calculado valor-nao-editavel"><input id="totalParcial" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+            </tr>
+            <tr class="linha-comum">
+              <td class="rotulo">(+)Encargos Legais</td>
+              <td class="percentual"><input id="percentualEncargos" class="campo-tabela campo-percentual" type="text" inputmode="decimal" value="0,00%" autocomplete="off" /></td>
+              <td class="valor valor-calculado valor-nao-editavel"><input id="valorEncargos" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+            </tr>
+            <tr class="linha-destaque">
+              <td class="rotulo">(=)Valor Consolidado</td>
+              <td class="percentual percentual-vazio">-</td>
+              <td class="valor valor-calculado valor-nao-editavel"><input id="valorConsolidado" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="acoes-pdf no-print">
+          <button type="button" class="btn btn-primary" id="btnGerarPdf">Gerar PDF</button>
+        </div>
+
+
+      </div>
+
+
+      <div class="conteudo-ferramenta" id="areaTcfaAcumulado" style="display:none;">
+        <div id="mensagemTcfaAcumulado" class="mensagem-acumulado">Carregue a memória de cálculo para o preenchimento automático.</div>
+        <div id="conteudoTcfaAcumulado" style="display:none;">
+          <div class="subtitulo-tabela">Composição do débito</div>
+          <div class="tabela-wrapper">
+            <table class="tabela-composicao-acumulado" aria-label="Composição do débito acumulado">
+              <thead>
+                <tr>
+                  <th>Débito</th>
+                  <th>Trimestre/Ano</th>
+                  <th>Vencimento</th>
+                  <th>Valor Original</th>
+                  <th>Saldo</th>
+                  <th>Comp. Regular</th>
+                  <th>Comp. Manual</th>
+                  <th>Correção %</th>
+                  <th>Valor IPCA</th>
+                  <th>Saldo Atualizado</th>
+                  <th>Multa %</th>
+                  <th>Multa</th>
+                  <th>Juros %</th>
+                  <th>Juros</th>
+                  <th>SELIC %</th>
+                  <th>SELIC</th>
+                  <th>Encargo %</th>
+                  <th>Encargo</th>
+                  <th>Valor Consolidado</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyComposicaoAcumulado"></tbody>
+            </table>
+          </div>
+
+          <div class="subtitulo-tabela">Consolidação do débito</div>
+          <table class="tabela-consolidacao" aria-label="Tabela de consolidação do débito acumulado">
+            <colgroup>
+              <col class="col-descricao" />
+              <col class="col-percentual" />
+              <col class="col-valores" />
+            </colgroup>
+            <tbody id="tbodyConsolidacaoAcumulado"></tbody>
+          </table>
+
+          <div class="acoes-pdf no-print">
+            <button type="button" class="btn btn-primary" id="btnGerarPdfTcfaAcumulado">Gerar PDF</button>
+          </div>
+        </div>
       </div>
     </section>
   </main>
@@ -255,5 +815,1451 @@
   <footer class="rodape">
     CALC-IBAMA · SECAT/CCOB
   </footer>
+
+  <script>
+    const BRASAO_REPUBLICA_PDF_URL = '../assets/img/pdf/brasao_republica.png';
+    const LOGO_IBAMA_PDF_URL = '../assets/img/pdf/logo_ibama.png';
+    const PDFJS_LOCAL_URL = '../libs/pdfjs/pdf.min.js';
+    const PDFJS_WORKER_LOCAL_URL = '../libs/pdfjs/pdf.worker.min.js';
+    let imagensCabecalhoPDFCache = null;
+    let promessaPDFJS = null;
+    let tipoDebitoAtual = '';
+    let dadosTcfaAcumulado = null;
+    let modoSomatorioSapiensDividaAcumulado = 'valor';
+
+    function carregarImagemComoJPEGParaPDF(url) {
+      return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const largura = img.naturalWidth || img.width || 200;
+            const altura = img.naturalHeight || img.height || 200;
+            const canvas = document.createElement('canvas');
+            canvas.width = largura;
+            canvas.height = altura;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, largura, altura);
+            ctx.drawImage(img, 0, 0, largura, altura);
+            const dataURL = canvas.toDataURL('image/jpeg', 0.92);
+            const dadosBinarios = atob(dataURL.split(',')[1] || '');
+            resolve({ data: dadosBinarios, width: largura, height: altura });
+          } catch (erro) {
+            console.warn('Não foi possível preparar imagem para o PDF:', url, erro);
+            resolve(null);
+          }
+        };
+        img.onerror = () => {
+          console.warn('Não foi possível carregar imagem do cabeçalho do PDF:', url);
+          resolve(null);
+        };
+        img.src = url;
+      });
+    }
+
+    async function carregarImagensCabecalhoPDF() {
+      if (imagensCabecalhoPDFCache) return imagensCabecalhoPDFCache;
+      const [brasao, ibama] = await Promise.all([
+        carregarImagemComoJPEGParaPDF(BRASAO_REPUBLICA_PDF_URL),
+        carregarImagemComoJPEGParaPDF(LOGO_IBAMA_PDF_URL)
+      ]);
+      imagensCabecalhoPDFCache = { brasao, ibama };
+      return imagensCabecalhoPDFCache;
+    }
+
+    let modoSomatorioSapiensDivida = 'valor';
+
+    function ehCampoBaseManual(input) {
+      return false;
+    }
+
+    function registrarEdicaoCampo(input) {
+      // Vinculação manual entre Valor Principal, Saldo Parcial e Saldo Atualizado cancelada.
+      // Saldo Parcial e Saldo Atualizado permanecem campos calculados/readOnly.
+      if (!input || !input.id) return;
+
+      if (input.id === 'percentualSomatorioAmortizacaoSapiensDivida') {
+        modoSomatorioSapiensDivida = 'percentual';
+      }
+
+      if (input.id === 'somatorioAmortizacaoSapiensDivida') {
+        modoSomatorioSapiensDivida = 'valor';
+      }
+    }
+
+    function showAlert(msg, type = 'erro') {
+      const el = document.getElementById('alerta');
+      if (!el) return;
+      el.textContent = msg;
+      el.className = 'alerta ' + (type === 'erro' ? 'erro' : '');
+      el.style.display = msg ? 'block' : 'none';
+    }
+
+    function clearAlert() {
+      const el = document.getElementById('alerta');
+      if (!el) return;
+      el.textContent = '';
+      el.className = 'alerta';
+      el.style.display = 'none';
+    }
+
+
+    function showToast(msg, type = 'error') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+      window.__toastSuppressNextDocClick = true;
+      const toast = document.createElement('div');
+      toast.className = 'toast ' + (type === 'success' ? 'success' : type === 'error' ? 'error' : '');
+      toast.textContent = msg;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'toast-close';
+      btn.textContent = '×';
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toast.remove();
+      });
+      toast.appendChild(btn);
+      container.appendChild(toast);
+    }
+
+    function limparAvisos() {
+      const container = document.getElementById('toastContainer');
+      if (container) container.innerHTML = '';
+      clearAlert();
+    }
+
+    document.addEventListener('click', () => {
+      if (window.__toastSuppressNextDocClick) {
+        window.__toastSuppressNextDocClick = false;
+        return;
+      }
+      limparAvisos();
+    });
+
+    function setUploadMemoriaOk(ok) {
+      const el = document.getElementById('statusMemoriaPDF');
+      if (!el) return;
+      el.classList.toggle('ok', !!ok);
+      el.textContent = ok ? 'CARREGADO' : '';
+    }
+
+    function getTipoDebitoSelecionado() {
+      const radio = document.querySelector('input[name="tipoDebito"]:checked');
+      return radio ? radio.value : '';
+    }
+
+    function tipoDebitoLabel(tipo) {
+      if (tipo === 'AI') return 'Auto de Infração';
+      if (tipo === 'TCFA_SIMPLES') return 'TCFA simples';
+      if (tipo === 'TCFA_ACUMULADO') return 'TCFA acumulado';
+      return '';
+    }
+
+    function normalizarTextoBusca(texto) {
+      return String(texto || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toUpperCase();
+    }
+
+    function selecionarTipoDebito() {
+      tipoDebitoAtual = getTipoDebitoSelecionado();
+      dadosTcfaAcumulado = null;
+      setUploadMemoriaOk(false);
+
+      const areaSimples = document.getElementById('areaTabelaSimples');
+      const areaAcumulado = document.getElementById('areaTcfaAcumulado');
+      const msgAcumulado = document.getElementById('mensagemTcfaAcumulado');
+      const conteudoAcumulado = document.getElementById('conteudoTcfaAcumulado');
+      const painelUpload = document.getElementById('painelUploadMemoria');
+
+      if (painelUpload) painelUpload.style.display = tipoDebitoAtual ? 'block' : 'none';
+      if (areaSimples) areaSimples.style.display = (tipoDebitoAtual === 'AI' || tipoDebitoAtual === 'TCFA_SIMPLES') ? 'block' : 'none';
+      if (areaAcumulado) areaAcumulado.style.display = tipoDebitoAtual === 'TCFA_ACUMULADO' ? 'block' : 'none';
+      if (msgAcumulado) msgAcumulado.style.display = tipoDebitoAtual === 'TCFA_ACUMULADO' ? 'block' : 'none';
+      if (conteudoAcumulado) conteudoAcumulado.style.display = 'none';
+    }
+
+    function selecionarMemoriaCalculoPDF() {
+      const tipo = getTipoDebitoSelecionado();
+      if (!tipo) {
+        showToast('Selecione o tipo do débito.', 'error');
+        return;
+      }
+      const input = document.getElementById('inputMemoriaCalculoPDF');
+      if (!input) return;
+      input.value = '';
+      input.click();
+    }
+
+    async function carregarPDFJS() {
+      if (window.pdfjsLib) {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_LOCAL_URL;
+        return window.pdfjsLib;
+      }
+      if (promessaPDFJS) return promessaPDFJS;
+      promessaPDFJS = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = PDFJS_LOCAL_URL;
+        script.onload = () => {
+          if (!window.pdfjsLib) {
+            reject(new Error('PDF.js não foi carregado corretamente.'));
+            return;
+          }
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_LOCAL_URL;
+          resolve(window.pdfjsLib);
+        };
+        script.onerror = () => reject(new Error('Não foi possível carregar o PDF.js local do portal.'));
+        document.head.appendChild(script);
+      });
+      return promessaPDFJS;
+    }
+
+    function limparTextoPDF(texto) {
+      return String(texto || '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    function montarLinhasPDF(pagina, items) {
+      const ordenados = [...items].sort((a, b) => Math.abs(a.y - b.y) > 2 ? b.y - a.y : a.x - b.x);
+      const grupos = [];
+      ordenados.forEach(item => {
+        const texto = String(item.str || '').replace(/\u00a0/g, ' ');
+        if (!texto.trim()) return;
+        let grupo = grupos.find(g => Math.abs(g.y - item.y) <= 2.2);
+        if (!grupo) {
+          grupo = { pagina, y: item.y, items: [] };
+          grupos.push(grupo);
+        }
+        grupo.items.push(item);
+      });
+      return grupos.map(grupo => {
+        grupo.items.sort((a, b) => a.x - b.x);
+        let texto = '';
+        let fimAnterior = null;
+        grupo.items.forEach(item => {
+          const parte = String(item.str || '').replace(/\u00a0/g, ' ').trim();
+          if (!parte) return;
+          if (fimAnterior !== null && item.x - fimAnterior > 1.8 && !texto.endsWith(' ')) texto += ' ';
+          texto += parte;
+          fimAnterior = item.x + Number(item.w || 0);
+        });
+        return { pagina: grupo.pagina, y: grupo.y, text: limparTextoPDF(texto) };
+      }).filter(l => l.text);
+    }
+
+    async function extrairModeloPDF(file) {
+      const pdfjsLib = await carregarPDFJS();
+      const buffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
+      const linhas = [];
+      for (let p = 1; p <= pdf.numPages; p++) {
+        const page = await pdf.getPage(p);
+        const textContent = await page.getTextContent();
+        const items = (textContent.items || []).map(item => {
+          const t = item.transform || [1, 0, 0, 1, 0, 0];
+          return {
+            str: item.str || '',
+            x: Number(t[4] || 0),
+            y: Number(t[5] || 0),
+            w: Number(item.width || 0)
+          };
+        });
+        linhas.push(...montarLinhasPDF(p, items));
+      }
+      const fullText = linhas.map(l => l.text).join('\n');
+      return { linhas, fullText, detectedType: detectarTipoMemoriaPDF(fullText) };
+    }
+
+    function detectarTipoMemoriaPDF(texto) {
+      const norm = normalizarTextoBusca(texto);
+      if (norm.includes('TCFA - ACUMULADO')) return 'TCFA_ACUMULADO';
+      if (norm.includes('AUTO DE INFRACAO')) return 'AI';
+      if (norm.includes('TAXA DE CONTROLE E FISCALIZACAO AMBIENTAL - TCFA')) return 'TCFA_SIMPLES';
+      return '';
+    }
+
+    function validarTipoMemoriaPDF(tipoEsperado, tipoDetectado) {
+      if (!tipoDetectado) throw new Error('Não foi possível identificar o tipo do PDF carregado.');
+      if (tipoEsperado !== tipoDetectado) throw new Error('O arquivo carregado não corresponde ao tipo de débito selecionado.');
+    }
+
+    function extrairUltimoNumeroMonetario(texto) {
+      // Para evitar capturar anos/datas da coluna de situação, considera apenas números em formato decimal brasileiro.
+      const matches = String(texto || '').match(/-?\d[\d.]*,\d{2}|-?,\d{1,2}/g);
+      if (!matches || !matches.length) return 0;
+      return parseNumeroFlexivel(matches[matches.length - 1]);
+    }
+
+    function extrairPercentualLinha(texto) {
+      const m = String(texto || '').match(/\(([\d.,]+)\s*%\)/i);
+      return m ? parseNumeroFlexivel(m[1]) : 0;
+    }
+
+    function primeiraLinhaQueContem(linhas, regex) {
+      return (linhas || []).find(l => regex.test(String(l.text || '')))?.text || '';
+    }
+
+    function extrairValorPorLinha(linhas, regex) {
+      const linha = primeiraLinhaQueContem(linhas, regex);
+      return linha ? extrairUltimoNumeroMonetario(linha) : 0;
+    }
+
+    function extrairPercentualPorLinha(linhas, regex) {
+      const linha = primeiraLinhaQueContem(linhas, regex);
+      return linha ? extrairPercentualLinha(linha) : 0;
+    }
+
+    function extrairDataConsolidacao(linhas) {
+      const texto = (linhas || []).map(l => l.text).join('\n');
+      let m = texto.match(/Consolidação do débito em:\s*(\d{2}\/\d{2}\/\d{4})/i);
+      if (m) return m[1];
+      const linhaMulta = primeiraLinhaQueContem(linhas, /\(\+\)\s*Multa/i);
+      m = linhaMulta.match(/até\s*(\d{2}\/\d{2}\/\d{4})/i);
+      if (m) return m[1];
+      const linhaSelic = primeiraLinhaQueContem(linhas, /\(\+\)\s*SELIC/i);
+      m = linhaSelic.match(/até\s*(\d{2}\/\d{2}\/\d{4})/i);
+      return m ? m[1] : '';
+    }
+
+    function extrairNumeroDebito(texto) {
+      const m = String(texto || '').match(/N[ºo]\s*do\s*d[eé]bito:\s*(\d+)/i);
+      return m ? m[1] : '';
+    }
+
+    function parseMemoriaSimples(modelo, tipoEsperado) {
+      validarTipoMemoriaPDF(tipoEsperado, modelo.detectedType);
+      const linhas = modelo.linhas || [];
+      return {
+        numeroDebito: extrairNumeroDebito(modelo.fullText),
+        dataConsolidacao: extrairDataConsolidacao(linhas),
+        valorPrincipal: extrairValorPorLinha(linhas, /^Valor Principal\b/i),
+        somatorioAmortizacao: extrairValorPorLinha(linhas, /\(-\)\s*Somatório da amortização/i),
+        percentualDesconto: extrairPercentualPorLinha(linhas, /\(-\)\s*Desconto/i),
+        compensacaoEstadual: extrairValorPorLinha(linhas, /\(-\)\s*Compensação Estadual/i),
+        correcaoMonetaria: extrairValorPorLinha(linhas, /\(\+\)\s*Correção Monetária/i),
+        percentualMulta: extrairPercentualPorLinha(linhas, /\(\+\)\s*Multa/i),
+        percentualJuros: extrairPercentualPorLinha(linhas, /\(\+\)\s*Juros/i),
+        percentualSelic: extrairPercentualPorLinha(linhas, /\(\+\)\s*SELIC/i),
+        percentualEncargos: extrairPercentualPorLinha(linhas, /\(\+\)\s*Encargos Legais/i)
+      };
+    }
+
+    function aplicarDadosMemoriaSimples(dados) {
+      document.getElementById('numeroDebito').value = onlyDigits(dados.numeroDebito || '');
+      document.getElementById('dataConsolidacao').value = dados.dataConsolidacao || '';
+      setValor('valorPrincipal', dados.valorPrincipal || 0);
+      setValor('somatorioAmortizacao', dados.somatorioAmortizacao || 0);
+      setPercentual('percentualDesconto', dados.percentualDesconto || 0);
+      setValor('compensacaoEstadual', dados.compensacaoEstadual || 0);
+      setPercentual('percentualSomatorioAmortizacaoSapiensDivida', 0);
+      setValor('somatorioAmortizacaoSapiensDivida', 0);
+      modoSomatorioSapiensDivida = 'valor';
+      setValor('correcaoMonetaria', dados.correcaoMonetaria || 0);
+      setPercentual('percentualMulta', dados.percentualMulta || 0);
+      setPercentual('percentualJuros', dados.percentualJuros || 0);
+      setPercentual('percentualSelic', dados.percentualSelic || 0);
+      setPercentual('percentualEncargos', dados.percentualEncargos || 0);
+      atualizarCalculos();
+    }
+
+    function parseLinhaComposicaoAcumulado(texto) {
+      const tokens = limparTextoPDF(texto).split(/\s+/).filter(Boolean);
+      if (!tokens.length || !/^\d{5,}$/.test(tokens[0] || '')) return null;
+      if (tokens.length < 18) return null;
+      const num = (idx) => parseNumeroFlexivel(tokens[idx] || '0');
+      return {
+        debito: tokens[0] || '',
+        trimestreAno: tokens[1] || '',
+        vencimento: tokens[2] || '',
+        valorOriginal: num(3),
+        saldo: num(4),
+        compensacaoRegular: num(5),
+        compensacaoManual: num(6),
+        correcaoPct: num(7),
+        correcaoValor: num(8),
+        saldoAtualizado: num(9),
+        multaPct: num(10),
+        multaValor: num(11),
+        jurosPct: num(12),
+        jurosValor: num(13),
+        selicPct: num(14),
+        selicValor: num(15),
+        encargosPct: num(16),
+        encargosValor: num(17),
+        valorConsolidado: num(tokens.length - 1)
+      };
+    }
+
+    function parseMemoriaTcfaAcumulado(modelo) {
+      validarTipoMemoriaPDF('TCFA_ACUMULADO', modelo.detectedType);
+      const linhas = modelo.linhas || [];
+      const rows = [];
+      linhas.forEach(l => {
+        const row = parseLinhaComposicaoAcumulado(l.text);
+        if (row) rows.push(row);
+      });
+      if (!rows.length) throw new Error('Não foi possível ler a composição do débito no PDF carregado.');
+      const dataConsolidacao = extrairDataConsolidacao(linhas) || (modelo.fullText.match(/Composição do débito\s*-\s*Acumulação em:\s*(\d{2}\/\d{2}\/\d{4})/i)?.[1] || '');
+      return {
+        numeroDebito: extrairNumeroDebito(modelo.fullText),
+        dataConsolidacao,
+        rows,
+        somatorioAmortizacao: extrairValorPorLinha(linhas, /\(-\)\s*Somatório da amortização/i),
+        percentualDesconto: extrairPercentualPorLinha(linhas, /\(-\)\s*Desconto/i),
+        somatorioSapiens: 0,
+        percentualSapiens: 0,
+        percentualEncargos: extrairPercentualPorLinha(linhas, /\(\+\)\s*Encargos Legais/i) || 20
+      };
+    }
+
+    function recalcularLinhaComposicao(row) {
+      const baseSaldo = roundMoneyValue((row.saldo || 0) - (row.compensacaoRegular || 0) - (row.compensacaoManual || 0));
+      row.correcaoValor = roundMoneyValue(baseSaldo * (row.correcaoPct || 0) / 100);
+      row.saldoAtualizado = roundMoneyValue(baseSaldo + row.correcaoValor);
+      row.multaValor = roundMoneyValue(row.saldoAtualizado * (row.multaPct || 0) / 100);
+      row.jurosValor = roundMoneyValue(row.saldoAtualizado * (row.jurosPct || 0) / 100);
+      row.selicValor = roundMoneyValue(row.saldoAtualizado * (row.selicPct || 0) / 100);
+      const totalParcialLinha = roundMoneyValue(row.saldoAtualizado + row.multaValor + row.jurosValor + row.selicValor);
+      row.encargosValor = roundMoneyValue(totalParcialLinha * (row.encargosPct || 0) / 100);
+      row.valorConsolidado = roundMoneyValue(totalParcialLinha + row.encargosValor);
+    }
+
+    function somarComposicaoAcumulado() {
+      const total = {
+        valorOriginal: 0, saldo: 0, compensacaoRegular: 0, compensacaoManual: 0,
+        correcaoValor: 0, saldoAtualizado: 0, multaValor: 0, jurosValor: 0,
+        selicValor: 0, encargosValor: 0, valorConsolidado: 0
+      };
+      (dadosTcfaAcumulado?.rows || []).forEach(row => {
+        recalcularLinhaComposicao(row);
+        Object.keys(total).forEach(k => { total[k] = roundMoneyValue(total[k] + Number(row[k] || 0)); });
+      });
+      return total;
+    }
+
+    function formatarPctNumero(n) {
+      return numeroParaPercentual(Number(n || 0));
+    }
+
+    function renderizarTcfaAcumulado() {
+      if (!dadosTcfaAcumulado) return;
+      const tbody = document.getElementById('tbodyComposicaoAcumulado');
+      const corpoConsolidacao = document.getElementById('tbodyConsolidacaoAcumulado');
+      if (!tbody || !corpoConsolidacao) return;
+      const total = somarComposicaoAcumulado();
+      tbody.innerHTML = '';
+      dadosTcfaAcumulado.rows.forEach((row, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${row.debito}</td>
+          <td>${row.trimestreAno}</td>
+          <td>${row.vencimento}</td>
+          <td>${numeroParaMoeda(row.valorOriginal)}</td>
+          <td>${numeroParaMoeda(row.saldo)}</td>
+          <td>${numeroParaMoeda(row.compensacaoRegular)}</td>
+          <td>${numeroParaMoeda(row.compensacaoManual)}</td>
+          <td><input class="campo-composicao-percentual" data-idx="${idx}" data-campo="correcaoPct" value="${formatarPctNumero(row.correcaoPct)}"></td>
+          <td>${numeroParaMoeda(row.correcaoValor)}</td>
+          <td>${numeroParaMoeda(row.saldoAtualizado)}</td>
+          <td><input class="campo-composicao-percentual" data-idx="${idx}" data-campo="multaPct" value="${formatarPctNumero(row.multaPct)}"></td>
+          <td>${numeroParaMoeda(row.multaValor)}</td>
+          <td><input class="campo-composicao-percentual" data-idx="${idx}" data-campo="jurosPct" value="${formatarPctNumero(row.jurosPct)}"></td>
+          <td>${numeroParaMoeda(row.jurosValor)}</td>
+          <td><input class="campo-composicao-percentual" data-idx="${idx}" data-campo="selicPct" value="${formatarPctNumero(row.selicPct)}"></td>
+          <td>${numeroParaMoeda(row.selicValor)}</td>
+          <td><input class="campo-composicao-percentual" data-idx="${idx}" data-campo="encargosPct" value="${formatarPctNumero(row.encargosPct)}"></td>
+          <td>${numeroParaMoeda(row.encargosValor)}</td>
+          <td>${numeroParaMoeda(row.valorConsolidado)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+      const trTotal = document.createElement('tr');
+      trTotal.className = 'linha-total-composicao';
+      trTotal.innerHTML = `
+        <td>TOTAIS</td><td></td><td></td>
+        <td>${numeroParaMoeda(total.valorOriginal)}</td>
+        <td>${numeroParaMoeda(total.saldo)}</td>
+        <td>${numeroParaMoeda(total.compensacaoRegular)}</td>
+        <td>${numeroParaMoeda(total.compensacaoManual)}</td>
+        <td></td>
+        <td>${numeroParaMoeda(total.correcaoValor)}</td>
+        <td>${numeroParaMoeda(total.saldoAtualizado)}</td>
+        <td></td>
+        <td>${numeroParaMoeda(total.multaValor)}</td>
+        <td></td>
+        <td>${numeroParaMoeda(total.jurosValor)}</td>
+        <td></td>
+        <td>${numeroParaMoeda(total.selicValor)}</td>
+        <td></td>
+        <td>${numeroParaMoeda(total.encargosValor)}</td>
+        <td>${numeroParaMoeda(total.valorConsolidado)}</td>
+      `;
+      tbody.appendChild(trTotal);
+
+      corpoConsolidacao.innerHTML = montarHtmlConsolidacaoAcumulado();
+      bindCamposConsolidacaoAcumulado();
+      bindCamposPercentuaisComposicao();
+      atualizarConsolidacaoAcumulado();
+    }
+
+    function montarHtmlConsolidacaoAcumulado() {
+      return `
+        <tr class="linha-topo"><th>Nº do débito acumulado:</th><td class="valor" colspan="2"><input id="numeroDebitoAcumulado" class="campo-tabela campo-numero" type="text" inputmode="numeric" placeholder="opcional" autocomplete="off" value="${onlyDigits(dadosTcfaAcumulado?.numeroDebito || '')}"></td></tr>
+        <tr class="linha-topo"><th>Consolidação do débito em (data):</th><td class="valor" colspan="2"><input id="dataConsolidacaoAcumulado" class="campo-tabela campo-data" type="text" inputmode="numeric" placeholder="opcional" maxlength="10" autocomplete="off" value="${dadosTcfaAcumulado?.dataConsolidacao || ''}"></td></tr>
+        <tr><th class="rotulo">Descrição</th><th class="percentual">Percentual</th><th class="valor">Valores</th></tr>
+        <tr class="linha-destaque"><td class="rotulo">Valor Principal</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumValorPrincipal" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
+        <tr class="linha-comum"><td class="rotulo">(-)Somatório da amortização</td><td class="percentual percentual-vazio">-</td><td class="valor"><input id="acumSomatorioAmortizacao" class="campo-tabela campo-moeda-acum" type="text" inputmode="numeric" value="${numeroParaMoeda(dadosTcfaAcumulado?.somatorioAmortizacao || 0)}"></td></tr>
+        <tr class="linha-comum"><td class="rotulo">(-)Desconto</td><td class="percentual"><input id="acumPercentualDesconto" class="campo-tabela campo-percentual-acum" type="text" inputmode="decimal" value="${formatarPctNumero(dadosTcfaAcumulado?.percentualDesconto || 0)}"></td><td class="valor valor-nao-editavel"><input id="acumValorDesconto" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
+        <tr class="linha-comum"><td class="rotulo">(-)Compensação Estadual</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumCompensacaoEstadual" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
+        <tr class="linha-destaque"><td class="rotulo">(=)Saldo Parcial</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumSaldoParcial" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
+        <tr class="linha-comum"><td class="rotulo">(-)Somatório da amortização Sapiens Dívida</td><td class="percentual"><input id="acumPercentualSapiens" class="campo-tabela campo-percentual-acum" type="text" inputmode="decimal" value="${formatarPctNumero(dadosTcfaAcumulado?.percentualSapiens || 0)}"></td><td class="valor"><input id="acumSomatorioSapiens" class="campo-tabela campo-moeda-acum" type="text" inputmode="numeric" value="${numeroParaMoeda(dadosTcfaAcumulado?.somatorioSapiens || 0)}"></td></tr>
+        <tr class="linha-comum"><td class="rotulo">(+)Correção Monetária</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumCorrecaoMonetaria" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
+        <tr class="linha-destaque"><td class="rotulo">(=)Saldo Atualizado</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumSaldoAtualizado" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
+        <tr class="linha-comum"><td class="rotulo">(+)Multa</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumValorMulta" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
+        <tr class="linha-comum"><td class="rotulo">(+)Juros</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumValorJuros" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
+        <tr class="linha-comum"><td class="rotulo">(+)SELIC</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumValorSelic" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
+        <tr class="linha-destaque"><td class="rotulo">(=)Total Parcial</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumTotalParcial" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
+        <tr class="linha-comum"><td class="rotulo">(+)Encargos Legais</td><td class="percentual"><input id="acumPercentualEncargos" class="campo-tabela campo-percentual-acum" type="text" inputmode="decimal" value="${formatarPctNumero(dadosTcfaAcumulado?.percentualEncargos || 0)}"></td><td class="valor valor-nao-editavel"><input id="acumValorEncargos" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
+        <tr class="linha-destaque"><td class="rotulo">(=)Valor Consolidado</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumValorConsolidado" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1"></td></tr>
+      `;
+    }
+
+    function bindCamposPercentuaisComposicao() {
+      document.querySelectorAll('.campo-composicao-percentual').forEach(input => {
+        if (input.dataset.bound === '1') return;
+        input.dataset.bound = '1';
+        input.addEventListener('focus', () => setTimeout(() => input.select(), 0));
+        input.addEventListener('input', () => { input.value = input.value.replace(/[^0-9,.%]/g, ''); });
+        input.addEventListener('blur', () => {
+          const idx = Number(input.dataset.idx);
+          const campo = input.dataset.campo;
+          if (dadosTcfaAcumulado?.rows?.[idx] && campo) dadosTcfaAcumulado.rows[idx][campo] = parseNumeroFlexivel(input.value);
+          renderizarTcfaAcumulado();
+        });
+        input.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Enter') {
+            ev.preventDefault();
+            input.blur();
+            focusNextField(input);
+          }
+        });
+      });
+    }
+
+    function bindCamposConsolidacaoAcumulado() {
+      document.querySelectorAll('.campo-moeda-acum').forEach(input => {
+        if (input.dataset.moneyBound === '1') return;
+        input.dataset.moneyBound = '1';
+        input.addEventListener('focus', () => setTimeout(() => input.select(), 0));
+        input.addEventListener('input', () => {
+          const digits = input.value.replace(/\D/g, '');
+          input.value = digits ? formatMoneyDigitsString(digits) : '';
+          if (input.id === 'acumSomatorioSapiens') modoSomatorioSapiensDividaAcumulado = 'valor';
+          atualizarConsolidacaoAcumulado();
+        });
+        input.addEventListener('blur', () => {
+          const digits = input.value.replace(/\D/g, '');
+          input.value = digits ? formatMoneyDigitsString(digits) : '0,00';
+          if (input.id === 'acumSomatorioSapiens') modoSomatorioSapiensDividaAcumulado = 'valor';
+          atualizarConsolidacaoAcumulado();
+        });
+      });
+      document.querySelectorAll('.campo-percentual-acum').forEach(input => {
+        if (input.dataset.percentBound === '1') return;
+        input.dataset.percentBound = '1';
+        input.addEventListener('focus', () => setTimeout(() => input.select(), 0));
+        input.addEventListener('input', () => {
+          input.value = input.value.replace(/[^0-9,.%]/g, '');
+          if (input.id === 'acumPercentualSapiens') modoSomatorioSapiensDividaAcumulado = 'percentual';
+          atualizarConsolidacaoAcumulado();
+        });
+        input.addEventListener('blur', () => {
+          input.value = numeroParaPercentual(parseNumeroFlexivel(input.value));
+          if (input.id === 'acumPercentualSapiens') modoSomatorioSapiensDividaAcumulado = 'percentual';
+          atualizarConsolidacaoAcumulado();
+        });
+      });
+      bindDateInput(document.getElementById('dataConsolidacaoAcumulado'));
+      const numero = document.getElementById('numeroDebitoAcumulado');
+      if (numero && numero.dataset.bound !== '1') {
+        numero.dataset.bound = '1';
+        numero.addEventListener('input', () => { numero.value = onlyDigits(numero.value); });
+      }
+    }
+
+    function atualizarConsolidacaoAcumulado() {
+      if (!dadosTcfaAcumulado) return;
+      const total = somarComposicaoAcumulado();
+      const valorPrincipal = total.valorOriginal;
+      const somatorio = moedaParaNumero(valorCampo('acumSomatorioAmortizacao'));
+      const pctDesconto = percentualParaFracao(valorCampo('acumPercentualDesconto'));
+      const valorDesconto = roundMoneyValue(valorPrincipal * pctDesconto);
+      const compensacao = roundMoneyValue(total.compensacaoRegular + total.compensacaoManual);
+      const saldoParcial = roundMoneyValue(valorPrincipal - somatorio - valorDesconto - compensacao);
+      let sapiens = moedaParaNumero(valorCampo('acumSomatorioSapiens'));
+      const pctSapiens = percentualParaFracao(valorCampo('acumPercentualSapiens'));
+      if (modoSomatorioSapiensDividaAcumulado === 'percentual') sapiens = roundMoneyValue(saldoParcial * pctSapiens);
+      const correcao = total.correcaoValor;
+      const saldoAtualizado = roundMoneyValue(saldoParcial - sapiens + correcao);
+      const multa = total.multaValor;
+      const juros = total.jurosValor;
+      const selic = total.selicValor;
+      const totalParcial = roundMoneyValue(saldoAtualizado + multa + juros + selic);
+      const pctEncargos = percentualParaFracao(valorCampo('acumPercentualEncargos'));
+      const encargos = roundMoneyValue(totalParcial * pctEncargos);
+      const valorConsolidado = roundMoneyValue(totalParcial + encargos);
+
+      setValor('acumValorPrincipal', valorPrincipal);
+      setValor('acumValorDesconto', valorDesconto);
+      setValor('acumCompensacaoEstadual', compensacao);
+      setValor('acumSaldoParcial', saldoParcial);
+      if (modoSomatorioSapiensDividaAcumulado === 'percentual') {
+        setValor('acumSomatorioSapiens', sapiens);
+      } else {
+        setPercentual('acumPercentualSapiens', saldoParcial !== 0 ? (sapiens / saldoParcial) * 100 : 0);
+      }
+      setValor('acumCorrecaoMonetaria', correcao);
+      setValor('acumSaldoAtualizado', saldoAtualizado);
+      setValor('acumValorMulta', multa);
+      setValor('acumValorJuros', juros);
+      setValor('acumValorSelic', selic);
+      setValor('acumTotalParcial', totalParcial);
+      setValor('acumValorEncargos', encargos);
+      setValor('acumValorConsolidado', valorConsolidado);
+    }
+
+    async function arquivoMemoriaCalculoSelecionado(input) {
+      const file = input?.files?.[0];
+      if (!file) return;
+      const tipo = getTipoDebitoSelecionado();
+      if (!tipo) {
+        showToast('Selecione o tipo do débito.', 'error');
+        return;
+      }
+      try {
+        const modelo = await extrairModeloPDF(file);
+        if (tipo === 'TCFA_ACUMULADO') {
+          dadosTcfaAcumulado = parseMemoriaTcfaAcumulado(modelo);
+          const msg = document.getElementById('mensagemTcfaAcumulado');
+          const conteudo = document.getElementById('conteudoTcfaAcumulado');
+          if (msg) msg.style.display = 'none';
+          if (conteudo) conteudo.style.display = 'block';
+          renderizarTcfaAcumulado();
+        } else {
+          const dados = parseMemoriaSimples(modelo, tipo);
+          aplicarDadosMemoriaSimples(dados);
+          const areaSimples = document.getElementById('areaTabelaSimples');
+          if (areaSimples) areaSimples.style.display = 'block';
+        }
+        setUploadMemoriaOk(true);
+        showToast('Memória de cálculo carregada com sucesso.', 'success');
+      } catch (erro) {
+        console.error(erro);
+        setUploadMemoriaOk(false);
+        showToast(erro.message || 'Não foi possível carregar a memória de cálculo.', 'error');
+      } finally {
+        if (input) input.value = '';
+      }
+    }
+
+    function onlyDigits(s) {
+      return String(s || '').replace(/\D/g, '');
+    }
+
+    function roundMoneyValue(n) {
+      const v = Number(n || 0);
+      if (!Number.isFinite(v)) return 0;
+      return Math.round((v + Number.EPSILON) * 100) / 100;
+    }
+
+    function moedaParaNumero(valorMoeda) {
+      if (!valorMoeda) return 0;
+      const s = String(valorMoeda).replace(/\s/g, '').replace('R$', '').replace(/\./g, '').replace(',', '.');
+      const n = parseFloat(s);
+      return isNaN(n) ? 0 : n;
+    }
+
+    function numeroParaMoeda(n) {
+      if (typeof n !== 'number' || isNaN(n)) n = 0;
+      const sinal = n < 0 ? '-' : '';
+      const abs = Math.abs(roundMoneyValue(n));
+      return sinal + abs.toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+    }
+
+    function formatMoneyDigitsString(digits) {
+      const only = String(digits || '').replace(/\D/g, '');
+      if (!only) return '';
+      const cents = only.padStart(3, '0');
+      const intPart = cents.slice(0, -2).replace(/^0+(?=\d)/, '') || '0';
+      const decPart = cents.slice(-2);
+      const intFmt = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      return `${intFmt},${decPart}`;
+    }
+
+    function bindRealtimeMoneyInput(input) {
+      if (!input || input.dataset.moneyBound === '1') return;
+      input.dataset.moneyBound = '1';
+
+      const apply = () => {
+        const digits = input.value.replace(/\D/g, '');
+        input.value = digits ? formatMoneyDigitsString(digits) : '';
+        try {
+          const len = input.value.length;
+          input.setSelectionRange(len, len);
+        } catch (_) {}
+
+        // Nos campos-base manuais, o recálculo é aplicado apenas ao sair do campo
+        // ou ao avançar com Enter/Tab. Isso evita que o próprio cálculo sobrescreva
+        // o valor enquanto o usuário ainda está digitando ou apagando.
+        if (!ehCampoBaseManual(input)) {
+          registrarEdicaoCampo(input);
+          atualizarCalculos();
+        }
+      };
+
+      input.addEventListener('focus', () => {
+        setTimeout(() => input.select(), 0);
+      });
+      input.addEventListener('input', apply);
+      input.addEventListener('blur', () => {
+        const digits = input.value.replace(/\D/g, '');
+        input.value = digits ? formatMoneyDigitsString(digits) : '0,00';
+        registrarEdicaoCampo(input);
+        atualizarCalculos();
+      });
+    }
+
+    function parseNumeroFlexivel(valor) {
+      const raw = String(valor || '').replace('%', '').trim();
+      if (!raw) return 0;
+
+      let s = raw.replace(/\s/g, '');
+      const temVirgula = s.includes(',');
+      const temPonto = s.includes('.');
+
+      if (temVirgula && temPonto) {
+        s = s.replace(/\./g, '').replace(',', '.');
+      } else if (temVirgula) {
+        s = s.replace(',', '.');
+      }
+
+      s = s.replace(/[^0-9.-]/g, '');
+      const n = parseFloat(s);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function percentualParaFracao(valor) {
+      return parseNumeroFlexivel(valor) / 100;
+    }
+
+    function numeroParaPercentual(n) {
+      if (typeof n !== 'number' || isNaN(n)) n = 0;
+      return n.toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.') + '%';
+    }
+
+    function bindPercentInput(input) {
+      if (!input || input.dataset.percentBound === '1') return;
+      input.dataset.percentBound = '1';
+
+      input.addEventListener('focus', () => {
+        setTimeout(() => input.select(), 0);
+      });
+
+      input.addEventListener('input', () => {
+        input.value = input.value.replace(/[^0-9,.%]/g, '');
+        registrarEdicaoCampo(input);
+        atualizarCalculos();
+      });
+
+      input.addEventListener('blur', () => {
+        const valor = parseNumeroFlexivel(input.value);
+        input.value = numeroParaPercentual(valor);
+        registrarEdicaoCampo(input);
+        atualizarCalculos();
+      });
+    }
+
+    function maskDateDdMmYyyyRealtime(input) {
+      if (!input) return;
+      let digits = String(input.value || '').replace(/[^\d/]/g, '').replace(/\//g, '').slice(0, 8);
+      let out = '';
+      if (digits.length <= 2) out = digits;
+      else if (digits.length <= 4) out = digits.slice(0, 2) + '/' + digits.slice(2);
+      else out = digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4);
+      input.value = out;
+      try {
+        const len = input.value.length;
+        input.setSelectionRange(len, len);
+      } catch (_) {}
+    }
+
+    function ensureInputDate(input) {
+      const raw = (input.value || '').trim();
+      if (!raw) return true;
+
+      let tmp = raw.replace(/[^\d/]/g, '');
+      const parts = tmp.split('/').filter(Boolean);
+
+      if (parts.length === 3 && parts[2].length === 2) {
+        parts[2] = '20' + parts[2];
+        tmp = `${parts[0]}/${parts[1]}/${parts[2]}`;
+      } else if (/^\d{6}$/.test(tmp.replace(/\//g, ''))) {
+        const d = tmp.replace(/\//g, '');
+        tmp = `${d.slice(0, 2)}/${d.slice(2, 4)}/20${d.slice(4, 6)}`;
+      }
+
+      const m = tmp.match(/^(\d{2})\/(\d{2})\/(\d{2}|\d{4})$/);
+      if (!m) {
+        input.value = '';
+        showAlert('Data inválida. Use dd/mm/aaaa.', 'erro');
+        return false;
+      }
+
+      let dia = Number(m[1]);
+      let mes = Number(m[2]);
+      let ano = Number(m[3]);
+      if (String(m[3]).length === 2) ano = 2000 + ano;
+
+      const dt = new Date(ano, mes - 1, dia);
+      const dataValida =
+        ano >= 1900 && ano <= 2999 &&
+        mes >= 1 && mes <= 12 &&
+        dia >= 1 && dia <= 31 &&
+        dt.getFullYear() === ano &&
+        dt.getMonth() === mes - 1 &&
+        dt.getDate() === dia;
+
+      if (!dataValida) {
+        input.value = '';
+        showAlert('Data inválida. Use dd/mm/aaaa.', 'erro');
+        return false;
+      }
+
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+      dt.setHours(0, 0, 0, 0);
+      if (dt.getTime() > hoje.getTime()) {
+        input.value = '';
+        showAlert('Data não pode ser futura.', 'erro');
+        return false;
+      }
+
+      input.value = `${String(dia).padStart(2, '0')}/${String(mes).padStart(2, '0')}/${String(ano).padStart(4, '0')}`;
+      clearAlert();
+      return true;
+    }
+
+    function bindDateInput(input) {
+      if (!input || input.dataset.dateBound === '1') return;
+      input.dataset.dateBound = '1';
+      input.addEventListener('input', () => maskDateDdMmYyyyRealtime(input));
+      input.addEventListener('blur', () => ensureInputDate(input));
+    }
+
+    function setValor(id, valor) {
+      const el = document.getElementById(id);
+      if (el) el.value = numeroParaMoeda(roundMoneyValue(valor));
+    }
+
+    function setPercentual(id, valorPercentual) {
+      const el = document.getElementById(id);
+      if (el) el.value = numeroParaPercentual(Number(valorPercentual || 0));
+    }
+
+    function atualizarCalculos() {
+      let valorPrincipal = moedaParaNumero(document.getElementById('valorPrincipal').value);
+      const somatorioAmortizacao = moedaParaNumero(document.getElementById('somatorioAmortizacao').value);
+      const pctDesconto = percentualParaFracao(document.getElementById('percentualDesconto').value);
+      const compensacaoEstadual = moedaParaNumero(document.getElementById('compensacaoEstadual').value);
+      let somatorioAmortizacaoSapiensDivida = moedaParaNumero(document.getElementById('somatorioAmortizacaoSapiensDivida').value);
+      const pctSomatorioAmortizacaoSapiensDivida = percentualParaFracao(document.getElementById('percentualSomatorioAmortizacaoSapiensDivida').value);
+      const correcaoMonetaria = moedaParaNumero(document.getElementById('correcaoMonetaria').value);
+      const pctMulta = percentualParaFracao(document.getElementById('percentualMulta').value);
+      const pctJuros = percentualParaFracao(document.getElementById('percentualJuros').value);
+      const pctSelic = percentualParaFracao(document.getElementById('percentualSelic').value);
+      const pctEncargos = percentualParaFracao(document.getElementById('percentualEncargos').value);
+
+      let valorDesconto = roundMoneyValue(valorPrincipal * pctDesconto);
+      let saldoParcial = roundMoneyValue(valorPrincipal - somatorioAmortizacao - valorDesconto - compensacaoEstadual);
+
+      if (modoSomatorioSapiensDivida === 'percentual') {
+        somatorioAmortizacaoSapiensDivida = roundMoneyValue(saldoParcial * pctSomatorioAmortizacaoSapiensDivida);
+      }
+
+      let saldoAtualizado = roundMoneyValue(saldoParcial - somatorioAmortizacaoSapiensDivida + correcaoMonetaria);
+
+
+      const valorMulta = roundMoneyValue(saldoAtualizado * pctMulta);
+      const valorJuros = roundMoneyValue(saldoAtualizado * pctJuros);
+      const valorSelic = roundMoneyValue(saldoAtualizado * pctSelic);
+      const totalParcial = roundMoneyValue(saldoAtualizado + valorMulta + valorJuros + valorSelic);
+      const valorEncargos = roundMoneyValue(totalParcial * pctEncargos);
+      const valorConsolidado = roundMoneyValue(totalParcial + valorEncargos);
+
+      setValor('valorPrincipal', valorPrincipal);
+      setValor('valorDesconto', valorDesconto);
+      setValor('saldoParcial', saldoParcial);
+      if (modoSomatorioSapiensDivida === 'percentual') {
+        setValor('somatorioAmortizacaoSapiensDivida', somatorioAmortizacaoSapiensDivida);
+      } else {
+        const percentualCalculadoSapiens = saldoParcial !== 0 ? (somatorioAmortizacaoSapiensDivida / saldoParcial) * 100 : 0;
+        setPercentual('percentualSomatorioAmortizacaoSapiensDivida', percentualCalculadoSapiens);
+      }
+      setValor('saldoAtualizado', saldoAtualizado);
+      setValor('valorMulta', valorMulta);
+      setValor('valorJuros', valorJuros);
+      setValor('valorSelic', valorSelic);
+      setValor('totalParcial', totalParcial);
+      setValor('valorEncargos', valorEncargos);
+      setValor('valorConsolidado', valorConsolidado);
+    }
+
+
+    function valorCampo(id) {
+      const el = document.getElementById(id);
+      return el ? String(el.value || '').trim() : '';
+    }
+
+    function coletarDadosPdf() {
+      const tipo = getTipoDebitoSelecionado();
+
+      if (tipo === 'TCFA_ACUMULADO' && dadosTcfaAcumulado) {
+        atualizarConsolidacaoAcumulado();
+        const totalComposicao = somarComposicaoAcumulado();
+        return {
+          tipoDebito: 'TCFA_ACUMULADO',
+          numeroDebito: valorCampo('numeroDebitoAcumulado'),
+          dataConsolidacao: valorCampo('dataConsolidacaoAcumulado'),
+          composicao: (dadosTcfaAcumulado.rows || []).map(r => ({ ...r })),
+          totalComposicao,
+          linhas: [
+            { descricao: 'Valor Principal', percentual: '-', valor: valorCampo('acumValorPrincipal'), destaque: true, valorNegrito: true },
+            { descricao: '(-)Somatório da amortização', percentual: '-', valor: valorCampo('acumSomatorioAmortizacao'), destaque: false, valorNegrito: false },
+            { descricao: '(-)Desconto', percentual: valorCampo('acumPercentualDesconto'), valor: valorCampo('acumValorDesconto'), destaque: false, valorNegrito: true },
+            { descricao: '(-)Compensação Estadual', percentual: '-', valor: valorCampo('acumCompensacaoEstadual'), destaque: false, valorNegrito: true },
+            { descricao: '(=)Saldo Parcial', percentual: '-', valor: valorCampo('acumSaldoParcial'), destaque: true, valorNegrito: true },
+            { descricao: '(-)Somatório da amortização Sapiens Dívida', percentual: valorCampo('acumPercentualSapiens'), valor: valorCampo('acumSomatorioSapiens'), destaque: false, valorNegrito: false },
+            { descricao: '(+)Correção Monetária', percentual: '-', valor: valorCampo('acumCorrecaoMonetaria'), destaque: false, valorNegrito: true },
+            { descricao: '(=)Saldo Atualizado', percentual: '-', valor: valorCampo('acumSaldoAtualizado'), destaque: true, valorNegrito: true },
+            { descricao: '(+)Multa', percentual: '-', valor: valorCampo('acumValorMulta'), destaque: false, valorNegrito: true },
+            { descricao: '(+)Juros', percentual: '-', valor: valorCampo('acumValorJuros'), destaque: false, valorNegrito: true },
+            { descricao: '(+)SELIC', percentual: '-', valor: valorCampo('acumValorSelic'), destaque: false, valorNegrito: true },
+            { descricao: '(=)Total Parcial', percentual: '-', valor: valorCampo('acumTotalParcial'), destaque: true, valorNegrito: true },
+            { descricao: '(+)Encargos Legais', percentual: valorCampo('acumPercentualEncargos'), valor: valorCampo('acumValorEncargos'), destaque: false, valorNegrito: true },
+            { descricao: '(=)Valor Consolidado', percentual: '-', valor: valorCampo('acumValorConsolidado'), destaque: true, valorNegrito: true }
+          ]
+        };
+      }
+
+      atualizarCalculos();
+
+      return {
+        tipoDebito: tipo || 'AI',
+        numeroDebito: valorCampo('numeroDebito'),
+        dataConsolidacao: valorCampo('dataConsolidacao'),
+        linhas: [
+          { descricao: 'Valor Principal', percentual: '-', valor: valorCampo('valorPrincipal'), destaque: true, valorNegrito: false },
+          { descricao: '(-)Somatório da amortização', percentual: '-', valor: valorCampo('somatorioAmortizacao'), destaque: false, valorNegrito: false },
+          { descricao: '(-)Desconto', percentual: valorCampo('percentualDesconto'), valor: valorCampo('valorDesconto'), destaque: false, valorNegrito: true },
+          { descricao: '(-)Compensação Estadual', percentual: '-', valor: valorCampo('compensacaoEstadual'), destaque: false, valorNegrito: false },
+          { descricao: '(=)Saldo Parcial', percentual: '-', valor: valorCampo('saldoParcial'), destaque: true, valorNegrito: false },
+          { descricao: '(-)Somatório da amortização Sapiens Dívida', percentual: valorCampo('percentualSomatorioAmortizacaoSapiensDivida'), valor: valorCampo('somatorioAmortizacaoSapiensDivida'), destaque: false, valorNegrito: false },
+          { descricao: '(+)Correção Monetária', percentual: '-', valor: valorCampo('correcaoMonetaria'), destaque: false, valorNegrito: false },
+          { descricao: '(=)Saldo Atualizado', percentual: '-', valor: valorCampo('saldoAtualizado'), destaque: true, valorNegrito: false },
+          { descricao: '(+)Multa', percentual: valorCampo('percentualMulta'), valor: valorCampo('valorMulta'), destaque: false, valorNegrito: true },
+          { descricao: '(+)Juros', percentual: valorCampo('percentualJuros'), valor: valorCampo('valorJuros'), destaque: false, valorNegrito: true },
+          { descricao: '(+)SELIC', percentual: valorCampo('percentualSelic'), valor: valorCampo('valorSelic'), destaque: false, valorNegrito: true },
+          { descricao: '(=)Total Parcial', percentual: '-', valor: valorCampo('totalParcial'), destaque: true, valorNegrito: true },
+          { descricao: '(+)Encargos Legais', percentual: valorCampo('percentualEncargos'), valor: valorCampo('valorEncargos'), destaque: false, valorNegrito: true },
+          { descricao: '(=)Valor Consolidado', percentual: '-', valor: valorCampo('valorConsolidado'), destaque: true, valorNegrito: true }
+        ]
+      };
+    }
+
+    function criarAsciiBytes(texto) {
+      const bytes = [];
+      for (let i = 0; i < texto.length; i++) {
+        bytes.push(texto.charCodeAt(i) & 0xff);
+      }
+      return bytes;
+    }
+
+    function caractereParaWinAnsi(c) {
+      const codigo = c.charCodeAt(0);
+      const mapa = {
+        0x20ac: 0x80,
+        0x201a: 0x82,
+        0x0192: 0x83,
+        0x201e: 0x84,
+        0x2026: 0x85,
+        0x2020: 0x86,
+        0x2021: 0x87,
+        0x02c6: 0x88,
+        0x2030: 0x89,
+        0x0160: 0x8a,
+        0x2039: 0x8b,
+        0x0152: 0x8c,
+        0x017d: 0x8e,
+        0x2018: 0x91,
+        0x2019: 0x92,
+        0x201c: 0x93,
+        0x201d: 0x94,
+        0x2022: 0x95,
+        0x2013: 0x96,
+        0x2014: 0x97,
+        0x02dc: 0x98,
+        0x2122: 0x99,
+        0x0161: 0x9a,
+        0x203a: 0x9b,
+        0x0153: 0x9c,
+        0x017e: 0x9e,
+        0x0178: 0x9f
+      };
+      if (codigo in mapa) return mapa[codigo];
+      if (codigo <= 0xff) return codigo;
+      return 0x3f;
+    }
+
+    function criarPdfStringBytes(texto) {
+      const bytes = [0x28];
+      const s = String(texto || '');
+      for (let i = 0; i < s.length; i++) {
+        const b = caractereParaWinAnsi(s[i]);
+        if (b === 0x28 || b === 0x29 || b === 0x5c) {
+          bytes.push(0x5c, b);
+        } else if (b < 0x20) {
+          const octal = b.toString(8).padStart(3, '0');
+          bytes.push(0x5c, octal.charCodeAt(0), octal.charCodeAt(1), octal.charCodeAt(2));
+        } else {
+          bytes.push(b);
+        }
+      }
+      bytes.push(0x29);
+      return bytes;
+    }
+
+    const LARGURAS_HELVETICA_PDF = {
+      ' ': 278, '!': 278, '"': 355, '#': 556, '$': 556, '%': 889, '&': 667, "'": 222,
+      '(': 333, ')': 333, '*': 389, '+': 584, ',': 278, '-': 333, '.': 278, '/': 278,
+      '0': 556, '1': 556, '2': 556, '3': 556, '4': 556, '5': 556, '6': 556, '7': 556, '8': 556, '9': 556,
+      ':': 278, ';': 278, '<': 584, '=': 584, '>': 584, '?': 556, '@': 1015,
+      'A': 667, 'B': 667, 'C': 722, 'D': 722, 'E': 667, 'F': 611, 'G': 778, 'H': 722, 'I': 278, 'J': 500,
+      'K': 667, 'L': 556, 'M': 833, 'N': 722, 'O': 778, 'P': 667, 'Q': 778, 'R': 722, 'S': 667, 'T': 611,
+      'U': 722, 'V': 667, 'W': 944, 'X': 667, 'Y': 667, 'Z': 611, '[': 278, '\\': 278, ']': 278, '^': 469, '_': 556,
+      '`': 222, 'a': 556, 'b': 556, 'c': 500, 'd': 556, 'e': 556, 'f': 278, 'g': 556, 'h': 556, 'i': 222,
+      'j': 222, 'k': 500, 'l': 222, 'm': 833, 'n': 556, 'o': 556, 'p': 556, 'q': 556, 'r': 333, 's': 500,
+      't': 278, 'u': 556, 'v': 500, 'w': 722, 'x': 500, 'y': 500, 'z': 500, '{': 334, '|': 260, '}': 334, '~': 584,
+      'Á': 667, 'À': 667, 'Â': 667, 'Ã': 667, 'É': 667, 'Ê': 667, 'Í': 278, 'Ó': 778, 'Ô': 778, 'Õ': 778, 'Ú': 722,
+      'Ç': 722, 'á': 556, 'à': 556, 'â': 556, 'ã': 556, 'é': 556, 'ê': 556, 'í': 222, 'ó': 556, 'ô': 556, 'õ': 556, 'ú': 556, 'ç': 500
+    };
+
+    const LARGURAS_HELVETICA_BOLD_PDF = {
+      ...LARGURAS_HELVETICA_PDF,
+      'A': 722, 'B': 722, 'C': 722, 'D': 722, 'E': 667, 'F': 611, 'G': 778, 'H': 722, 'I': 278, 'J': 556,
+      'K': 722, 'L': 611, 'M': 833, 'N': 722, 'O': 778, 'P': 667, 'Q': 778, 'R': 722, 'S': 667, 'T': 611,
+      'U': 722, 'V': 667, 'W': 944, 'X': 667, 'Y': 667, 'Z': 611,
+      'a': 556, 'b': 611, 'c': 556, 'd': 611, 'e': 556, 'f': 333, 'g': 611, 'h': 611, 'i': 278,
+      'j': 278, 'k': 556, 'l': 278, 'm': 889, 'n': 611, 'o': 611, 'p': 611, 'q': 611, 'r': 389, 's': 556,
+      't': 333, 'u': 611, 'v': 556, 'w': 778, 'x': 556, 'y': 556, 'z': 500,
+      'Á': 722, 'À': 722, 'Â': 722, 'Ã': 722, 'É': 667, 'Ê': 667, 'Í': 278, 'Ó': 778, 'Ô': 778, 'Õ': 778, 'Ú': 722,
+      'Ç': 722, 'á': 556, 'à': 556, 'â': 556, 'ã': 556, 'é': 556, 'ê': 556, 'í': 278, 'ó': 611, 'ô': 611, 'õ': 611, 'ú': 611, 'ç': 556
+    };
+
+    function estimarLarguraTextoPDF(texto, tamanho = 9, negrito = false) {
+      const fonte = negrito ? LARGURAS_HELVETICA_BOLD_PDF : LARGURAS_HELVETICA_PDF;
+      const s = String(texto || '');
+      let total = 0;
+      for (const c of s) {
+        total += fonte[c] || (c.charCodeAt(0) > 127 ? 556 : 520);
+      }
+      return (total / 1000) * tamanho;
+    }
+
+    function estimarLarguraTexto(texto, tamanho) {
+      return estimarLarguraTextoPDF(texto, tamanho, false);
+    }
+
+    function stringBinariaParaBytes(binario) {
+      const s = String(binario || '');
+      const bytes = new Uint8Array(s.length);
+      for (let i = 0; i < s.length; i++) {
+        bytes[i] = s.charCodeAt(i) & 0xff;
+      }
+      return bytes;
+    }
+
+    function construirPdfConsolidacao(dados, imagensCabecalho) {
+      const larguraPagina = 595.28;
+      const alturaPagina = 841.89;
+      const margem = 42;
+      const margemX = margem;
+      const margemInferior = 42;
+      const tabelaLargura = larguraPagina - (margemX * 2);
+      const colunas = [tabelaLargura * 0.40, tabelaLargura * 0.27, tabelaLargura * 0.33];
+      const alturaLinha = 18;
+      const x0 = margemX;
+      const paginas = [];
+      let conteudo = [];
+      let y = 0;
+
+      function cmd(s) {
+        conteudo.push(...criarAsciiBytes(s));
+      }
+
+      function textoPDF(texto) {
+        return criarPdfStringBytes(texto);
+      }
+
+      function addText(texto, x, yTexto, tamanho = 9, alinhamento = 'left', largura = 0, negrito = false) {
+        const fonte = negrito ? 'F2' : 'F1';
+        let textoX = x;
+        const conteudoTexto = String(texto || '');
+        let textoEstimado;
+        try {
+          textoEstimado = estimarLarguraTextoPDF(conteudoTexto, tamanho, negrito);
+        } catch (_) {
+          const fatorEstimativa = negrito ? 0.54 : 0.48;
+          textoEstimado = conteudoTexto.length * tamanho * fatorEstimativa;
+        }
+        if (alinhamento === 'center') textoX = x + (largura - textoEstimado) / 2;
+        if (alinhamento === 'right') textoX = x + largura - textoEstimado;
+        cmd(`BT /${fonte} ${tamanho} Tf ${textoX.toFixed(2)} ${yTexto.toFixed(2)} Td `);
+        conteudo.push(...textoPDF(conteudoTexto));
+        cmd(' Tj ET\n');
+      }
+
+      function desenharImagemCabecalho(nomeImagem, x, yImagem, largura, altura) {
+        if (!nomeImagem) return;
+        cmd(`q ${largura.toFixed(2)} 0 0 ${altura.toFixed(2)} ${x.toFixed(2)} ${yImagem.toFixed(2)} cm /${nomeImagem} Do Q\n`);
+      }
+
+      function desenharCabecalhoInstitucional(tituloDocumento) {
+        const tamanhoLogo = 42;
+        const yLogo = alturaPagina - 64;
+        const xLogoEsquerda = margem + 8;
+        const xLogoDireita = larguraPagina - margem - tamanhoLogo - 8;
+
+        if (imagensCabecalho?.brasao) desenharImagemCabecalho('ImBrasao', xLogoEsquerda, yLogo, tamanhoLogo, tamanhoLogo);
+        if (imagensCabecalho?.ibama) desenharImagemCabecalho('ImIbama', xLogoDireita, yLogo, tamanhoLogo, tamanhoLogo);
+
+        cmd('0 0 0 rg\n');
+        addText('MINISTÉRIO DO MEIO AMBIENTE - MMA', margem, alturaPagina - 36, 8.7, 'center', larguraPagina - 2 * margem, true);
+        addText('INSTITUTO BRASILEIRO DO MEIO AMBIENTE E DOS RECURSOS NATURAIS RENOVÁVEIS - IBAMA', margem, alturaPagina - 49, 8.2, 'center', larguraPagina - 2 * margem, true);
+
+        const alturaTitulo = 26;
+        const yTitulo = alturaPagina - 110;
+        cmd('0.12 0.31 0.47 rg\n');
+        cmd(`${margem} ${yTitulo.toFixed(2)} ${larguraPagina - 2 * margem} ${alturaTitulo} re f\n`);
+        cmd('1 1 1 rg\n');
+        addText(tituloDocumento, margem, yTitulo + 8.5, 12.5, 'center', larguraPagina - 2 * margem, true);
+        cmd('0 0 0 rg\n');
+
+        y = yTitulo - 28;
+      }
+
+      function novaPagina() {
+        conteudo = [];
+        paginas.push(conteudo);
+        desenharCabecalhoInstitucional('Simulação de consolidação do débito');
+      }
+
+      function garantirEspaco(alturaNecessaria = alturaLinha) {
+        if (y - alturaNecessaria < margemInferior) {
+          novaPagina();
+        }
+      }
+
+      function preencherRetangulo(x, yBase, w, h, cinza) {
+        cmd(`q ${cinza} g ${x.toFixed(2)} ${yBase.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f Q\n`);
+      }
+
+      function contornarRetangulo(x, yBase, w, h) {
+        cmd(`q 0 G 0.55 w ${x.toFixed(2)} ${yBase.toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re S Q\n`);
+      }
+
+      function celula(x, yTop, w, h, cinza, texto, opcoes = {}) {
+        const yBase = yTop - h;
+        preencherRetangulo(x, yBase, w, h, cinza);
+        contornarRetangulo(x, yBase, w, h);
+        if (texto !== undefined && texto !== null && texto !== '') {
+          const tamanho = opcoes.tamanho || 8;
+          const baseline = yBase + ((h - tamanho) / 2) + 2.4;
+          const padding = opcoes.padding || 5;
+          let xTexto = x + padding;
+          let larguraTexto = w - (padding * 2);
+          addText(texto, xTexto, baseline, tamanho, opcoes.alinhamento || 'left', larguraTexto, !!opcoes.negrito);
+        }
+      }
+
+      novaPagina();
+
+      if (dados.tipoDebito === 'TCFA_ACUMULADO' && Array.isArray(dados.composicao) && dados.composicao.length) {
+        const colComp = [32, 30, 33, 34, 30, 28, 28, 28, 30, 33, 26, 30, 24, 30, 28, 32, 26, 32, 36];
+        const totalColComp = colComp.reduce((a, b) => a + b, 0);
+        const escalaComp = tabelaLargura / totalColComp;
+        const colsC = colComp.map(v => v * escalaComp);
+        const headersC = ['Débito', 'Trim.', 'Venc.', 'Valor\nOriginal', 'Saldo', 'Comp.\nReg.', 'Comp.\nMan.', 'Corr.\n%', 'IPCA', 'Saldo\nAtual.', 'Multa\n%', 'Multa', 'Juros\n%', 'Juros', 'SELIC\n%', 'SELIC', 'Enc.\n%', 'Encargo', 'Valor\nConsol.'];
+        const alturaCabC = 22;
+        const alturaLinhaC = 13;
+
+        function desenharCabecalhoComposicao() {
+          garantirEspaco(alturaCabC + 18);
+          celula(x0, y, tabelaLargura, 18, '0.85', 'Composição do débito', { negrito: true, alinhamento: 'center', tamanho: 8 });
+          y -= 18;
+          let x = x0;
+          headersC.forEach((h, i) => {
+            celula(x, y, colsC[i], alturaCabC, '0.88', h, { negrito: true, alinhamento: 'center', tamanho: 4.2, padding: 1 });
+            x += colsC[i];
+          });
+          y -= alturaCabC;
+        }
+
+        function desenharLinhaComposicao(row, total = false) {
+          garantirEspaco(alturaLinhaC);
+          let x = x0;
+          const cinzaLinha = total ? '0.88' : '0.97';
+          const valores = total ? [
+            'TOTAIS', '', '', numeroParaMoeda(row.valorOriginal), numeroParaMoeda(row.saldo), numeroParaMoeda(row.compensacaoRegular), numeroParaMoeda(row.compensacaoManual), '', numeroParaMoeda(row.correcaoValor), numeroParaMoeda(row.saldoAtualizado), '', numeroParaMoeda(row.multaValor), '', numeroParaMoeda(row.jurosValor), '', numeroParaMoeda(row.selicValor), '', numeroParaMoeda(row.encargosValor), numeroParaMoeda(row.valorConsolidado)
+          ] : [
+            row.debito, row.trimestreAno, row.vencimento, numeroParaMoeda(row.valorOriginal), numeroParaMoeda(row.saldo), numeroParaMoeda(row.compensacaoRegular), numeroParaMoeda(row.compensacaoManual), numeroParaPercentual(row.correcaoPct), numeroParaMoeda(row.correcaoValor), numeroParaMoeda(row.saldoAtualizado), numeroParaPercentual(row.multaPct), numeroParaMoeda(row.multaValor), numeroParaPercentual(row.jurosPct), numeroParaMoeda(row.jurosValor), numeroParaPercentual(row.selicPct), numeroParaMoeda(row.selicValor), numeroParaPercentual(row.encargosPct), numeroParaMoeda(row.encargosValor), numeroParaMoeda(row.valorConsolidado)
+          ];
+          valores.forEach((v, i) => {
+            celula(x, y, colsC[i], alturaLinhaC, cinzaLinha, v, { alinhamento: i <= 2 ? 'center' : 'right', tamanho: 3.9, padding: 1, negrito: total });
+            x += colsC[i];
+          });
+          y -= alturaLinhaC;
+        }
+
+        desenharCabecalhoComposicao();
+        dados.composicao.forEach(row => {
+          if (y - alturaLinhaC < margemInferior) {
+            novaPagina();
+            desenharCabecalhoComposicao();
+          }
+          desenharLinhaComposicao(row, false);
+        });
+        if (dados.totalComposicao) desenharLinhaComposicao(dados.totalComposicao, true);
+        y -= 12;
+      }
+
+      if (dados.numeroDebito) {
+        garantirEspaco(alturaLinha);
+        celula(x0, y, colunas[0], alturaLinha, '0.85', 'Nº do débito:', { negrito: true });
+        celula(x0 + colunas[0], y, colunas[1] + colunas[2], alturaLinha, '1', dados.numeroDebito, { alinhamento: 'left' });
+        y -= alturaLinha;
+      }
+
+      garantirEspaco(alturaLinha);
+      const rotuloData = dados.dataConsolidacao ? 'Consolidação do débito em:' : 'Consolidação do débito:';
+      celula(x0, y, colunas[0], alturaLinha, '0.85', rotuloData, { negrito: true });
+      celula(x0 + colunas[0], y, colunas[1] + colunas[2], alturaLinha, '1', dados.dataConsolidacao || '', { alinhamento: 'left' });
+      y -= alturaLinha;
+
+      garantirEspaco(alturaLinha);
+      celula(x0, y, colunas[0], alturaLinha, '0.97', 'Descrição', { negrito: true });
+      celula(x0 + colunas[0], y, colunas[1], alturaLinha, '0.97', 'Percentual', { negrito: true, alinhamento: 'center' });
+      celula(x0 + colunas[0] + colunas[1], y, colunas[2], alturaLinha, '0.97', 'Valores', { negrito: true, alinhamento: 'right' });
+      y -= alturaLinha;
+
+      dados.linhas.forEach((linha) => {
+        garantirEspaco(alturaLinha);
+        const cinza = linha.destaque ? '0.88' : '0.97';
+        celula(x0, y, colunas[0], alturaLinha, cinza, linha.descricao, { negrito: linha.destaque });
+        celula(x0 + colunas[0], y, colunas[1], alturaLinha, cinza, linha.percentual, { alinhamento: 'center' });
+        celula(x0 + colunas[0] + colunas[1], y, colunas[2], alturaLinha, cinza, linha.valor, { alinhamento: 'right', negrito: linha.valorNegrito });
+        y -= alturaLinha;
+      });
+
+      const streamPaginas = paginas.map((pagina) => new Uint8Array(pagina));
+      const partes = [];
+      let tamanhoTotal = 0;
+      const offsets = [0];
+      const objetosImagem = [];
+
+      function adicionarBytes(bytes) {
+        const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+        partes.push(arr);
+        tamanhoTotal += arr.length;
+      }
+
+      function adicionarAscii(s) {
+        adicionarBytes(criarAsciiBytes(s));
+      }
+
+      function adicionarObjeto(numero, bytesObjeto) {
+        offsets[numero] = tamanhoTotal;
+        adicionarAscii(`${numero} 0 obj\n`);
+        adicionarBytes(bytesObjeto);
+        adicionarAscii('\nendobj\n');
+      }
+
+      const qtdPaginas = streamPaginas.length;
+      const primeiroObjetoPagina = 3;
+      const primeiroObjetoConteudo = primeiroObjetoPagina + qtdPaginas;
+      const objetoFonteNormal = primeiroObjetoConteudo + qtdPaginas;
+      const objetoFonteNegrito = objetoFonteNormal + 1;
+      let proximoObjeto = objetoFonteNegrito + 1;
+
+      if (imagensCabecalho?.brasao) {
+        objetosImagem.push({ nome: 'ImBrasao', numero: proximoObjeto++, imagem: imagensCabecalho.brasao });
+      }
+      if (imagensCabecalho?.ibama) {
+        objetosImagem.push({ nome: 'ImIbama', numero: proximoObjeto++, imagem: imagensCabecalho.ibama });
+      }
+
+      const recursosXObject = objetosImagem.length
+        ? ` /XObject << ${objetosImagem.map(img => `/${img.nome} ${img.numero} 0 R`).join(' ')} >>`
+        : '';
+      const recursosPagina = `<< /Font << /F1 ${objetoFonteNormal} 0 R /F2 ${objetoFonteNegrito} 0 R >>${recursosXObject} >>`;
+      const kids = Array.from({ length: qtdPaginas }, (_, i) => `${primeiroObjetoPagina + i} 0 R`).join(' ');
+
+      adicionarAscii('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+      adicionarObjeto(1, criarAsciiBytes('<< /Type /Catalog /Pages 2 0 R >>'));
+      adicionarObjeto(2, criarAsciiBytes(`<< /Type /Pages /Kids [${kids}] /Count ${qtdPaginas} >>`));
+
+      for (let i = 0; i < qtdPaginas; i++) {
+        const objPagina = primeiroObjetoPagina + i;
+        const objConteudo = primeiroObjetoConteudo + i;
+        adicionarObjeto(objPagina, criarAsciiBytes(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${larguraPagina} ${alturaPagina}] /Resources ${recursosPagina} /Contents ${objConteudo} 0 R >>`));
+      }
+
+      streamPaginas.forEach((stream, i) => {
+        const objStream = [];
+        objStream.push(...criarAsciiBytes(`<< /Length ${stream.length} >>\nstream\n`));
+        objStream.push(...stream);
+        objStream.push(...criarAsciiBytes('\nendstream'));
+        adicionarObjeto(primeiroObjetoConteudo + i, objStream);
+      });
+
+      adicionarObjeto(objetoFonteNormal, criarAsciiBytes('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>'));
+      adicionarObjeto(objetoFonteNegrito, criarAsciiBytes('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>'));
+
+      objetosImagem.forEach((item) => {
+        const bytesImagem = stringBinariaParaBytes(item.imagem.data);
+        const cabecalho = criarAsciiBytes(`<< /Type /XObject /Subtype /Image /Width ${item.imagem.width} /Height ${item.imagem.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${bytesImagem.length} >>\nstream\n`);
+        const rodape = criarAsciiBytes('\nendstream');
+        const objImagem = new Uint8Array(cabecalho.length + bytesImagem.length + rodape.length);
+        objImagem.set(cabecalho, 0);
+        objImagem.set(bytesImagem, cabecalho.length);
+        objImagem.set(rodape, cabecalho.length + bytesImagem.length);
+        adicionarObjeto(item.numero, objImagem);
+      });
+
+      const inicioXref = tamanhoTotal;
+      adicionarAscii(`xref\n0 ${proximoObjeto}\n`);
+      adicionarAscii('0000000000 65535 f \n');
+      for (let i = 1; i < proximoObjeto; i++) {
+        adicionarAscii(String(offsets[i]).padStart(10, '0') + ' 00000 n \n');
+      }
+      adicionarAscii(`trailer\n<< /Size ${proximoObjeto} /Root 1 0 R >>\nstartxref\n${inicioXref}\n%%EOF`);
+
+      const pdf = new Uint8Array(tamanhoTotal);
+      let pos = 0;
+      partes.forEach((parte) => {
+        pdf.set(parte, pos);
+        pos += parte.length;
+      });
+      return pdf;
+    }
+
+    async function gerarPdfConsolidacao() {
+      const dataInput = document.getElementById('dataConsolidacao');
+      if (dataInput && dataInput.value.trim() && !ensureInputDate(dataInput)) {
+        return;
+      }
+
+      const tipo = getTipoDebitoSelecionado();
+      if (tipo === 'TCFA_ACUMULADO' && !dadosTcfaAcumulado) {
+        showToast('Carregue a memória de cálculo para o preenchimento automático.', 'error');
+        return;
+      }
+      if (tipo === 'TCFA_ACUMULADO') atualizarConsolidacaoAcumulado();
+      else atualizarCalculos();
+      const dados = coletarDadosPdf();
+      const imagensCabecalho = await carregarImagensCabecalhoPDF();
+      const pdf = construirPdfConsolidacao(dados, imagensCabecalho);
+      const blob = new Blob([pdf], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const numero = onlyDigits(dados.numeroDebito);
+      link.href = url;
+      link.download = numero ? `consolidacao_debito_${numero}.pdf` : 'consolidacao_debito.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function focusNextField(current) {
+      const fields = Array.from(document.querySelectorAll('input:not([readonly]), button:not([disabled])'));
+      const idx = fields.indexOf(current);
+      if (idx >= 0 && idx < fields.length - 1) {
+        fields[idx + 1].focus();
+      }
+    }
+
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.campo-moeda').forEach(bindRealtimeMoneyInput);
+      document.querySelectorAll('.campo-percentual').forEach(bindPercentInput);
+      bindDateInput(document.getElementById('dataConsolidacao'));
+
+      const numeroDebito = document.getElementById('numeroDebito');
+      numeroDebito.addEventListener('input', () => {
+        numeroDebito.value = onlyDigits(numeroDebito.value);
+      });
+
+      document.querySelectorAll('input:not([readonly])').forEach((input) => {
+        input.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Enter') {
+            ev.preventDefault();
+            if (input.classList.contains('campo-percentual')) {
+              input.value = numeroParaPercentual(parseNumeroFlexivel(input.value));
+              registrarEdicaoCampo(input);
+              atualizarCalculos();
+            }
+            if (input.id === 'dataConsolidacao') {
+              ensureInputDate(input);
+            }
+            focusNextField(input);
+          }
+        });
+      });
+
+
+      const btnGerarPdf = document.getElementById('btnGerarPdf');
+      if (btnGerarPdf) {
+        btnGerarPdf.addEventListener('click', gerarPdfConsolidacao);
+      }
+
+      const btnGerarPdfTcfaAcumulado = document.getElementById('btnGerarPdfTcfaAcumulado');
+      if (btnGerarPdfTcfaAcumulado) {
+        btnGerarPdfTcfaAcumulado.addEventListener('click', gerarPdfConsolidacao);
+      }
+
+      const btnCarregarMemoriaPDF = document.getElementById('btnCarregarMemoriaPDF');
+      if (btnCarregarMemoriaPDF) {
+        btnCarregarMemoriaPDF.addEventListener('click', selecionarMemoriaCalculoPDF);
+      }
+
+      const inputMemoriaPDF = document.getElementById('inputMemoriaCalculoPDF');
+      if (inputMemoriaPDF) {
+        inputMemoriaPDF.addEventListener('change', () => arquivoMemoriaCalculoSelecionado(inputMemoriaPDF));
+      }
+
+      document.querySelectorAll('input[name="tipoDebito"]').forEach(radio => {
+        radio.checked = false;
+        radio.addEventListener('change', selecionarTipoDebito);
+      });
+
+      selecionarTipoDebito();
+      atualizarCalculos();
+    });
+  </script>
 </body>
 </html>
