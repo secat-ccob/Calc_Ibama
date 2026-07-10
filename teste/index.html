@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_20 -->
+  <!-- Versão: simulador_consolidacao_debito_v_21 -->
 
   <style>
     :root {
@@ -486,11 +486,22 @@
 
     .tabela-composicao-acumulado {
       width: 100%;
-      min-width: 980px;
+      min-width: 1365px;
       border-collapse: collapse;
       table-layout: fixed;
       margin: 0;
     }
+
+    .tabela-composicao-acumulado col.col-comp-debito { width: 68px; }
+    .tabela-composicao-acumulado col.col-comp-trimestre { width: 70px; }
+    .tabela-composicao-acumulado col.col-comp-vencimento { width: 76px; }
+    .tabela-composicao-acumulado col.col-comp-valor-original { width: 78px; }
+    .tabela-composicao-acumulado col.col-comp-saldo { width: 72px; }
+    .tabela-composicao-acumulado col.col-comp-compensacao { width: 70px; }
+    .tabela-composicao-acumulado col.col-comp-percentual { width: 58px; }
+    .tabela-composicao-acumulado col.col-comp-valor { width: 76px; }
+    .tabela-composicao-acumulado col.col-comp-saldo-atualizado { width: 88px; }
+    .tabela-composicao-acumulado col.col-comp-consolidado { width: 94px; }
 
     .tabela-composicao-acumulado th,
     .tabela-composicao-acumulado td {
@@ -512,18 +523,40 @@
       background: #f7f7f7;
     }
 
+    .tabela-composicao-acumulado .linha-composicao-par td {
+      background: #f7f7f7;
+    }
+
+    .tabela-composicao-acumulado .linha-composicao-impar td {
+      background: #eef3f1;
+    }
+
     .tabela-composicao-acumulado .linha-total-composicao td {
       background: #e0e0e0;
       font-weight: bold;
     }
 
+    .tabela-composicao-acumulado th .simbolo-percentual {
+      display: block;
+      margin-top: 2px;
+      line-height: 1;
+      font-weight: bold;
+    }
+
+    .tabela-composicao-acumulado td.celula-editavel-composicao {
+      background: #fffdf0 !important;
+      box-shadow: inset 0 0 0 2px rgba(31, 111, 84, 0.24);
+    }
+
     .campo-composicao-percentual {
       width: 100%;
-      border: none;
-      background: transparent;
+      border: 1px solid rgba(31, 111, 84, 0.36);
+      border-radius: 4px;
+      background: #ffffff;
       text-align: center;
       font: inherit;
-      padding: 1px;
+      font-weight: bold;
+      padding: 2px 1px;
       outline: none;
     }
 
@@ -767,6 +800,27 @@
           <div class="subtitulo-tabela">Composição do débito</div>
           <div class="tabela-wrapper">
             <table class="tabela-composicao-acumulado" aria-label="Composição do débito acumulado">
+              <colgroup>
+                <col class="col-comp-debito">
+                <col class="col-comp-trimestre">
+                <col class="col-comp-vencimento">
+                <col class="col-comp-valor-original">
+                <col class="col-comp-saldo">
+                <col class="col-comp-compensacao">
+                <col class="col-comp-compensacao">
+                <col class="col-comp-percentual">
+                <col class="col-comp-valor">
+                <col class="col-comp-saldo-atualizado">
+                <col class="col-comp-percentual">
+                <col class="col-comp-valor">
+                <col class="col-comp-percentual">
+                <col class="col-comp-valor">
+                <col class="col-comp-percentual">
+                <col class="col-comp-valor">
+                <col class="col-comp-percentual">
+                <col class="col-comp-valor">
+                <col class="col-comp-consolidado">
+              </colgroup>
               <thead>
                 <tr>
                   <th>Débito</th>
@@ -776,16 +830,16 @@
                   <th>Saldo</th>
                   <th>Comp. Regular</th>
                   <th>Comp. Manual</th>
-                  <th>Correção %</th>
+                  <th>Correção<span class="simbolo-percentual">%</span></th>
                   <th>Valor IPCA</th>
                   <th>Saldo Atualizado</th>
-                  <th>Multa %</th>
+                  <th>Multa<span class="simbolo-percentual">%</span></th>
                   <th>Multa</th>
-                  <th>Juros %</th>
+                  <th>Juros<span class="simbolo-percentual">%</span></th>
                   <th>Juros</th>
-                  <th>SELIC %</th>
+                  <th>SELIC<span class="simbolo-percentual">%</span></th>
                   <th>SELIC</th>
-                  <th>Encargo %</th>
+                  <th>Encargo<span class="simbolo-percentual">%</span></th>
                   <th>Encargo</th>
                   <th>Valor Consolidado</th>
                 </tr>
@@ -966,10 +1020,60 @@
         .toUpperCase();
     }
 
+
+    function limparTabelaSimples() {
+      const setTexto = (id, valor = '') => {
+        const el = document.getElementById(id);
+        if (el) el.value = valor;
+      };
+      setTexto('numeroDebito', '');
+      setTexto('dataConsolidacao', '');
+      setValor('valorPrincipal', 0);
+      setValor('somatorioAmortizacao', 0);
+      setPercentual('percentualDesconto', 0);
+      setValor('valorDesconto', 0);
+      setValor('compensacaoEstadual', 0);
+      setValor('saldoParcial', 0);
+      setPercentual('percentualSomatorioAmortizacaoSapiensDivida', 0);
+      setValor('somatorioAmortizacaoSapiensDivida', 0);
+      setValor('correcaoMonetaria', 0);
+      setValor('saldoAtualizado', 0);
+      setPercentual('percentualMulta', 0);
+      setValor('valorMulta', 0);
+      setPercentual('percentualJuros', 0);
+      setValor('valorJuros', 0);
+      setPercentual('percentualSelic', 0);
+      setValor('valorSelic', 0);
+      setValor('totalParcial', 0);
+      setPercentual('percentualEncargos', 0);
+      setValor('valorEncargos', 0);
+      setValor('valorConsolidado', 0);
+      modoSomatorioSapiensDivida = 'valor';
+      atualizarCalculos();
+    }
+
+    function limparTcfaAcumulado() {
+      dadosTcfaAcumulado = null;
+      modoSomatorioSapiensDividaAcumulado = 'valor';
+      const tbody = document.getElementById('tbodyComposicaoAcumulado');
+      const corpoConsolidacao = document.getElementById('tbodyConsolidacaoAcumulado');
+      const msgAcumulado = document.getElementById('mensagemTcfaAcumulado');
+      const conteudoAcumulado = document.getElementById('conteudoTcfaAcumulado');
+      if (tbody) tbody.innerHTML = '';
+      if (corpoConsolidacao) corpoConsolidacao.innerHTML = '';
+      if (msgAcumulado) msgAcumulado.style.display = 'block';
+      if (conteudoAcumulado) conteudoAcumulado.style.display = 'none';
+    }
+
+    function limparDadosExibidos() {
+      limparTabelaSimples();
+      limparTcfaAcumulado();
+      setUploadMemoriaOk(false);
+    }
+
     function selecionarTipoDebito() {
       tipoDebitoAtual = getTipoDebitoSelecionado();
-      dadosTcfaAcumulado = null;
-      setUploadMemoriaOk(false);
+      limparDadosExibidos();
 
       const areaSimples = document.getElementById('areaTabelaSimples');
       const areaAcumulado = document.getElementById('areaTcfaAcumulado');
@@ -1254,6 +1358,7 @@
       tbody.innerHTML = '';
       dadosTcfaAcumulado.rows.forEach((row, idx) => {
         const tr = document.createElement('tr');
+        tr.className = idx % 2 === 0 ? 'linha-composicao-par' : 'linha-composicao-impar';
         tr.innerHTML = `
           <td>${row.debito}</td>
           <td>${row.trimestreAno}</td>
@@ -1262,16 +1367,16 @@
           <td>${numeroParaMoeda(row.saldo)}</td>
           <td>${numeroParaMoeda(row.compensacaoRegular)}</td>
           <td>${numeroParaMoeda(row.compensacaoManual)}</td>
-          <td><input class="campo-composicao-percentual" data-idx="${idx}" data-campo="correcaoPct" value="${formatarPctNumero(row.correcaoPct)}"></td>
+          <td class="celula-editavel-composicao"><input class="campo-composicao-percentual" data-idx="${idx}" data-campo="correcaoPct" value="${formatarPctNumero(row.correcaoPct)}"></td>
           <td>${numeroParaMoeda(row.correcaoValor)}</td>
           <td>${numeroParaMoeda(row.saldoAtualizado)}</td>
-          <td><input class="campo-composicao-percentual" data-idx="${idx}" data-campo="multaPct" value="${formatarPctNumero(row.multaPct)}"></td>
+          <td class="celula-editavel-composicao"><input class="campo-composicao-percentual" data-idx="${idx}" data-campo="multaPct" value="${formatarPctNumero(row.multaPct)}"></td>
           <td>${numeroParaMoeda(row.multaValor)}</td>
-          <td><input class="campo-composicao-percentual" data-idx="${idx}" data-campo="jurosPct" value="${formatarPctNumero(row.jurosPct)}"></td>
+          <td class="celula-editavel-composicao"><input class="campo-composicao-percentual" data-idx="${idx}" data-campo="jurosPct" value="${formatarPctNumero(row.jurosPct)}"></td>
           <td>${numeroParaMoeda(row.jurosValor)}</td>
-          <td><input class="campo-composicao-percentual" data-idx="${idx}" data-campo="selicPct" value="${formatarPctNumero(row.selicPct)}"></td>
+          <td class="celula-editavel-composicao"><input class="campo-composicao-percentual" data-idx="${idx}" data-campo="selicPct" value="${formatarPctNumero(row.selicPct)}"></td>
           <td>${numeroParaMoeda(row.selicValor)}</td>
-          <td><input class="campo-composicao-percentual" data-idx="${idx}" data-campo="encargosPct" value="${formatarPctNumero(row.encargosPct)}"></td>
+          <td class="celula-editavel-composicao"><input class="campo-composicao-percentual" data-idx="${idx}" data-campo="encargosPct" value="${formatarPctNumero(row.encargosPct)}"></td>
           <td>${numeroParaMoeda(row.encargosValor)}</td>
           <td>${numeroParaMoeda(row.valorConsolidado)}</td>
         `;
@@ -2254,6 +2359,7 @@
 
       document.querySelectorAll('input[name="tipoDebito"]').forEach(radio => {
         radio.checked = false;
+        radio.defaultChecked = false;
         radio.addEventListener('change', selecionarTipoDebito);
       });
 
