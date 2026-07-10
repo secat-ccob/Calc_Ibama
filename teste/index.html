@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_22 -->
+  <!-- Versão: simulador_consolidacao_debito_v_23 -->
 
   <style>
     :root {
@@ -378,6 +378,20 @@
       flex-wrap: wrap;
     }
 
+    .painel-upload-memoria .btnbar {
+      display: grid;
+      grid-template-columns: max-content minmax(150px, 1fr) minmax(150px, 1fr);
+      gap: 8px;
+      align-items: stretch;
+      width: 100%;
+    }
+
+    #btnCarregarMemoriaPDF,
+    #btnReprocessarCalculos {
+      min-height: 34px;
+      white-space: nowrap;
+    }
+
     .upload-status {
       width: 180px;
       min-height: 34px;
@@ -395,11 +409,31 @@
       letter-spacing: 0.03em;
     }
 
+    .painel-upload-memoria .upload-status {
+      width: 100%;
+      height: 100%;
+      min-height: 34px;
+      text-align: center;
+    }
+
     .upload-status.ok {
       background: #1f7a1f;
       border-color: #1f7a1f;
       color: #fff;
       letter-spacing: 1px;
+    }
+
+    .upload-status.alterado {
+      background: #fff3cd;
+      border-color: #ffeaa7;
+      color: #856404;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-reprocessar {
+      width: 100%;
+      height: 100%;
+      text-align: center;
     }
 
     #toastContainer {
@@ -584,6 +618,9 @@
     @media (max-width: 720px) {
       .linha-controle { grid-template-columns: 1fr; }
       .upload-status { width: 100%; }
+      .painel-upload-memoria .btnbar { grid-template-columns: 1fr; }
+      #btnCarregarMemoriaPDF,
+      #btnReprocessarCalculos { white-space: normal; }
     }
 
     .rodape {
@@ -701,6 +738,7 @@
           <button type="button" class="btn" id="btnCarregarMemoriaPDF">Carregar memória de cálculo para preenchimento automático (PDF)</button>
           <input type="file" id="inputMemoriaCalculoPDF" accept="application/pdf,.pdf" style="display:none;">
           <div class="upload-status" id="statusMemoriaPDF" aria-live="polite"></div>
+          <button type="button" class="btn btn-reprocessar" id="btnReprocessarCalculos">Reprocessar Cálculos 🔁</button>
         </div>
       </div>
       <div id="toastContainer"></div>
@@ -904,6 +942,7 @@
     let tipoDebitoAtual = '';
     let dadosTcfaAcumulado = null;
     let modoSomatorioSapiensDividaAcumulado = 'valor';
+    let statusMemoriaPDF = 'vazio';
 
     function carregarImagemComoJPEGParaPDF(url) {
       return new Promise(resolve => {
@@ -1016,11 +1055,35 @@
       limparAvisos();
     });
 
-    function setUploadMemoriaOk(ok) {
+    function atualizarStatusMemoriaPDF(status) {
+      statusMemoriaPDF = status || 'vazio';
       const el = document.getElementById('statusMemoriaPDF');
       if (!el) return;
-      el.classList.toggle('ok', !!ok);
-      el.textContent = ok ? 'CARREGADO' : '';
+      el.classList.remove('ok', 'alterado');
+      if (statusMemoriaPDF === 'carregado') {
+        el.classList.add('ok');
+        el.textContent = 'CARREGADO';
+      } else if (statusMemoriaPDF === 'alterado') {
+        el.classList.add('alterado');
+        el.textContent = 'CARREGADO / ALTERADO';
+      } else {
+        el.textContent = '';
+      }
+    }
+
+    function setUploadMemoriaOk(ok) {
+      atualizarStatusMemoriaPDF(ok ? 'carregado' : 'vazio');
+    }
+
+    function marcarMemoriaPDFAlterada() {
+      if (statusMemoriaPDF === 'carregado') atualizarStatusMemoriaPDF('alterado');
+    }
+
+    function monitorarAlteracaoDeDadosCarregados(event) {
+      const alvo = event?.target;
+      if (!alvo || !alvo.matches || !alvo.matches('input, select, textarea')) return;
+      if (!alvo.closest('#areaTabelaSimples') && !alvo.closest('#areaTcfaAcumulado')) return;
+      marcarMemoriaPDFAlterada();
     }
 
     function getTipoDebitoSelecionado() {
@@ -1467,6 +1530,7 @@
           const idx = Number(input.dataset.idx);
           const campo = input.dataset.campo;
           if (dadosTcfaAcumulado?.rows?.[idx] && campo) dadosTcfaAcumulado.rows[idx][campo] = parseNumeroFlexivel(input.value);
+          marcarMemoriaPDFAlterada();
           renderizarTcfaAcumulado();
         });
         input.addEventListener('keydown', (ev) => {
@@ -1559,6 +1623,53 @@
       setValor('acumTotalParcial', totalParcial);
       setValor('acumValorEncargos', encargos);
       setValor('acumValorConsolidado', valorConsolidado);
+    }
+
+    function reprocessarComposicaoAcumuladoAPartirDosPercentuais() {
+      if (!dadosTcfaAcumulado || !Array.isArray(dadosTcfaAcumulado.rows)) return false;
+      dadosTcfaAcumulado.rows.forEach(row => {
+        const valorOriginal = Number(row.valorOriginal || 0);
+        const compensacaoRegular = Number(row.compensacaoRegular || 0);
+        const compensacaoManual = Number(row.compensacaoManual || 0);
+        row.saldo = roundMoneyValue(valorOriginal - compensacaoRegular - compensacaoManual);
+        recalcularLinhaComposicao(row);
+      });
+      renderizarTcfaAcumulado();
+      return true;
+    }
+
+    function obterAssinaturaDadosReprocessamento() {
+      try {
+        return JSON.stringify(obterDadosPDF());
+      } catch (_) {
+        return '';
+      }
+    }
+
+    function reprocessarCalculos() {
+      const tipo = getTipoDebitoSelecionado();
+      if (!tipo) {
+        showToast('Selecione o tipo do débito.', 'error');
+        return;
+      }
+
+      const assinaturaAntes = obterAssinaturaDadosReprocessamento();
+
+      if (tipo === 'TCFA_ACUMULADO') {
+        if (!dadosTcfaAcumulado) {
+          showToast('Carregue a memória de cálculo para o preenchimento automático.', 'error');
+          return;
+        }
+        reprocessarComposicaoAcumuladoAPartirDosPercentuais();
+      } else {
+        atualizarCalculos();
+      }
+
+      const assinaturaDepois = obterAssinaturaDadosReprocessamento();
+      if (statusMemoriaPDF === 'carregado' && assinaturaAntes && assinaturaDepois && assinaturaAntes !== assinaturaDepois) {
+        atualizarStatusMemoriaPDF('alterado');
+      }
+      showToast('Cálculos reprocessados com sucesso.', 'success');
     }
 
     async function arquivoMemoriaCalculoSelecionado(input) {
@@ -2338,6 +2449,8 @@
       document.querySelectorAll('.campo-percentual').forEach(bindPercentInput);
       bindDateInput(document.getElementById('dataConsolidacao'));
 
+      document.addEventListener('input', monitorarAlteracaoDeDadosCarregados);
+
       const numeroDebito = document.getElementById('numeroDebito');
       numeroDebito.addEventListener('input', () => {
         numeroDebito.value = onlyDigits(numeroDebito.value);
@@ -2374,6 +2487,11 @@
       const btnCarregarMemoriaPDF = document.getElementById('btnCarregarMemoriaPDF');
       if (btnCarregarMemoriaPDF) {
         btnCarregarMemoriaPDF.addEventListener('click', selecionarMemoriaCalculoPDF);
+      }
+
+      const btnReprocessarCalculos = document.getElementById('btnReprocessarCalculos');
+      if (btnReprocessarCalculos) {
+        btnReprocessarCalculos.addEventListener('click', reprocessarCalculos);
       }
 
       const inputMemoriaPDF = document.getElementById('inputMemoriaCalculoPDF');
