@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_29 -->
+  <!-- Versão: simulador_consolidacao_debito_v_30 -->
 
   <style>
     :root {
@@ -1070,6 +1070,9 @@
     let promessaBaseSelicRfb = null;
     let percentualMultaSicafiArmazenado = 0;
     let percentualSelicSicafiArmazenado = 0;
+    let assinaturaMemoriaCarregada = '';
+    let assinaturaMemoriaCorrigida = '';
+    let verificacaoStatusMemoriaPendente = false;
 
     function carregarImagemComoJPEGParaPDF(url) {
       return new Promise(resolve => {
@@ -1209,12 +1212,48 @@
       }
     }
 
+    function limparReferenciaMemoriaPDF() {
+      assinaturaMemoriaCarregada = '';
+      assinaturaMemoriaCorrigida = '';
+      verificacaoStatusMemoriaPendente = false;
+    }
+
     function setUploadMemoriaOk(ok) {
+      if (!ok) limparReferenciaMemoriaPDF();
       atualizarStatusMemoriaPDF(ok ? 'carregado' : 'vazio');
     }
 
+    function obterAssinaturaDadosMemoriaAtual() {
+      return obterAssinaturaDadosReprocessamento();
+    }
+
+    function registrarReferenciaMemoriaCarregada() {
+      assinaturaMemoriaCarregada = obterAssinaturaDadosMemoriaAtual();
+      assinaturaMemoriaCorrigida = '';
+      atualizarStatusMemoriaPDF('carregado');
+    }
+
+    function atualizarStatusMemoriaConformeDadosAtuais() {
+      if (!assinaturaMemoriaCarregada || statusMemoriaPDF === 'vazio') return;
+      const assinaturaAtual = obterAssinaturaDadosMemoriaAtual();
+      if (!assinaturaAtual) return;
+      if (assinaturaAtual === assinaturaMemoriaCarregada) {
+        atualizarStatusMemoriaPDF('carregado');
+      } else if (assinaturaMemoriaCorrigida && assinaturaAtual === assinaturaMemoriaCorrigida) {
+        atualizarStatusMemoriaPDF('corrigido');
+      } else {
+        atualizarStatusMemoriaPDF('alterado');
+      }
+    }
+
     function marcarMemoriaPDFAlterada() {
-      if (statusMemoriaPDF === 'carregado' || statusMemoriaPDF === 'corrigido') atualizarStatusMemoriaPDF('alterado');
+      if (!assinaturaMemoriaCarregada || statusMemoriaPDF === 'vazio') return;
+      if (verificacaoStatusMemoriaPendente) return;
+      verificacaoStatusMemoriaPendente = true;
+      setTimeout(() => {
+        verificacaoStatusMemoriaPendente = false;
+        atualizarStatusMemoriaConformeDadosAtuais();
+      }, 0);
     }
 
     function monitorarAlteracaoDeDadosCarregados(event) {
@@ -1903,8 +1942,6 @@
         ];
         return JSON.stringify({
           tipo,
-          modoMulta: modoEncargoSelecionado('multa'),
-          modoSelic: modoEncargoSelecionado('selic'),
           campos: Object.fromEntries(campos.map(id => [id, valorCampo(id)]))
         });
       } catch (_) {
@@ -1935,7 +1972,15 @@
 
       const assinaturaDepois = obterAssinaturaDadosReprocessamento();
       if (statusMemoriaPDF !== 'vazio' && assinaturaAntes && assinaturaDepois && assinaturaAntes !== assinaturaDepois) {
-        atualizarStatusMemoriaPDF('corrigido');
+        if (assinaturaMemoriaCarregada && assinaturaDepois === assinaturaMemoriaCarregada) {
+          assinaturaMemoriaCorrigida = '';
+          atualizarStatusMemoriaPDF('carregado');
+        } else {
+          assinaturaMemoriaCorrigida = assinaturaDepois;
+          atualizarStatusMemoriaPDF('corrigido');
+        }
+      } else {
+        atualizarStatusMemoriaConformeDadosAtuais();
       }
       showToast('Cálculos reprocessados com sucesso.', 'success');
     }
@@ -1964,6 +2009,7 @@
           if (areaSimples) areaSimples.style.display = 'block';
         }
         setUploadMemoriaOk(true);
+        registrarReferenciaMemoriaCarregada();
         showToast('Memória de cálculo carregada com sucesso.', 'success');
       } catch (erro) {
         console.error(erro);
@@ -2134,6 +2180,7 @@
       setPercentual('percentualMulta', calcularPercentualMultaAutomatica(inicio, fim));
       atualizarEstadoPercentuaisEncargos();
       atualizarCalculos();
+      marcarMemoriaPDFAlterada();
       if (opcoes.mostrarSucesso) {
         showToast('Cálculo automático da multa ativado com sucesso.', 'success');
       }
@@ -2155,6 +2202,7 @@
         setPercentual('percentualSelic', percentual);
         atualizarEstadoPercentuaisEncargos();
         atualizarCalculos();
+        marcarMemoriaPDFAlterada();
         if (opcoes.mostrarSucesso) {
           showToast('Selic automática ativada com base no Sicalc/RFB. Pode haver divergência com o SICAFI, em razão de registros antigos equivocados no sistema do Ibama.', 'success');
         }
@@ -2215,6 +2263,7 @@
         restaurarPercentualSicafi('multa');
         atualizarEstadoPercentuaisEncargos();
         atualizarCalculos();
+        marcarMemoriaPDFAlterada();
       }
     }
 
@@ -2226,6 +2275,7 @@
         restaurarPercentualSicafi('selic');
         atualizarEstadoPercentuaisEncargos();
         atualizarCalculos();
+        marcarMemoriaPDFAlterada();
       }
     }
 
