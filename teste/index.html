@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_31 -->
+  <!-- Versão: simulador_consolidacao_debito_v_32 -->
 
   <style>
     :root {
@@ -2300,8 +2300,7 @@
       const inicio = valorCampo(`dataInicio${prefixo}`);
       const fim = valorCampo(`dataFim${prefixo}`);
       const percentual = valorCampo(`percentual${prefixo}`);
-      return inicio && fim ? `De: ${inicio} até ${fim}
-${percentual}` : percentual;
+      return inicio && fim ? `De: ${inicio} até ${fim}: ${percentual}` : percentual;
     }
 
     function onlyDigits(s) {
@@ -2734,7 +2733,7 @@ ${percentual}` : percentual;
       const margemX = margem;
       const margemInferior = 42;
       const tabelaLargura = larguraPagina - (margemX * 2);
-      const colunas = [tabelaLargura * 0.40, tabelaLargura * 0.27, tabelaLargura * 0.33];
+      const colunas = [tabelaLargura * 0.37, tabelaLargura * 0.43, tabelaLargura * 0.20];
       const alturaLinha = 18;
       const x0 = margemX;
       const paginas = [];
@@ -2903,8 +2902,13 @@ ${percentual}` : percentual;
       dados.linhas.forEach((linha) => {
         garantirEspaco(alturaLinha);
         const cinza = linha.destaque ? '0.88' : '0.97';
+        const percentualComDatas = /^De:\s*\d{2}\/\d{2}\/\d{4}\s+até\s+\d{2}\/\d{2}\/\d{4}:/.test(String(linha.percentual || ''));
         celula(x0, y, colunas[0], alturaLinha, cinza, linha.descricao, { negrito: linha.destaque });
-        celula(x0 + colunas[0], y, colunas[1], alturaLinha, cinza, linha.percentual, { alinhamento: 'center' });
+        celula(x0 + colunas[0], y, colunas[1], alturaLinha, cinza, linha.percentual, {
+          alinhamento: percentualComDatas ? 'left' : 'center',
+          tamanho: percentualComDatas ? 7.4 : 8,
+          padding: percentualComDatas ? 7 : 5
+        });
         celula(x0 + colunas[0] + colunas[1], y, colunas[2], alturaLinha, cinza, linha.valor, { alinhamento: 'right', negrito: linha.valorNegrito });
         y -= alturaLinha;
       });
