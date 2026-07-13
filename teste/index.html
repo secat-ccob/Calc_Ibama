@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_30 -->
+  <!-- Versão: simulador_consolidacao_debito_v_31 -->
 
   <style>
     :root {
@@ -525,11 +525,17 @@
       letter-spacing: 1px;
     }
 
-    .upload-status.alterado,
-    .upload-status.corrigido {
+    .upload-status.alterado {
       background: #fff3cd;
       border-color: #ffeaa7;
       color: #856404;
+      letter-spacing: 0.02em;
+    }
+
+    .upload-status.corrigido {
+      background: #1f4e79;
+      border-color: #1f4e79;
+      color: #ffffff;
       letter-spacing: 0.02em;
     }
 
@@ -1200,7 +1206,7 @@
       el.classList.remove('ok', 'alterado', 'corrigido');
       if (statusMemoriaPDF === 'carregado') {
         el.classList.add('ok');
-        el.textContent = 'CARREGADO';
+        el.textContent = 'CARREGADO / ORIGINAL';
       } else if (statusMemoriaPDF === 'alterado') {
         el.classList.add('alterado');
         el.textContent = 'CARREGADO / ALTERADO';
