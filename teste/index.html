@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_37 -->
+  <!-- Versão: simulador_consolidacao_debito_v_38 -->
 
   <style>
     :root {
@@ -3290,19 +3290,72 @@
         const totalColComp = colComp.reduce((a, b) => a + b, 0);
         const escalaComp = tabelaLargura / totalColComp;
         const colsC = colComp.map(v => v * escalaComp);
-        const headersC = ['Débito', 'Trim.', 'Venc.', 'Valor\nOriginal', 'Saldo', 'Comp.\nReg.', 'Comp.\nMan.', '%', 'Valor\nIPCA', 'Saldo\nAtual.', '%', 'Multa', '%', 'Juros', '%', 'SELIC', '%', 'Encargo', 'Valor\nConsol.'];
-        const alturaCabC = 22;
+        const alturaGrupoCabC = 16;
+        const alturaSubCabC = 22;
+        const alturaCabC = alturaGrupoCabC + alturaSubCabC;
         const alturaLinhaC = 13;
+
+        function xColunaComposicao(indice) {
+          return x0 + colsC.slice(0, indice).reduce((a, b) => a + b, 0);
+        }
+
+        function larguraColunasComposicao(inicio, quantidade) {
+          return colsC.slice(inicio, inicio + quantidade).reduce((a, b) => a + b, 0);
+        }
 
         function desenharCabecalhoComposicao() {
           garantirEspaco(alturaCabC + 18);
           celula(x0, y, tabelaLargura, 18, '0.85', 'Composição do débito', { negrito: true, alinhamento: 'center', tamanho: 8 });
           y -= 18;
-          let x = x0;
-          headersC.forEach((h, i) => {
-            celula(x, y, colsC[i], alturaCabC, '0.88', h, { negrito: true, alinhamento: 'center', tamanho: 4.2, padding: 1 });
-            x += colsC[i];
+
+          const yTopoCabecalho = y;
+          const ySubCabecalho = yTopoCabecalho - alturaGrupoCabC;
+          const opcoesRotuloFixo = { negrito: true, alinhamento: 'center', tamanho: 4.2, padding: 1 };
+          const opcoesGrupo = { negrito: true, alinhamento: 'center', tamanho: 4.8, padding: 1 };
+          const opcoesSubgrupo = { negrito: true, alinhamento: 'center', tamanho: 4.2, padding: 1 };
+
+          [
+            [0, 'Débito'],
+            [1, 'Trim.'],
+            [2, 'Venc.'],
+            [3, 'Valor\nOriginal'],
+            [4, 'Saldo'],
+            [18, 'Valor\nConsol.']
+          ].forEach(([indice, rotulo]) => {
+            celula(xColunaComposicao(indice), yTopoCabecalho, colsC[indice], alturaCabC, '0.88', rotulo, opcoesRotuloFixo);
           });
+
+          [
+            [5, 2, 'Compensação'],
+            [7, 3, 'Correção\nMonetária'],
+            [10, 2, 'Multa'],
+            [12, 2, 'Juros'],
+            [14, 2, 'SELIC'],
+            [16, 2, 'Encargo\nLegal']
+          ].forEach(([inicio, quantidade, rotulo]) => {
+            celula(xColunaComposicao(inicio), yTopoCabecalho, larguraColunasComposicao(inicio, quantidade), alturaGrupoCabC, '0.88', rotulo, opcoesGrupo);
+          });
+
+          const subgrupos = [
+            [5, 'Regular'],
+            [6, 'Manual'],
+            [7, '%'],
+            [8, 'Valor\nIPCA'],
+            [9, 'Saldo\nAtual.'],
+            [10, '%'],
+            [11, 'Valor'],
+            [12, '%'],
+            [13, 'Valor'],
+            [14, '%'],
+            [15, 'Valor'],
+            [16, '%'],
+            [17, 'Valor']
+          ];
+
+          subgrupos.forEach(([indice, rotulo]) => {
+            celula(xColunaComposicao(indice), ySubCabecalho, colsC[indice], alturaSubCabC, '0.88', rotulo, opcoesSubgrupo);
+          });
+
           y -= alturaCabC;
         }
 
