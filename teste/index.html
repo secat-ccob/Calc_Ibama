@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_32 -->
+  <!-- Versão: simulador_consolidacao_debito_v_33 -->
 
   <style>
     :root {
@@ -545,6 +545,73 @@
       text-align: center;
     }
 
+
+
+    .modal-progresso-pdf {
+      position: fixed;
+      inset: 0;
+      z-index: 99998;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.38);
+      padding: 24px;
+    }
+
+    .modal-progresso-pdf.ativo {
+      display: flex;
+    }
+
+    .caixa-progresso-pdf {
+      width: min(430px, 92vw);
+      background: #ffffff;
+      border: 1px solid #c9d2d0;
+      border-radius: 8px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+      padding: 20px 22px 18px;
+      color: #1f2933;
+    }
+
+    .titulo-progresso-pdf {
+      font-size: 15px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #1f4e79;
+      text-align: center;
+    }
+
+    .detalhe-progresso-pdf {
+      min-height: 18px;
+      font-size: 13px;
+      color: #4b5563;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .barra-progresso-pdf {
+      width: 100%;
+      height: 14px;
+      border: 1px solid #b8c4c0;
+      border-radius: 999px;
+      background: #edf1f0;
+      overflow: hidden;
+    }
+
+    .preenchimento-progresso-pdf {
+      width: 0%;
+      height: 100%;
+      background: #1f6f54;
+      transition: width 0.16s linear;
+    }
+
+    .percentual-progresso-pdf {
+      margin-top: 8px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: bold;
+      color: #1f2933;
+    }
+
     #toastContainer {
       position: fixed;
       right: 18px;
@@ -848,6 +915,16 @@
           <input type="file" id="inputMemoriaCalculoPDF" accept="application/pdf,.pdf" style="display:none;">
           <div class="upload-status" id="statusMemoriaPDF" aria-live="polite"></div>
           <button type="button" class="btn btn-reprocessar" id="btnReprocessarCalculos">Reprocessar Cálculos 🔁</button>
+        </div>
+      </div>
+      <div id="modalProgressoPDF" class="modal-progresso-pdf" aria-hidden="true">
+        <div class="caixa-progresso-pdf" role="dialog" aria-modal="true" aria-labelledby="tituloProgressoPDF">
+          <div id="tituloProgressoPDF" class="titulo-progresso-pdf">Carregando memória de cálculo</div>
+          <div id="detalheProgressoPDF" class="detalhe-progresso-pdf">Preparando leitura do PDF...</div>
+          <div class="barra-progresso-pdf" aria-hidden="true">
+            <div id="preenchimentoProgressoPDF" class="preenchimento-progresso-pdf"></div>
+          </div>
+          <div id="percentualProgressoPDF" class="percentual-progresso-pdf">0%</div>
         </div>
       </div>
       <div id="toastContainer"></div>
@@ -1366,6 +1443,46 @@
       if (conteudoAcumulado) conteudoAcumulado.style.display = 'none';
     }
 
+
+    function limitarPercentualProgresso(valor) {
+      const n = Number(valor || 0);
+      if (!Number.isFinite(n)) return 0;
+      return Math.max(0, Math.min(100, Math.round(n)));
+    }
+
+    function atualizarProgressoPDF(percentual, detalhe) {
+      const valor = limitarPercentualProgresso(percentual);
+      const modal = document.getElementById('modalProgressoPDF');
+      const barra = document.getElementById('preenchimentoProgressoPDF');
+      const texto = document.getElementById('percentualProgressoPDF');
+      const detalheEl = document.getElementById('detalheProgressoPDF');
+      if (modal) {
+        modal.classList.add('ativo');
+        modal.setAttribute('aria-hidden', 'false');
+      }
+      if (barra) barra.style.width = `${valor}%`;
+      if (texto) texto.textContent = `${valor}%`;
+      if (detalheEl && detalhe) detalheEl.textContent = detalhe;
+    }
+
+    function abrirProgressoPDF(detalhe = 'Preparando leitura do PDF...') {
+      atualizarProgressoPDF(0, detalhe);
+    }
+
+    function fecharProgressoPDF() {
+      const modal = document.getElementById('modalProgressoPDF');
+      if (modal) {
+        modal.classList.remove('ativo');
+        modal.setAttribute('aria-hidden', 'true');
+      }
+      const barra = document.getElementById('preenchimentoProgressoPDF');
+      const texto = document.getElementById('percentualProgressoPDF');
+      const detalheEl = document.getElementById('detalheProgressoPDF');
+      if (barra) barra.style.width = '0%';
+      if (texto) texto.textContent = '0%';
+      if (detalheEl) detalheEl.textContent = 'Preparando leitura do PDF...';
+    }
+
     function selecionarMemoriaCalculoPDF() {
       const tipo = getTipoDebitoSelecionado();
       if (!tipo) {
@@ -1433,12 +1550,32 @@
       }).filter(l => l.text);
     }
 
-    async function extrairModeloPDF(file) {
+    async function extrairModeloPDF(file, onProgress) {
+      const progresso = typeof onProgress === 'function' ? onProgress : () => {};
+      progresso(4, 'Carregando leitor de PDF...');
       const pdfjsLib = await carregarPDFJS();
+
+      progresso(12, 'Lendo arquivo selecionado...');
       const buffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buffer) }).promise;
+
+      progresso(22, 'Abrindo PDF...');
+      const tarefaCarregamento = pdfjsLib.getDocument({ data: new Uint8Array(buffer) });
+      tarefaCarregamento.onProgress = dadosProgresso => {
+        const carregado = Number(dadosProgresso?.loaded || 0);
+        const total = Number(dadosProgresso?.total || 0);
+        if (total > 0) {
+          const parcial = carregado / total;
+          progresso(22 + (parcial * 20), 'Abrindo PDF...');
+        }
+      };
+
+      const pdf = await tarefaCarregamento.promise;
       const linhas = [];
+      const totalPaginas = Math.max(1, Number(pdf.numPages || 1));
+      progresso(44, `PDF aberto. Processando ${totalPaginas} página(s)...`);
+
       for (let p = 1; p <= pdf.numPages; p++) {
+        progresso(44 + ((p - 1) / totalPaginas) * 44, `Lendo página ${p} de ${totalPaginas}...`);
         const page = await pdf.getPage(p);
         const textContent = await page.getTextContent();
         const items = (textContent.items || []).map(item => {
@@ -1451,7 +1588,10 @@
           };
         });
         linhas.push(...montarLinhasPDF(p, items));
+        progresso(44 + (p / totalPaginas) * 44, `Lendo página ${p} de ${totalPaginas}...`);
       }
+
+      progresso(90, 'Interpretando dados da memória de cálculo...');
       const fullText = linhas.map(l => l.text).join('\n');
       return { linhas, fullText, detectedType: detectarTipoMemoriaPDF(fullText) };
     }
@@ -1999,10 +2139,13 @@
         showToast('Selecione o tipo do débito.', 'error');
         return;
       }
+      abrirProgressoPDF('Preparando leitura do PDF...');
       try {
-        const modelo = await extrairModeloPDF(file);
+        const modelo = await extrairModeloPDF(file, atualizarProgressoPDF);
+        atualizarProgressoPDF(92, 'Aplicando dados extraídos...');
         if (tipo === 'TCFA_ACUMULADO') {
           dadosTcfaAcumulado = parseMemoriaTcfaAcumulado(modelo);
+          atualizarProgressoPDF(96, 'Montando composição do débito...');
           const msg = document.getElementById('mensagemTcfaAcumulado');
           const conteudo = document.getElementById('conteudoTcfaAcumulado');
           if (msg) msg.style.display = 'none';
@@ -2010,16 +2153,20 @@
           renderizarTcfaAcumulado();
         } else {
           const dados = parseMemoriaSimples(modelo, tipo);
+          atualizarProgressoPDF(96, 'Preenchendo tabela de consolidação...');
           aplicarDadosMemoriaSimples(dados);
           const areaSimples = document.getElementById('areaTabelaSimples');
           if (areaSimples) areaSimples.style.display = 'block';
         }
         setUploadMemoriaOk(true);
         registrarReferenciaMemoriaCarregada();
+        atualizarProgressoPDF(100, 'Memória de cálculo carregada com sucesso.');
+        setTimeout(fecharProgressoPDF, 350);
         showToast('Memória de cálculo carregada com sucesso.', 'success');
       } catch (erro) {
         console.error(erro);
         setUploadMemoriaOk(false);
+        fecharProgressoPDF();
         showToast(normalizarMensagemErro(erro, 'Não foi possível carregar a memória de cálculo.'), 'error');
       } finally {
         if (input) input.value = '';
@@ -2829,6 +2976,35 @@
         }
       }
 
+
+      function celulaPercentualEncargoPDF(x, yTop, w, h, cinza, texto) {
+        const yBase = yTop - h;
+        preencherRetangulo(x, yBase, w, h, cinza);
+        contornarRetangulo(x, yBase, w, h);
+
+        const conteudoTexto = String(texto || '');
+        const partes = conteudoTexto.match(/^(De:\s*\d{2}\/\d{2}\/\d{4}\s+até\s+\d{2}\/\d{2}\/\d{4}:)\s*(.+)$/);
+        if (!partes) {
+          celula(x, yTop, w, h, cinza, texto, { alinhamento: 'left', tamanho: 7.4, padding: 7 });
+          return;
+        }
+
+        const dataTexto = partes[1];
+        const percentualTexto = partes[2];
+        let tamanho = 7.1;
+        const padding = 8;
+        const espacoMinimo = 20;
+        const larguraDisponivel = w - (padding * 2);
+        const larguraNecessaria = estimarLarguraTextoPDF(dataTexto, tamanho, false) + estimarLarguraTextoPDF(percentualTexto, tamanho, false) + espacoMinimo;
+        if (larguraNecessaria > larguraDisponivel) {
+          tamanho = Math.max(6.4, tamanho * (larguraDisponivel / larguraNecessaria));
+        }
+
+        const baseline = yBase + ((h - tamanho) / 2) + 2.4;
+        addText(dataTexto, x + padding, baseline, tamanho, 'left', larguraDisponivel, false);
+        addText(percentualTexto, x + padding, baseline, tamanho, 'right', larguraDisponivel, false);
+      }
+
       novaPagina();
 
       if (dados.tipoDebito === 'TCFA_ACUMULADO' && Array.isArray(dados.composicao) && dados.composicao.length) {
@@ -2904,11 +3080,15 @@
         const cinza = linha.destaque ? '0.88' : '0.97';
         const percentualComDatas = /^De:\s*\d{2}\/\d{2}\/\d{4}\s+até\s+\d{2}\/\d{2}\/\d{4}:/.test(String(linha.percentual || ''));
         celula(x0, y, colunas[0], alturaLinha, cinza, linha.descricao, { negrito: linha.destaque });
-        celula(x0 + colunas[0], y, colunas[1], alturaLinha, cinza, linha.percentual, {
-          alinhamento: percentualComDatas ? 'left' : 'center',
-          tamanho: percentualComDatas ? 7.4 : 8,
-          padding: percentualComDatas ? 7 : 5
-        });
+        if (percentualComDatas) {
+          celulaPercentualEncargoPDF(x0 + colunas[0], y, colunas[1], alturaLinha, cinza, linha.percentual);
+        } else {
+          celula(x0 + colunas[0], y, colunas[1], alturaLinha, cinza, linha.percentual, {
+            alinhamento: 'center',
+            tamanho: 8,
+            padding: 5
+          });
+        }
         celula(x0 + colunas[0] + colunas[1], y, colunas[2], alturaLinha, cinza, linha.valor, { alinhamento: 'right', negrito: linha.valorNegrito });
         y -= alturaLinha;
       });
