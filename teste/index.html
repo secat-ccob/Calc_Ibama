@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_35 -->
+  <!-- Versão: simulador_consolidacao_debito_v_36 -->
 
   <style>
     :root {
@@ -738,6 +738,26 @@
       padding-bottom: 4px;
     }
 
+    .select-modo-composicao {
+      width: 100%;
+      max-width: 112px;
+      height: 20px;
+      border: 1px solid #a8a8a8;
+      border-radius: 3px;
+      background: #ffffff;
+      color: #000000;
+      font-size: 8.8px;
+      font-weight: bold;
+      text-align: center;
+      padding: 1px 2px;
+    }
+
+    .campo-composicao-percentual[readonly] {
+      background: rgba(255, 255, 255, 0.45);
+      color: #333333;
+      cursor: default;
+    }
+
     .tabela-composicao-acumulado .linha-subgrupo-composicao th {
       background: #d9d9d9;
       font-size: 9px;
@@ -1090,9 +1110,19 @@
                   <th rowspan="2">Saldo</th>
                   <th colspan="2">Compensação</th>
                   <th colspan="3">Correção Monetária</th>
-                  <th colspan="2">Multa</th>
+                  <th colspan="2">
+                    <select id="modoMultaAcumulado" class="select-modo-composicao" aria-label="Modo de cálculo da multa no TCFA acumulado">
+                      <option value="manual">Multa (manual)</option>
+                      <option value="automatico">Multa (automático)</option>
+                    </select>
+                  </th>
                   <th colspan="2">Juros</th>
-                  <th colspan="2">SELIC</th>
+                  <th colspan="2">
+                    <select id="modoSelicAcumulado" class="select-modo-composicao" aria-label="Modo de cálculo da Selic no TCFA acumulado">
+                      <option value="manual">SELIC (manual)</option>
+                      <option value="automatico">SELIC (automático)</option>
+                    </select>
+                  </th>
                   <th colspan="2">Encargo Legal</th>
                   <th rowspan="2">Valor<br>Consolidado</th>
                 </tr>
@@ -1148,6 +1178,8 @@
     let tipoDebitoAtual = '';
     let dadosTcfaAcumulado = null;
     let modoSomatorioSapiensDividaAcumulado = 'valor';
+    let modoMultaAcumulado = 'manual';
+    let modoSelicAcumulado = 'manual';
     let statusMemoriaPDF = 'vazio';
     let dadosSelicRfb = {};
     let promessaBaseSelicRfb = null;
@@ -1410,6 +1442,8 @@
     function limparTcfaAcumulado() {
       dadosTcfaAcumulado = null;
       modoSomatorioSapiensDividaAcumulado = 'valor';
+      selecionarModoComposicaoAcumulado('multa', 'manual');
+      selecionarModoComposicaoAcumulado('selic', 'manual');
       const tbody = document.getElementById('tbodyComposicaoAcumulado');
       const corpoConsolidacao = document.getElementById('tbodyConsolidacaoAcumulado');
       const msgAcumulado = document.getElementById('mensagemTcfaAcumulado');
@@ -1747,10 +1781,12 @@
         correcaoValor: num(8),
         saldoAtualizado: num(9),
         multaPct: num(10),
+        multaPctManual: num(10),
         multaValor: num(11),
         jurosPct: num(12),
         jurosValor: num(13),
         selicPct: num(14),
+        selicPctManual: num(14),
         selicValor: num(15),
         encargosPct: num(16),
         encargosValor: num(17),
@@ -1817,6 +1853,214 @@
       };
     }
 
+    function normalizarPercentuaisManuaisComposicao(row) {
+      if (!row) return;
+      if (typeof row.multaPctManual !== 'number' || !Number.isFinite(row.multaPctManual)) {
+        row.multaPctManual = Number(row.multaPct || 0);
+      }
+      if (typeof row.selicPctManual !== 'number' || !Number.isFinite(row.selicPctManual)) {
+        row.selicPctManual = Number(row.selicPct || 0);
+      }
+    }
+
+    function normalizarTodasLinhasComposicaoManual() {
+      (dadosTcfaAcumulado?.rows || []).forEach(normalizarPercentuaisManuaisComposicao);
+    }
+
+    function assinaturaLinhaComposicao(row) {
+      return {
+        debito: row.debito || '',
+        trimestreAno: row.trimestreAno || '',
+        vencimento: row.vencimento || '',
+        valorOriginal: Number(row.valorOriginal || 0),
+        saldo: Number(row.saldo || 0),
+        compensacaoRegular: Number(row.compensacaoRegular || 0),
+        compensacaoManual: Number(row.compensacaoManual || 0),
+        correcaoPct: Number(row.correcaoPct || 0),
+        correcaoValor: Number(row.correcaoValor || 0),
+        saldoAtualizado: Number(row.saldoAtualizado || 0),
+        multaPct: Number(row.multaPct || 0),
+        multaValor: Number(row.multaValor || 0),
+        jurosPct: Number(row.jurosPct || 0),
+        jurosValor: Number(row.jurosValor || 0),
+        selicPct: Number(row.selicPct || 0),
+        selicValor: Number(row.selicValor || 0),
+        encargosPct: Number(row.encargosPct || 0),
+        encargosValor: Number(row.encargosValor || 0),
+        valorConsolidado: Number(row.valorConsolidado || 0)
+      };
+    }
+
+    function modoComposicaoAcumulado(tipo) {
+      const id = tipo === 'multa' ? 'modoMultaAcumulado' : 'modoSelicAcumulado';
+      const fallback = tipo === 'multa' ? modoMultaAcumulado : modoSelicAcumulado;
+      return document.getElementById(id)?.value || fallback || 'manual';
+    }
+
+    function selecionarModoComposicaoAcumulado(tipo, modo) {
+      const normalizado = modo === 'automatico' ? 'automatico' : 'manual';
+      if (tipo === 'multa') modoMultaAcumulado = normalizado;
+      if (tipo === 'selic') modoSelicAcumulado = normalizado;
+      const id = tipo === 'multa' ? 'modoMultaAcumulado' : 'modoSelicAcumulado';
+      const select = document.getElementById(id);
+      if (select) select.value = normalizado;
+      atualizarEstadoPercentuaisComposicaoAcumulado();
+    }
+
+    function armazenarPercentuaisManuaisComposicaoAcumulado(tipo) {
+      (dadosTcfaAcumulado?.rows || []).forEach(row => {
+        normalizarPercentuaisManuaisComposicao(row);
+        if (tipo === 'multa') row.multaPctManual = Number(row.multaPct || 0);
+        if (tipo === 'selic') row.selicPctManual = Number(row.selicPct || 0);
+      });
+    }
+
+    function restaurarPercentuaisManuaisComposicaoAcumulado(tipo) {
+      (dadosTcfaAcumulado?.rows || []).forEach(row => {
+        normalizarPercentuaisManuaisComposicao(row);
+        if (tipo === 'multa') row.multaPct = Number(row.multaPctManual || 0);
+        if (tipo === 'selic') row.selicPct = Number(row.selicPctManual || 0);
+        recalcularLinhaComposicao(row);
+      });
+    }
+
+    function atualizarEstadoPercentuaisComposicaoAcumulado() {
+      const multaAuto = modoComposicaoAcumulado('multa') === 'automatico';
+      const selicAuto = modoComposicaoAcumulado('selic') === 'automatico';
+      document.querySelectorAll('.campo-composicao-percentual[data-campo="multaPct"]').forEach(input => {
+        input.readOnly = multaAuto;
+        input.tabIndex = multaAuto ? -1 : 0;
+      });
+      document.querySelectorAll('.campo-composicao-percentual[data-campo="selicPct"]').forEach(input => {
+        input.readOnly = selicAuto;
+        input.tabIndex = selicAuto ? -1 : 0;
+      });
+    }
+
+    function dataFinalConsolidacaoAcumuladoValida() {
+      const el = document.getElementById('dataConsolidacaoAcumulado');
+      const valor = String(el?.value || dadosTcfaAcumulado?.dataConsolidacao || '').trim();
+      return parseDataPtBr(valor) ? valor : '';
+    }
+
+    function todasLinhasTemVencimentoValidoAcumulado() {
+      return (dadosTcfaAcumulado?.rows || []).every(row => parseDataPtBr(row.vencimento));
+    }
+
+    function validarDatasAutomaticasAcumulado(tipo) {
+      const fim = dataFinalConsolidacaoAcumuladoValida();
+      if (!fim || !todasLinhasTemVencimentoValidoAcumulado()) {
+        showToast(tipo === 'multa' ? 'preencha as datas para cobrança da Multa' : 'preencha as datas para cobrança da Selic', 'error');
+        return '';
+      }
+      return fim;
+    }
+
+    async function aplicarModoMultaAcumuladoAutomatico(opcoes = {}) {
+      const fim = validarDatasAutomaticasAcumulado('multa');
+      if (!fim) {
+        selecionarModoComposicaoAcumulado('multa', 'manual');
+        restaurarPercentuaisManuaisComposicaoAcumulado('multa');
+        renderizarTcfaAcumulado();
+        return false;
+      }
+      (dadosTcfaAcumulado?.rows || []).forEach(row => {
+        row.multaPct = calcularPercentualMultaAutomatica(row.vencimento, fim);
+        recalcularLinhaComposicao(row);
+      });
+      dadosTcfaAcumulado._preservarValoresCarregados = false;
+      renderizarTcfaAcumulado();
+      marcarMemoriaPDFAlterada();
+      if (opcoes.mostrarSucesso) showToast('Cálculo automático da multa ativado com sucesso.', 'success');
+      return true;
+    }
+
+    async function aplicarModoSelicAcumuladoAutomatico(opcoes = {}) {
+      const fim = validarDatasAutomaticasAcumulado('selic');
+      if (!fim) {
+        selecionarModoComposicaoAcumulado('selic', 'manual');
+        restaurarPercentuaisManuaisComposicaoAcumulado('selic');
+        renderizarTcfaAcumulado();
+        return false;
+      }
+      try {
+        await carregarBaseSelicRfb();
+        (dadosTcfaAcumulado?.rows || []).forEach(row => {
+          row.selicPct = calcularTaxaSelicSicalcPorCompetencia(competenciaMesAnoDeData(row.vencimento), competenciaMesAnoDeData(fim));
+          recalcularLinhaComposicao(row);
+        });
+        dadosTcfaAcumulado._preservarValoresCarregados = false;
+        renderizarTcfaAcumulado();
+        marcarMemoriaPDFAlterada();
+        if (opcoes.mostrarSucesso) showToast('Selic automática ativada com base no Sicalc/RFB. Pode haver divergência com o SICAFI, em razão de registros antigos equivocados no sistema do Ibama.', 'success');
+        return true;
+      } catch (erro) {
+        selecionarModoComposicaoAcumulado('selic', 'manual');
+        restaurarPercentuaisManuaisComposicaoAcumulado('selic');
+        renderizarTcfaAcumulado();
+        showToast(normalizarMensagemErro(erro, 'Não foi possível calcular a Selic Sicalc.'), 'error');
+        return false;
+      }
+    }
+
+    async function atualizarPercentuaisAutomaticosAcumuladoSeNecessario(opcoes = {}) {
+      let ok = true;
+      if (modoComposicaoAcumulado('multa') === 'automatico') {
+        ok = (await aplicarModoMultaAcumuladoAutomatico({ mostrarSucesso: false })) && ok;
+      }
+      if (modoComposicaoAcumulado('selic') === 'automatico') {
+        ok = (await aplicarModoSelicAcumuladoAutomatico({ mostrarSucesso: false })) && ok;
+      }
+      return ok;
+    }
+
+    async function aoAlterarModoMultaAcumulado(event) {
+      if (!dadosTcfaAcumulado) {
+        selecionarModoComposicaoAcumulado('multa', 'manual');
+        return;
+      }
+      if (event.target?.value === 'automatico') {
+        armazenarPercentuaisManuaisComposicaoAcumulado('multa');
+        selecionarModoComposicaoAcumulado('multa', 'automatico');
+        await aplicarModoMultaAcumuladoAutomatico({ mostrarSucesso: true });
+      } else {
+        selecionarModoComposicaoAcumulado('multa', 'manual');
+        restaurarPercentuaisManuaisComposicaoAcumulado('multa');
+        dadosTcfaAcumulado._preservarValoresCarregados = false;
+        renderizarTcfaAcumulado();
+        marcarMemoriaPDFAlterada();
+      }
+    }
+
+    async function aoAlterarModoSelicAcumulado(event) {
+      if (!dadosTcfaAcumulado) {
+        selecionarModoComposicaoAcumulado('selic', 'manual');
+        return;
+      }
+      if (event.target?.value === 'automatico') {
+        armazenarPercentuaisManuaisComposicaoAcumulado('selic');
+        selecionarModoComposicaoAcumulado('selic', 'automatico');
+        await aplicarModoSelicAcumuladoAutomatico({ mostrarSucesso: true });
+      } else {
+        selecionarModoComposicaoAcumulado('selic', 'manual');
+        restaurarPercentuaisManuaisComposicaoAcumulado('selic');
+        dadosTcfaAcumulado._preservarValoresCarregados = false;
+        renderizarTcfaAcumulado();
+        marcarMemoriaPDFAlterada();
+      }
+    }
+
+    async function aoAlterarDataConsolidacaoAcumulado() {
+      if (!dadosTcfaAcumulado) return;
+      const el = document.getElementById('dataConsolidacaoAcumulado');
+      if (el && el.value.trim() && !ensureInputDate(el)) return;
+      dadosTcfaAcumulado.dataConsolidacao = el?.value || '';
+      if (modoComposicaoAcumulado('multa') === 'automatico' || modoComposicaoAcumulado('selic') === 'automatico') {
+        await atualizarPercentuaisAutomaticosAcumuladoSeNecessario({ mostrarAviso: true });
+      }
+      marcarMemoriaPDFAlterada();
+    }
+
     function recalcularLinhaComposicao(row) {
       const baseSaldo = roundMoneyValue((row.saldo || 0) - (row.compensacaoRegular || 0) - (row.compensacaoManual || 0));
       row.correcaoValor = roundMoneyValue(baseSaldo * (row.correcaoPct || 0) / 100);
@@ -1855,6 +2099,9 @@
 
     function renderizarTcfaAcumulado() {
       if (!dadosTcfaAcumulado) return;
+      normalizarTodasLinhasComposicaoManual();
+      selecionarModoComposicaoAcumulado('multa', modoMultaAcumulado);
+      selecionarModoComposicaoAcumulado('selic', modoSelicAcumulado);
       const tbody = document.getElementById('tbodyComposicaoAcumulado');
       const corpoConsolidacao = document.getElementById('tbodyConsolidacaoAcumulado');
       if (!tbody || !corpoConsolidacao) return;
@@ -1874,11 +2121,11 @@
           <td class="celula-editavel-composicao"><input class="campo-composicao-percentual" data-idx="${idx}" data-campo="correcaoPct" value="${formatarPctNumero(row.correcaoPct)}"></td>
           <td>${numeroParaMoeda(row.correcaoValor)}</td>
           <td>${numeroParaMoeda(row.saldoAtualizado)}</td>
-          <td class="celula-editavel-composicao"><input class="campo-composicao-percentual" data-idx="${idx}" data-campo="multaPct" value="${formatarPctNumero(row.multaPct)}"></td>
+          <td class="celula-editavel-composicao"><input class="campo-composicao-percentual" data-idx="${idx}" data-campo="multaPct" value="${formatarPctNumero(row.multaPct)}" ${modoMultaAcumulado === 'automatico' ? 'readonly tabindex="-1"' : ''}></td>
           <td>${numeroParaMoeda(row.multaValor)}</td>
           <td class="celula-editavel-composicao"><input class="campo-composicao-percentual" data-idx="${idx}" data-campo="jurosPct" value="${formatarPctNumero(row.jurosPct)}"></td>
           <td>${numeroParaMoeda(row.jurosValor)}</td>
-          <td class="celula-editavel-composicao"><input class="campo-composicao-percentual" data-idx="${idx}" data-campo="selicPct" value="${formatarPctNumero(row.selicPct)}"></td>
+          <td class="celula-editavel-composicao"><input class="campo-composicao-percentual" data-idx="${idx}" data-campo="selicPct" value="${formatarPctNumero(row.selicPct)}" ${modoSelicAcumulado === 'automatico' ? 'readonly tabindex="-1"' : ''}></td>
           <td>${numeroParaMoeda(row.selicValor)}</td>
           <td class="celula-editavel-composicao"><input class="campo-composicao-percentual" data-idx="${idx}" data-campo="encargosPct" value="${formatarPctNumero(row.encargosPct)}"></td>
           <td>${numeroParaMoeda(row.encargosValor)}</td>
@@ -1912,6 +2159,7 @@
       corpoConsolidacao.innerHTML = montarHtmlConsolidacaoAcumulado();
       bindCamposConsolidacaoAcumulado();
       bindCamposPercentuaisComposicao();
+      atualizarEstadoPercentuaisComposicaoAcumulado();
       if (!dadosTcfaAcumulado._preservarValoresCarregados) atualizarConsolidacaoAcumulado();
     }
 
@@ -1944,11 +2192,18 @@
         input.addEventListener('focus', () => setTimeout(() => input.select(), 0));
         input.addEventListener('input', () => { input.value = input.value.replace(/[^0-9,.%]/g, ''); });
         input.addEventListener('blur', () => {
+          if (input.readOnly) return;
           const idx = Number(input.dataset.idx);
           const campo = input.dataset.campo;
           if (dadosTcfaAcumulado?.rows?.[idx] && campo) {
             dadosTcfaAcumulado._preservarValoresCarregados = false;
             dadosTcfaAcumulado.rows[idx][campo] = parseNumeroFlexivel(input.value);
+            if (campo === 'multaPct' && modoComposicaoAcumulado('multa') === 'manual') {
+              dadosTcfaAcumulado.rows[idx].multaPctManual = dadosTcfaAcumulado.rows[idx][campo];
+            }
+            if (campo === 'selicPct' && modoComposicaoAcumulado('selic') === 'manual') {
+              dadosTcfaAcumulado.rows[idx].selicPctManual = dadosTcfaAcumulado.rows[idx][campo];
+            }
             recalcularLinhaComposicao(dadosTcfaAcumulado.rows[idx]);
           }
           marcarMemoriaPDFAlterada();
@@ -1997,7 +2252,12 @@
           atualizarConsolidacaoAcumulado();
         });
       });
-      bindDateInput(document.getElementById('dataConsolidacaoAcumulado'));
+      const dataConsolidacaoAcumulado = document.getElementById('dataConsolidacaoAcumulado');
+      bindDateInput(dataConsolidacaoAcumulado);
+      if (dataConsolidacaoAcumulado && dataConsolidacaoAcumulado.dataset.autoAcumBound !== '1') {
+        dataConsolidacaoAcumulado.dataset.autoAcumBound = '1';
+        dataConsolidacaoAcumulado.addEventListener('blur', aoAlterarDataConsolidacaoAcumulado);
+      }
       const numero = document.getElementById('numeroDebitoAcumulado');
       if (numero && numero.dataset.bound !== '1') {
         numero.dataset.bound = '1';
@@ -2073,7 +2333,7 @@
             tipo,
             campos: Object.fromEntries(campos.map(id => [id, valorCampo(id)])),
             totalAtual: obterTotalComposicaoAtual(),
-            rows: (dadosTcfaAcumulado?.rows || []).map(r => ({ ...r }))
+            rows: (dadosTcfaAcumulado?.rows || []).map(assinaturaLinhaComposicao)
           });
         }
 
@@ -2109,6 +2369,7 @@
           showToast('Carregue a memória de cálculo para o preenchimento automático.', 'error');
           return;
         }
+        await atualizarPercentuaisAutomaticosAcumuladoSeNecessario({ mostrarAviso: false });
         dadosTcfaAcumulado._preservarValoresCarregados = false;
         reprocessarComposicaoAcumuladoAPartirDosPercentuais();
       } else {
@@ -2145,6 +2406,9 @@
         atualizarProgressoPDF(92, 'Aplicando dados extraídos...');
         if (tipo === 'TCFA_ACUMULADO') {
           dadosTcfaAcumulado = parseMemoriaTcfaAcumulado(modelo);
+          selecionarModoComposicaoAcumulado('multa', 'manual');
+          selecionarModoComposicaoAcumulado('selic', 'manual');
+          normalizarTodasLinhasComposicaoManual();
           atualizarProgressoPDF(96, 'Montando composição do débito...');
           const msg = document.getElementById('mensagemTcfaAcumulado');
           const conteudo = document.getElementById('conteudoTcfaAcumulado');
@@ -3218,7 +3482,7 @@
     }
 
     function focusNextField(current) {
-      const fields = Array.from(document.querySelectorAll('input:not([readonly]), button:not([disabled])'));
+      const fields = Array.from(document.querySelectorAll('input:not([readonly]), select:not([disabled]), button:not([disabled])'));
       const idx = fields.indexOf(current);
       if (idx >= 0 && idx < fields.length - 1) {
         fields[idx + 1].focus();
@@ -3238,7 +3502,12 @@
       });
       document.querySelectorAll('input[name="modoMulta"]').forEach(radio => radio.addEventListener('change', aoAlterarModoMulta));
       document.querySelectorAll('input[name="modoSelic"]').forEach(radio => radio.addEventListener('change', aoAlterarModoSelic));
+      const modoMultaAcumuladoSelect = document.getElementById('modoMultaAcumulado');
+      if (modoMultaAcumuladoSelect) modoMultaAcumuladoSelect.addEventListener('change', aoAlterarModoMultaAcumulado);
+      const modoSelicAcumuladoSelect = document.getElementById('modoSelicAcumulado');
+      if (modoSelicAcumuladoSelect) modoSelicAcumuladoSelect.addEventListener('change', aoAlterarModoSelicAcumulado);
       atualizarEstadoPercentuaisEncargos();
+      atualizarEstadoPercentuaisComposicaoAcumulado();
 
       document.addEventListener('input', monitorarAlteracaoDeDadosCarregados);
       document.addEventListener('change', monitorarAlteracaoDeDadosCarregados);
