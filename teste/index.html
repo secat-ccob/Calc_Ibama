@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_33 -->
+  <!-- Versão: simulador_consolidacao_debito_v_35 -->
 
   <style>
     :root {
@@ -2991,18 +2991,24 @@
 
         const dataTexto = partes[1];
         const percentualTexto = partes[2];
-        let tamanho = 7.1;
+        let tamanho = 8;
         const padding = 8;
-        const espacoMinimo = 20;
+        const espacoEntreDataEPercentual = 12;
         const larguraDisponivel = w - (padding * 2);
-        const larguraNecessaria = estimarLarguraTextoPDF(dataTexto, tamanho, false) + estimarLarguraTextoPDF(percentualTexto, tamanho, false) + espacoMinimo;
+        const larguraData = estimarLarguraTextoPDF(dataTexto, tamanho, false);
+        const larguraPercentual = estimarLarguraTextoPDF(percentualTexto, tamanho, false);
+        const larguraNecessaria = larguraData + larguraPercentual + espacoEntreDataEPercentual;
         if (larguraNecessaria > larguraDisponivel) {
-          tamanho = Math.max(6.4, tamanho * (larguraDisponivel / larguraNecessaria));
+          tamanho = Math.max(7.2, tamanho * (larguraDisponivel / larguraNecessaria));
         }
 
+        const larguraDataAjustada = estimarLarguraTextoPDF(dataTexto, tamanho, false);
         const baseline = yBase + ((h - tamanho) / 2) + 2.4;
         addText(dataTexto, x + padding, baseline, tamanho, 'left', larguraDisponivel, false);
-        addText(percentualTexto, x + padding, baseline, tamanho, 'right', larguraDisponivel, false);
+
+        const inicioAreaPercentual = x + padding + larguraDataAjustada + espacoEntreDataEPercentual;
+        const larguraAreaPercentual = Math.max(28, (x + w - padding) - inicioAreaPercentual);
+        addText(percentualTexto, inicioAreaPercentual, baseline, tamanho, 'center', larguraAreaPercentual, false);
       }
 
       novaPagina();
