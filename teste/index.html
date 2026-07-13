@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_24 -->
+  <!-- Versão: simulador_consolidacao_debito_v_28 -->
 
   <style>
     :root {
@@ -216,15 +216,15 @@
     }
 
     .tabela-consolidacao col.col-descricao {
-      width: 35%;
+      width: 28%;
     }
 
     .tabela-consolidacao col.col-percentual {
-      width: 35%;
+      width: 52%;
     }
 
     .tabela-consolidacao col.col-valores {
-      width: 30%;
+      width: 20%;
     }
 
     .tabela-consolidacao th,
@@ -248,20 +248,24 @@
     }
 
     .tabela-consolidacao .rotulo {
-      width: 35%;
+      width: 28%;
       font-weight: bold;
       background-color: #f7f7f7;
       text-align: left;
     }
 
     .tabela-consolidacao .percentual {
-      width: 35%;
+      width: 52%;
       background-color: #ffffff;
       text-align: center;
     }
 
+    .tabela-consolidacao td.percentual {
+      text-align: left;
+    }
+
     .tabela-consolidacao .valor {
-      width: 30%;
+      width: 20%;
       background-color: #ffffff;
       text-align: right;
     }
@@ -269,6 +273,16 @@
     .tabela-consolidacao th.percentual,
     .tabela-consolidacao th.valor {
       background-color: #f7f7f7;
+    }
+
+
+    .tabela-consolidacao td.percentual {
+      padding-left: 4px;
+      padding-right: 4px;
+    }
+
+    .tabela-consolidacao td.percentual.percentual-vazio {
+      text-align: center;
     }
 
     .tabela-consolidacao tbody tr.linha-comum td {
@@ -317,6 +331,94 @@
 
     .campo-percentual {
       text-align: center;
+    }
+
+    .controle-encargo {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 0;
+      width: 100%;
+      min-width: 0;
+      white-space: nowrap;
+      font-size: 10.8px;
+      line-height: 1.1;
+      text-align: left;
+    }
+
+    .controle-encargo .texto-periodo {
+      font-weight: bold;
+      color: #333;
+      flex: 0 0 auto;
+      margin-right: 5px;
+    }
+
+    .controle-encargo .campo-data-encargo {
+      width: 68px;
+      min-width: 68px;
+      border: 1px solid #b8c3bd;
+      border-radius: 3px;
+      background: #ffffff;
+      padding: 2px 3px;
+      text-align: center;
+      font: inherit;
+      font-size: 10.5px;
+      outline: none;
+      margin-right: 5px;
+    }
+
+    .controle-encargo .campo-data-encargo + span {
+      margin-right: 5px;
+    }
+
+    .controle-encargo .campo-data-encargo:nth-of-type(2) {
+      margin-right: 14px;
+    }
+
+    .controle-encargo .campo-data-encargo:focus {
+      outline: 2px solid #4CAF50;
+      outline-offset: 0;
+      background: #ffffff;
+    }
+
+    .controle-encargo .opcao-encargo {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      flex: 0 0 auto;
+      font-weight: normal;
+      color: #000;
+    }
+
+    .controle-encargo .opcao-encargo:nth-of-type(1) {
+      width: 112px;
+      margin-right: 5px;
+    }
+
+    .controle-encargo .opcao-encargo:nth-of-type(2) {
+      width: 80px;
+      margin-right: 8px;
+    }
+
+    .controle-encargo .opcao-encargo input {
+      width: auto;
+      margin: 0;
+    }
+
+    .controle-encargo .campo-percentual-encargo {
+      width: 58px;
+      min-width: 58px;
+      border: 1px solid #b8c3bd;
+      border-radius: 3px;
+      background: #ffffff;
+      padding: 2px 3px;
+      text-align: center;
+    }
+
+    .controle-encargo .campo-percentual-encargo[readonly] {
+      background: #eeeeee;
+      cursor: default;
+      font-weight: bold;
     }
 
     .linha-destaque .rotulo {
@@ -674,27 +776,27 @@
       }
 
       .tabela-consolidacao col.col-descricao {
-        width: 44%;
+        width: 28%;
       }
 
       .tabela-consolidacao col.col-percentual {
-        width: 24%;
+        width: 52%;
       }
 
       .tabela-consolidacao col.col-valores {
-        width: 32%;
+        width: 20%;
       }
 
       .tabela-consolidacao .rotulo {
-        width: 44%;
+        width: 28%;
       }
 
       .tabela-consolidacao .percentual {
-        width: 24%;
+        width: 52%;
       }
 
       .tabela-consolidacao .valor {
-        width: 32%;
+        width: 20%;
       }
     }
   </style>
@@ -810,7 +912,17 @@
             </tr>
             <tr class="linha-comum">
               <td class="rotulo">(+)Multa</td>
-              <td class="percentual"><input id="percentualMulta" class="campo-tabela campo-percentual" type="text" inputmode="decimal" value="0,00%" autocomplete="off" /></td>
+              <td class="percentual">
+                <div class="controle-encargo" data-encargo="multa">
+                  <span class="texto-periodo">De:</span>
+                  <input id="dataInicioMulta" class="campo-data-encargo" type="text" inputmode="numeric" placeholder="00/00/0000" maxlength="10" autocomplete="off" />
+                  <span class="texto-periodo">até</span>
+                  <input id="dataFimMulta" class="campo-data-encargo" type="text" inputmode="numeric" placeholder="00/00/0000" maxlength="10" autocomplete="off" />
+                  <label class="opcao-encargo"><input id="modoMultaAutomatica" type="radio" name="modoMulta" value="automatica" autocomplete="off" /> Multa automática</label>
+                  <label class="opcao-encargo"><input id="modoMultaSicafi" type="radio" name="modoMulta" value="sicafi" autocomplete="off" checked /> Multa Sicafi</label>
+                  <input id="percentualMulta" class="campo-tabela campo-percentual campo-percentual-encargo" type="text" inputmode="decimal" value="0,00%" autocomplete="off" />
+                </div>
+              </td>
               <td class="valor valor-calculado valor-nao-editavel"><input id="valorMulta" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
             </tr>
             <tr class="linha-comum">
@@ -820,7 +932,17 @@
             </tr>
             <tr class="linha-comum">
               <td class="rotulo">(+)SELIC</td>
-              <td class="percentual"><input id="percentualSelic" class="campo-tabela campo-percentual" type="text" inputmode="decimal" value="0,00%" autocomplete="off" /></td>
+              <td class="percentual">
+                <div class="controle-encargo" data-encargo="selic">
+                  <span class="texto-periodo">De:</span>
+                  <input id="dataInicioSelic" class="campo-data-encargo" type="text" inputmode="numeric" placeholder="00/00/0000" maxlength="10" autocomplete="off" />
+                  <span class="texto-periodo">até</span>
+                  <input id="dataFimSelic" class="campo-data-encargo" type="text" inputmode="numeric" placeholder="00/00/0000" maxlength="10" autocomplete="off" />
+                  <label class="opcao-encargo"><input id="modoSelicSicalc" type="radio" name="modoSelic" value="sicalc" autocomplete="off" /> Selic Sicalc</label>
+                  <label class="opcao-encargo"><input id="modoSelicSicafi" type="radio" name="modoSelic" value="sicafi" autocomplete="off" checked /> Selic Sicafi</label>
+                  <input id="percentualSelic" class="campo-tabela campo-percentual campo-percentual-encargo" type="text" inputmode="decimal" value="0,00%" autocomplete="off" />
+                </div>
+              </td>
               <td class="valor valor-calculado valor-nao-editavel"><input id="valorSelic" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></td>
             </tr>
             <tr class="linha-destaque">
@@ -944,6 +1066,8 @@
     let dadosTcfaAcumulado = null;
     let modoSomatorioSapiensDividaAcumulado = 'valor';
     let statusMemoriaPDF = 'vazio';
+    let dadosSelicRfb = {};
+    let promessaBaseSelicRfb = null;
 
     function carregarImagemComoJPEGParaPDF(url) {
       return new Promise(resolve => {
@@ -1119,6 +1243,12 @@
       };
       setTexto('numeroDebito', '');
       setTexto('dataConsolidacao', '');
+      setTexto('dataInicioMulta', '');
+      setTexto('dataFimMulta', '');
+      setTexto('dataInicioSelic', '');
+      setTexto('dataFimSelic', '');
+      selecionarModoEncargo('multa', 'sicafi');
+      selecionarModoEncargo('selic', 'sicafi');
       setValor('valorPrincipal', 0);
       setValor('somatorioAmortizacao', 0);
       setPercentual('percentualDesconto', 0);
@@ -1308,6 +1438,15 @@
       return linha ? extrairPercentualLinha(linha) : 0;
     }
 
+    function extrairPeriodoPorLinha(linhas, regex) {
+      const lista = linhas || [];
+      const idx = lista.findIndex(l => regex.test(String(l.text || '')));
+      if (idx < 0) return { inicio: '', fim: '' };
+      const janela = lista.slice(idx, idx + 6).map(l => l.text || '').join(' ');
+      const m = String(janela).match(/De:\s*(\d{2}\/\d{2}\/\d{4})\s*até\s*(\d{2}\/\d{2}\/\d{4})/i);
+      return m ? { inicio: m[1], fim: m[2] } : { inicio: '', fim: '' };
+    }
+
     function extrairDataConsolidacao(linhas) {
       const texto = (linhas || []).map(l => l.text).join('\n');
       let m = texto.match(/Consolidação do débito em:\s*(\d{2}\/\d{2}\/\d{4})/i);
@@ -1328,9 +1467,15 @@
     function parseMemoriaSimples(modelo, tipoEsperado) {
       validarTipoMemoriaPDF(tipoEsperado, modelo.detectedType);
       const linhas = modelo.linhas || [];
+      const periodoMulta = extrairPeriodoPorLinha(linhas, /\(\+\)\s*Multa/i);
+      const periodoSelic = extrairPeriodoPorLinha(linhas, /\(\+\)\s*SELIC/i);
       return {
         numeroDebito: extrairNumeroDebito(modelo.fullText),
         dataConsolidacao: extrairDataConsolidacao(linhas),
+        dataInicioMulta: periodoMulta.inicio,
+        dataFimMulta: periodoMulta.fim,
+        dataInicioSelic: periodoSelic.inicio,
+        dataFimSelic: periodoSelic.fim,
         valorPrincipal: extrairValorPorLinha(linhas, /^Valor Principal\b/i),
         somatorioAmortizacao: extrairValorPorLinha(linhas, /\(-\)\s*Somatório da amortização/i),
         percentualDesconto: extrairPercentualPorLinha(linhas, /\(-\)\s*Desconto/i),
@@ -1357,6 +1502,12 @@
     function aplicarDadosMemoriaSimples(dados) {
       document.getElementById('numeroDebito').value = onlyDigits(dados.numeroDebito || '');
       document.getElementById('dataConsolidacao').value = dados.dataConsolidacao || '';
+      setTextoCampo('dataInicioMulta', dados.dataInicioMulta || '');
+      setTextoCampo('dataFimMulta', dados.dataFimMulta || '');
+      setTextoCampo('dataInicioSelic', dados.dataInicioSelic || '');
+      setTextoCampo('dataFimSelic', dados.dataFimSelic || '');
+      selecionarModoEncargo('multa', 'sicafi');
+      selecionarModoEncargo('selic', 'sicafi');
       setValor('valorPrincipal', dados.valorPrincipal || 0);
       setValor('somatorioAmortizacao', dados.somatorioAmortizacao || 0);
       setPercentual('percentualDesconto', dados.percentualDesconto || 0);
@@ -1728,20 +1879,26 @@
         }
 
         const campos = [
-          'numeroDebito', 'dataConsolidacao', 'valorPrincipal', 'somatorioAmortizacao',
+          'numeroDebito', 'dataConsolidacao', 'dataInicioMulta', 'dataFimMulta',
+          'dataInicioSelic', 'dataFimSelic', 'valorPrincipal', 'somatorioAmortizacao',
           'percentualDesconto', 'valorDesconto', 'compensacaoEstadual', 'saldoParcial',
           'percentualSomatorioAmortizacaoSapiensDivida', 'somatorioAmortizacaoSapiensDivida',
           'correcaoMonetaria', 'saldoAtualizado', 'percentualMulta', 'valorMulta',
           'percentualJuros', 'valorJuros', 'percentualSelic', 'valorSelic', 'totalParcial',
           'percentualEncargos', 'valorEncargos', 'valorConsolidado'
         ];
-        return JSON.stringify({ tipo, campos: Object.fromEntries(campos.map(id => [id, valorCampo(id)])) });
+        return JSON.stringify({
+          tipo,
+          modoMulta: modoEncargoSelecionado('multa'),
+          modoSelic: modoEncargoSelecionado('selic'),
+          campos: Object.fromEntries(campos.map(id => [id, valorCampo(id)]))
+        });
       } catch (_) {
         return '';
       }
     }
 
-    function reprocessarCalculos() {
+    async function reprocessarCalculos() {
       const tipo = getTipoDebitoSelecionado();
       if (!tipo) {
         showToast('Selecione o tipo do débito.', 'error');
@@ -1758,6 +1915,7 @@
         dadosTcfaAcumulado._preservarValoresCarregados = false;
         reprocessarComposicaoAcumuladoAPartirDosPercentuais();
       } else {
+        await atualizarPercentuaisAutomaticosSeNecessario({ mostrarAviso: false });
         atualizarCalculos();
       }
 
@@ -1796,10 +1954,247 @@
       } catch (erro) {
         console.error(erro);
         setUploadMemoriaOk(false);
-        showToast(erro.message || 'Não foi possível carregar a memória de cálculo.', 'error');
+        showToast(normalizarMensagemErro(erro, 'Não foi possível carregar a memória de cálculo.'), 'error');
       } finally {
         if (input) input.value = '';
       }
+    }
+
+    function setTextoCampo(id, valor) {
+      const el = document.getElementById(id);
+      if (el) el.value = String(valor || '');
+    }
+
+    function modoEncargoSelecionado(tipo) {
+      const name = tipo === 'multa' ? 'modoMulta' : 'modoSelic';
+      const radio = document.querySelector(`input[name="${name}"]:checked`);
+      return radio ? radio.value : '';
+    }
+
+    function selecionarModoEncargo(tipo, modo) {
+      const id = tipo === 'multa'
+        ? (modo === 'automatica' ? 'modoMultaAutomatica' : 'modoMultaSicafi')
+        : (modo === 'sicalc' ? 'modoSelicSicalc' : 'modoSelicSicafi');
+      const radio = document.getElementById(id);
+      if (radio) radio.checked = true;
+      atualizarEstadoPercentuaisEncargos();
+    }
+
+    function atualizarEstadoPercentuaisEncargos() {
+      const percentualMulta = document.getElementById('percentualMulta');
+      const percentualSelic = document.getElementById('percentualSelic');
+      if (percentualMulta) percentualMulta.readOnly = modoEncargoSelecionado('multa') === 'automatica';
+      if (percentualSelic) percentualSelic.readOnly = modoEncargoSelecionado('selic') === 'sicalc';
+    }
+
+    function dataInputValidaOuVazia(id) {
+      const el = document.getElementById(id);
+      if (!el) return '';
+      if (!el.value.trim()) return '';
+      return ensureInputDate(el) ? el.value.trim() : '';
+    }
+
+    function parseDataPtBr(data) {
+      const m = String(data || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if (!m) return null;
+      const dia = Number(m[1]);
+      const mes = Number(m[2]);
+      const ano = Number(m[3]);
+      const dt = new Date(ano, mes - 1, dia);
+      if (dt.getFullYear() !== ano || dt.getMonth() !== mes - 1 || dt.getDate() !== dia) return null;
+      dt.setHours(0, 0, 0, 0);
+      return dt;
+    }
+
+    function diffDiasPtBr(dataInicio, dataFim) {
+      const inicio = parseDataPtBr(dataInicio);
+      const fim = parseDataPtBr(dataFim);
+      if (!inicio || !fim) return 0;
+      const diff = Math.floor((fim.getTime() - inicio.getTime()) / 86400000);
+      return Math.max(0, diff);
+    }
+
+    function calcularPercentualMultaAutomatica(dataInicio, dataFim) {
+      const dias = diffDiasPtBr(dataInicio, dataFim);
+      return Math.min(roundMoneyValue(dias * 0.33), 20);
+    }
+
+    function competenciaMesAnoDeData(data) {
+      const m = String(data || '').match(/^\d{2}\/(\d{2})\/(\d{4})$/);
+      return m ? `${m[1]}/${m[2]}` : '';
+    }
+
+    function normalizarMensagemErro(erro, mensagemPadrao = '') {
+      const mensagem = String(erro?.message || erro || mensagemPadrao || '');
+      if (mensagem === 'Failed to fetch' || mensagem.includes('Failed to fetch')) {
+        return 'Falha na busca';
+      }
+      return mensagem || mensagemPadrao;
+    }
+
+    async function carregarBaseSelicRfb() {
+      if (Object.keys(dadosSelicRfb || {}).length) return dadosSelicRfb;
+      if (promessaBaseSelicRfb) return promessaBaseSelicRfb;
+      promessaBaseSelicRfb = fetch(`../dados/selic-rfb.json?v=${Date.now()}`, { cache: 'no-store' })
+        .then(resposta => {
+          if (!resposta.ok) throw new Error(`Falha ao carregar base da Selic: ${resposta.status}`);
+          return resposta.json();
+        })
+        .then(payload => {
+          dadosSelicRfb = payload.taxas || {};
+          if (!Object.keys(dadosSelicRfb).length) throw new Error('Base da Selic sem taxas válidas.');
+          return dadosSelicRfb;
+        })
+        .catch(erro => {
+          promessaBaseSelicRfb = null;
+          const mensagem = normalizarMensagemErro(erro);
+          if (mensagem && mensagem !== String(erro?.message || erro || '')) {
+            throw new Error(mensagem);
+          }
+          throw erro;
+        });
+      return promessaBaseSelicRfb;
+    }
+
+    function obterTaxaSelicMes(ano, mes) {
+      const chave = `${ano}-${String(mes).padStart(2, '0')}`;
+      if (!(chave in dadosSelicRfb)) throw new Error(`Dados ausentes para ${String(mes).padStart(2, '0')}/${ano}`);
+      return Number(dadosSelicRfb[chave] || 0);
+    }
+
+    function calcularTaxaSelicSicalcPorCompetencia(competenciaInicial, competenciaFinal) {
+      const [mesIni, anoIni] = String(competenciaInicial || '').split('/').map(Number);
+      const [mesFim, anoFim] = String(competenciaFinal || '').split('/').map(Number);
+      if (!mesIni || !anoIni || !mesFim || !anoFim) return 0;
+      if (anoFim < anoIni || (anoFim === anoIni && mesFim <= mesIni)) return 0;
+
+      let somaTaxas = 0;
+      let anoAtual = anoIni;
+      let mesAtual = mesIni;
+
+      while (true) {
+        mesAtual++;
+        if (mesAtual > 12) {
+          mesAtual = 1;
+          anoAtual++;
+        }
+        if (anoAtual > anoFim || (anoAtual === anoFim && mesAtual >= mesFim)) break;
+        somaTaxas += obterTaxaSelicMes(anoAtual, mesAtual);
+      }
+
+      somaTaxas += 1.0;
+      return roundMoneyValue(somaTaxas);
+    }
+
+    async function calcularPercentualSelicSicalc(dataInicio, dataFim) {
+      await carregarBaseSelicRfb();
+      return calcularTaxaSelicSicalcPorCompetencia(competenciaMesAnoDeData(dataInicio), competenciaMesAnoDeData(dataFim));
+    }
+
+    async function aplicarModoMultaAutomatica() {
+      const inicio = dataInputValidaOuVazia('dataInicioMulta');
+      const fim = dataInputValidaOuVazia('dataFimMulta');
+      if (!inicio || !fim) {
+        selecionarModoEncargo('multa', 'sicafi');
+        showToast('preencha as datas para cobrança da Multa', 'error');
+        return false;
+      }
+      setPercentual('percentualMulta', calcularPercentualMultaAutomatica(inicio, fim));
+      atualizarEstadoPercentuaisEncargos();
+      atualizarCalculos();
+      return true;
+    }
+
+    async function aplicarModoSelicSicalc() {
+      const inicio = dataInputValidaOuVazia('dataInicioSelic');
+      const fim = dataInputValidaOuVazia('dataFimSelic');
+      if (!inicio || !fim) {
+        selecionarModoEncargo('selic', 'sicafi');
+        showToast('preencha as datas para cobrança da Selic', 'error');
+        return false;
+      }
+      try {
+        const percentual = await calcularPercentualSelicSicalc(inicio, fim);
+        setPercentual('percentualSelic', percentual);
+        atualizarEstadoPercentuaisEncargos();
+        atualizarCalculos();
+        return true;
+      } catch (erro) {
+        selecionarModoEncargo('selic', 'sicafi');
+        showToast(normalizarMensagemErro(erro, 'Não foi possível calcular a Selic Sicalc.'), 'error');
+        return false;
+      }
+    }
+
+    async function atualizarPercentuaisAutomaticosSeNecessario(opcoes = {}) {
+      const mostrarAviso = opcoes.mostrarAviso !== false;
+      let ok = true;
+      if (modoEncargoSelecionado('multa') === 'automatica') {
+        const inicio = dataInputValidaOuVazia('dataInicioMulta');
+        const fim = dataInputValidaOuVazia('dataFimMulta');
+        if (inicio && fim) {
+          setPercentual('percentualMulta', calcularPercentualMultaAutomatica(inicio, fim));
+        } else {
+          ok = false;
+          selecionarModoEncargo('multa', 'sicafi');
+          if (mostrarAviso) showToast('preencha as datas para cobrança da Multa', 'error');
+        }
+      }
+      if (modoEncargoSelecionado('selic') === 'sicalc') {
+        const inicio = dataInputValidaOuVazia('dataInicioSelic');
+        const fim = dataInputValidaOuVazia('dataFimSelic');
+        if (inicio && fim) {
+          try {
+            setPercentual('percentualSelic', await calcularPercentualSelicSicalc(inicio, fim));
+          } catch (erro) {
+            ok = false;
+            selecionarModoEncargo('selic', 'sicafi');
+            if (mostrarAviso) showToast(normalizarMensagemErro(erro, 'Não foi possível calcular a Selic Sicalc.'), 'error');
+          }
+        } else {
+          ok = false;
+          selecionarModoEncargo('selic', 'sicafi');
+          if (mostrarAviso) showToast('preencha as datas para cobrança da Selic', 'error');
+        }
+      }
+      atualizarEstadoPercentuaisEncargos();
+      atualizarCalculos();
+      return ok;
+    }
+
+    async function aoAlterarModoMulta(event) {
+      if (event.target?.value === 'automatica') {
+        await aplicarModoMultaAutomatica();
+      } else {
+        atualizarEstadoPercentuaisEncargos();
+      }
+    }
+
+    async function aoAlterarModoSelic(event) {
+      if (event.target?.value === 'sicalc') {
+        await aplicarModoSelicSicalc();
+      } else {
+        atualizarEstadoPercentuaisEncargos();
+      }
+    }
+
+    async function aoAlterarDataEncargo(event) {
+      const id = event.target?.id || '';
+      if (id.includes('Multa') && modoEncargoSelecionado('multa') === 'automatica') {
+        await aplicarModoMultaAutomatica();
+      }
+      if (id.includes('Selic') && modoEncargoSelecionado('selic') === 'sicalc') {
+        await aplicarModoSelicSicalc();
+      }
+    }
+
+    function percentualEncargoParaPdf(tipo) {
+      const prefixo = tipo === 'multa' ? 'Multa' : 'Selic';
+      const inicio = valorCampo(`dataInicio${prefixo}`);
+      const fim = valorCampo(`dataFim${prefixo}`);
+      const percentual = valorCampo(`percentual${prefixo}`);
+      return inicio && fim ? `De: ${inicio} até ${fim}
+${percentual}` : percentual;
     }
 
     function onlyDigits(s) {
@@ -2103,9 +2498,9 @@
           { descricao: '(-)Somatório da amortização Sapiens Dívida', percentual: valorCampo('percentualSomatorioAmortizacaoSapiensDivida'), valor: valorCampo('somatorioAmortizacaoSapiensDivida'), destaque: false, valorNegrito: false },
           { descricao: '(+)Correção Monetária', percentual: '-', valor: valorCampo('correcaoMonetaria'), destaque: false, valorNegrito: false },
           { descricao: '(=)Saldo Atualizado', percentual: '-', valor: valorCampo('saldoAtualizado'), destaque: true, valorNegrito: false },
-          { descricao: '(+)Multa', percentual: valorCampo('percentualMulta'), valor: valorCampo('valorMulta'), destaque: false, valorNegrito: true },
+          { descricao: '(+)Multa', percentual: percentualEncargoParaPdf('multa'), valor: valorCampo('valorMulta'), destaque: false, valorNegrito: true },
           { descricao: '(+)Juros', percentual: valorCampo('percentualJuros'), valor: valorCampo('valorJuros'), destaque: false, valorNegrito: true },
-          { descricao: '(+)SELIC', percentual: valorCampo('percentualSelic'), valor: valorCampo('valorSelic'), destaque: false, valorNegrito: true },
+          { descricao: '(+)SELIC', percentual: percentualEncargoParaPdf('selic'), valor: valorCampo('valorSelic'), destaque: false, valorNegrito: true },
           { descricao: '(=)Total Parcial', percentual: '-', valor: valorCampo('totalParcial'), destaque: true, valorNegrito: true },
           { descricao: '(+)Encargos Legais', percentual: valorCampo('percentualEncargos'), valor: valorCampo('valorEncargos'), destaque: false, valorNegrito: true },
           { descricao: '(=)Valor Consolidado', percentual: '-', valor: valorCampo('valorConsolidado'), destaque: true, valorNegrito: true }
@@ -2539,8 +2934,17 @@
       document.querySelectorAll('.campo-moeda').forEach(bindRealtimeMoneyInput);
       document.querySelectorAll('.campo-percentual').forEach(bindPercentInput);
       bindDateInput(document.getElementById('dataConsolidacao'));
+      ['dataInicioMulta', 'dataFimMulta', 'dataInicioSelic', 'dataFimSelic'].forEach(id => {
+        const el = document.getElementById(id);
+        bindDateInput(el);
+        if (el) el.addEventListener('blur', aoAlterarDataEncargo);
+      });
+      document.querySelectorAll('input[name="modoMulta"]').forEach(radio => radio.addEventListener('change', aoAlterarModoMulta));
+      document.querySelectorAll('input[name="modoSelic"]').forEach(radio => radio.addEventListener('change', aoAlterarModoSelic));
+      atualizarEstadoPercentuaisEncargos();
 
       document.addEventListener('input', monitorarAlteracaoDeDadosCarregados);
+      document.addEventListener('change', monitorarAlteracaoDeDadosCarregados);
 
       const numeroDebito = document.getElementById('numeroDebito');
       numeroDebito.addEventListener('input', () => {
@@ -2556,7 +2960,7 @@
               registrarEdicaoCampo(input);
               atualizarCalculos();
             }
-            if (input.id === 'dataConsolidacao') {
+            if (input.id === 'dataConsolidacao' || input.classList.contains('campo-data-encargo')) {
               ensureInputDate(input);
             }
             focusNextField(input);
