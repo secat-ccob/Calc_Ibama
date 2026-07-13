@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_28 -->
+  <!-- Versão: simulador_consolidacao_debito_v_29 -->
 
   <style>
     :root {
@@ -391,13 +391,13 @@
     }
 
     .controle-encargo .opcao-encargo:nth-of-type(1) {
-      width: 112px;
-      margin-right: 5px;
+      width: 86px;
+      margin-right: 8px;
     }
 
     .controle-encargo .opcao-encargo:nth-of-type(2) {
-      width: 80px;
-      margin-right: 8px;
+      width: 108px;
+      margin-right: 10px;
     }
 
     .controle-encargo .opcao-encargo input {
@@ -918,8 +918,8 @@
                   <input id="dataInicioMulta" class="campo-data-encargo" type="text" inputmode="numeric" placeholder="00/00/0000" maxlength="10" autocomplete="off" />
                   <span class="texto-periodo">até</span>
                   <input id="dataFimMulta" class="campo-data-encargo" type="text" inputmode="numeric" placeholder="00/00/0000" maxlength="10" autocomplete="off" />
-                  <label class="opcao-encargo"><input id="modoMultaAutomatica" type="radio" name="modoMulta" value="automatica" autocomplete="off" /> Multa automática</label>
-                  <label class="opcao-encargo"><input id="modoMultaSicafi" type="radio" name="modoMulta" value="sicafi" autocomplete="off" checked /> Multa Sicafi</label>
+                  <label class="opcao-encargo"><input id="modoMultaAutomatica" type="radio" name="modoMulta" value="automatica" autocomplete="off" /> Automático</label>
+                  <label class="opcao-encargo"><input id="modoMultaSicafi" type="radio" name="modoMulta" value="sicafi" autocomplete="off" checked /> Manual / SICAFI</label>
                   <input id="percentualMulta" class="campo-tabela campo-percentual campo-percentual-encargo" type="text" inputmode="decimal" value="0,00%" autocomplete="off" />
                 </div>
               </td>
@@ -938,8 +938,8 @@
                   <input id="dataInicioSelic" class="campo-data-encargo" type="text" inputmode="numeric" placeholder="00/00/0000" maxlength="10" autocomplete="off" />
                   <span class="texto-periodo">até</span>
                   <input id="dataFimSelic" class="campo-data-encargo" type="text" inputmode="numeric" placeholder="00/00/0000" maxlength="10" autocomplete="off" />
-                  <label class="opcao-encargo"><input id="modoSelicSicalc" type="radio" name="modoSelic" value="sicalc" autocomplete="off" /> Selic Sicalc</label>
-                  <label class="opcao-encargo"><input id="modoSelicSicafi" type="radio" name="modoSelic" value="sicafi" autocomplete="off" checked /> Selic Sicafi</label>
+                  <label class="opcao-encargo"><input id="modoSelicSicalc" type="radio" name="modoSelic" value="sicalc" autocomplete="off" /> Automático</label>
+                  <label class="opcao-encargo"><input id="modoSelicSicafi" type="radio" name="modoSelic" value="sicafi" autocomplete="off" checked /> Manual / SICAFI</label>
                   <input id="percentualSelic" class="campo-tabela campo-percentual campo-percentual-encargo" type="text" inputmode="decimal" value="0,00%" autocomplete="off" />
                 </div>
               </td>
@@ -1068,6 +1068,8 @@
     let statusMemoriaPDF = 'vazio';
     let dadosSelicRfb = {};
     let promessaBaseSelicRfb = null;
+    let percentualMultaSicafiArmazenado = 0;
+    let percentualSelicSicafiArmazenado = 0;
 
     function carregarImagemComoJPEGParaPDF(url) {
       return new Promise(resolve => {
@@ -1126,6 +1128,14 @@
 
       if (input.id === 'somatorioAmortizacaoSapiensDivida') {
         modoSomatorioSapiensDivida = 'valor';
+      }
+
+      if (input.id === 'percentualMulta' && modoEncargoSelecionado('multa') === 'sicafi') {
+        percentualMultaSicafiArmazenado = parseNumeroFlexivel(input.value);
+      }
+
+      if (input.id === 'percentualSelic' && modoEncargoSelecionado('selic') === 'sicafi') {
+        percentualSelicSicafiArmazenado = parseNumeroFlexivel(input.value);
       }
     }
 
@@ -1269,6 +1279,8 @@
       setPercentual('percentualEncargos', 0);
       setValor('valorEncargos', 0);
       setValor('valorConsolidado', 0);
+      percentualMultaSicafiArmazenado = 0;
+      percentualSelicSicafiArmazenado = 0;
       modoSomatorioSapiensDivida = 'valor';
       atualizarCalculos();
     }
@@ -1524,6 +1536,8 @@
       setPercentual('percentualJuros', dados.percentualJuros || 0);
       setValor('valorJuros', dados.valorJuros || 0);
       setPercentual('percentualSelic', dados.percentualSelic || 0);
+      percentualMultaSicafiArmazenado = Number(dados.percentualMulta || 0);
+      percentualSelicSicafiArmazenado = Number(dados.percentualSelic || 0);
       setValor('valorSelic', dados.valorSelic || 0);
       setValor('totalParcial', dados.totalParcial || 0);
       setPercentual('percentualEncargos', dados.percentualEncargos || 0);
@@ -1980,6 +1994,22 @@
       atualizarEstadoPercentuaisEncargos();
     }
 
+    function armazenarPercentualSicafiAtual(tipo) {
+      if (tipo === 'multa') {
+        percentualMultaSicafiArmazenado = parseNumeroFlexivel(document.getElementById('percentualMulta')?.value || '0');
+      } else if (tipo === 'selic') {
+        percentualSelicSicafiArmazenado = parseNumeroFlexivel(document.getElementById('percentualSelic')?.value || '0');
+      }
+    }
+
+    function restaurarPercentualSicafi(tipo) {
+      if (tipo === 'multa') {
+        setPercentual('percentualMulta', percentualMultaSicafiArmazenado);
+      } else if (tipo === 'selic') {
+        setPercentual('percentualSelic', percentualSelicSicafiArmazenado);
+      }
+    }
+
     function atualizarEstadoPercentuaisEncargos() {
       const percentualMulta = document.getElementById('percentualMulta');
       const percentualSelic = document.getElementById('percentualSelic');
@@ -2091,25 +2121,32 @@
       return calcularTaxaSelicSicalcPorCompetencia(competenciaMesAnoDeData(dataInicio), competenciaMesAnoDeData(dataFim));
     }
 
-    async function aplicarModoMultaAutomatica() {
+    async function aplicarModoMultaAutomatica(opcoes = {}) {
       const inicio = dataInputValidaOuVazia('dataInicioMulta');
       const fim = dataInputValidaOuVazia('dataFimMulta');
       if (!inicio || !fim) {
         selecionarModoEncargo('multa', 'sicafi');
+        restaurarPercentualSicafi('multa');
+        atualizarCalculos();
         showToast('preencha as datas para cobrança da Multa', 'error');
         return false;
       }
       setPercentual('percentualMulta', calcularPercentualMultaAutomatica(inicio, fim));
       atualizarEstadoPercentuaisEncargos();
       atualizarCalculos();
+      if (opcoes.mostrarSucesso) {
+        showToast('Cálculo automático da multa ativado com sucesso.', 'success');
+      }
       return true;
     }
 
-    async function aplicarModoSelicSicalc() {
+    async function aplicarModoSelicSicalc(opcoes = {}) {
       const inicio = dataInputValidaOuVazia('dataInicioSelic');
       const fim = dataInputValidaOuVazia('dataFimSelic');
       if (!inicio || !fim) {
         selecionarModoEncargo('selic', 'sicafi');
+        restaurarPercentualSicafi('selic');
+        atualizarCalculos();
         showToast('preencha as datas para cobrança da Selic', 'error');
         return false;
       }
@@ -2118,9 +2155,14 @@
         setPercentual('percentualSelic', percentual);
         atualizarEstadoPercentuaisEncargos();
         atualizarCalculos();
+        if (opcoes.mostrarSucesso) {
+          showToast('Selic automática ativada com base no Sicalc/RFB. Pode haver divergência com o SICAFI, em razão de registros antigos equivocados no sistema do Ibama.', 'success');
+        }
         return true;
       } catch (erro) {
         selecionarModoEncargo('selic', 'sicafi');
+        restaurarPercentualSicafi('selic');
+        atualizarCalculos();
         showToast(normalizarMensagemErro(erro, 'Não foi possível calcular a Selic Sicalc.'), 'error');
         return false;
       }
@@ -2137,6 +2179,7 @@
         } else {
           ok = false;
           selecionarModoEncargo('multa', 'sicafi');
+          restaurarPercentualSicafi('multa');
           if (mostrarAviso) showToast('preencha as datas para cobrança da Multa', 'error');
         }
       }
@@ -2149,11 +2192,13 @@
           } catch (erro) {
             ok = false;
             selecionarModoEncargo('selic', 'sicafi');
+            restaurarPercentualSicafi('selic');
             if (mostrarAviso) showToast(normalizarMensagemErro(erro, 'Não foi possível calcular a Selic Sicalc.'), 'error');
           }
         } else {
           ok = false;
           selecionarModoEncargo('selic', 'sicafi');
+          restaurarPercentualSicafi('selic');
           if (mostrarAviso) showToast('preencha as datas para cobrança da Selic', 'error');
         }
       }
@@ -2164,17 +2209,23 @@
 
     async function aoAlterarModoMulta(event) {
       if (event.target?.value === 'automatica') {
-        await aplicarModoMultaAutomatica();
+        armazenarPercentualSicafiAtual('multa');
+        await aplicarModoMultaAutomatica({ mostrarSucesso: true });
       } else {
+        restaurarPercentualSicafi('multa');
         atualizarEstadoPercentuaisEncargos();
+        atualizarCalculos();
       }
     }
 
     async function aoAlterarModoSelic(event) {
       if (event.target?.value === 'sicalc') {
-        await aplicarModoSelicSicalc();
+        armazenarPercentualSicafiAtual('selic');
+        await aplicarModoSelicSicalc({ mostrarSucesso: true });
       } else {
+        restaurarPercentualSicafi('selic');
         atualizarEstadoPercentuaisEncargos();
+        atualizarCalculos();
       }
     }
 
