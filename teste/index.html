@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_36 -->
+  <!-- Versão: simulador_consolidacao_debito_v_37 -->
 
   <style>
     :root {
@@ -282,6 +282,14 @@
     }
 
     .tabela-consolidacao td.percentual.percentual-vazio {
+      text-align: center;
+    }
+
+    #areaTcfaAcumulado .tabela-consolidacao td.percentual {
+      text-align: center;
+    }
+
+    #areaTcfaAcumulado .tabela-consolidacao td.percentual .campo-tabela {
       text-align: center;
     }
 
@@ -3308,7 +3316,7 @@
             row.debito, row.trimestreAno, row.vencimento, numeroParaMoeda(row.valorOriginal), numeroParaMoeda(row.saldo), numeroParaMoeda(row.compensacaoRegular), numeroParaMoeda(row.compensacaoManual), numeroParaPercentual(row.correcaoPct), numeroParaMoeda(row.correcaoValor), numeroParaMoeda(row.saldoAtualizado), numeroParaPercentual(row.multaPct), numeroParaMoeda(row.multaValor), numeroParaPercentual(row.jurosPct), numeroParaMoeda(row.jurosValor), numeroParaPercentual(row.selicPct), numeroParaMoeda(row.selicValor), numeroParaPercentual(row.encargosPct), numeroParaMoeda(row.encargosValor), numeroParaMoeda(row.valorConsolidado)
           ];
           valores.forEach((v, i) => {
-            celula(x, y, colsC[i], alturaLinhaC, cinzaLinha, v, { alinhamento: i <= 2 ? 'center' : 'right', tamanho: 3.9, padding: 1, negrito: total });
+            celula(x, y, colsC[i], alturaLinhaC, cinzaLinha, v, { alinhamento: 'center', tamanho: 3.9, padding: 1, negrito: total });
             x += colsC[i];
           });
           y -= alturaLinhaC;
