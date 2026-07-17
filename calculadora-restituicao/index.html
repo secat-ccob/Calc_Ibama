@@ -7,7 +7,7 @@
     <title>Calculadora de restituição</title>
     <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_restituicao_portal_v_28 -->
+    <!-- Versão: calculadora_restituicao_portal_v_29 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -791,6 +791,72 @@
             padding-top: 4px;
         }
 
+
+        .modal-progresso-pdf {
+            position: fixed;
+            inset: 0;
+            z-index: 99998;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.38);
+            padding: 24px;
+        }
+
+        .modal-progresso-pdf.ativo {
+            display: flex;
+        }
+
+        .caixa-progresso-pdf {
+            width: min(430px, 92vw);
+            background: #ffffff;
+            border: 1px solid #c9d2d0;
+            border-radius: 8px;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+            padding: 20px 22px 18px;
+            color: #1f2933;
+        }
+
+        .titulo-progresso-pdf {
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #1f4e79;
+            text-align: center;
+        }
+
+        .detalhe-progresso-pdf {
+            min-height: 18px;
+            font-size: 13px;
+            color: #4b5563;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .barra-progresso-pdf {
+            width: 100%;
+            height: 14px;
+            border: 1px solid #b8c4c0;
+            border-radius: 999px;
+            background: #edf1f0;
+            overflow: hidden;
+        }
+
+        .preenchimento-progresso-pdf {
+            width: 0%;
+            height: 100%;
+            background: #1f6f54;
+            transition: width 0.16s linear;
+        }
+
+        .percentual-progresso-pdf {
+            margin-top: 8px;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: #1f2933;
+        }
+
         @media (max-width: 720px) {
             .cabecalho-conteudo { padding: 0 16px 10px; }
             .marca-topo {
@@ -1114,6 +1180,18 @@
                     <button type="button" class="btn btn-primario" id="btnGerarPDFSelecionado">Gerar PDF</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+
+    <div id="modalProgressoPDF" class="modal-progresso-pdf" aria-hidden="true">
+        <div class="caixa-progresso-pdf" role="dialog" aria-modal="true" aria-labelledby="tituloProgressoPDF">
+            <div id="tituloProgressoPDF" class="titulo-progresso-pdf">Carregando relação de pagamentos</div>
+            <div id="detalheProgressoPDF" class="detalhe-progresso-pdf">Preparando leitura do PDF...</div>
+            <div class="barra-progresso-pdf" aria-hidden="true">
+                <div id="preenchimentoProgressoPDF" class="preenchimento-progresso-pdf"></div>
+            </div>
+            <div id="percentualProgressoPDF" class="percentual-progresso-pdf">0%</div>
         </div>
     </div>
 
@@ -1712,6 +1790,46 @@
         }
 
 
+
+        function limitarPercentualProgressoPDF(valor) {
+            const n = Number(valor || 0);
+            if (!Number.isFinite(n)) return 0;
+            return Math.max(0, Math.min(100, Math.round(n)));
+        }
+
+        function atualizarProgressoPDF(percentual, detalhe) {
+            const valor = limitarPercentualProgressoPDF(percentual);
+            const modal = document.getElementById('modalProgressoPDF');
+            const barra = document.getElementById('preenchimentoProgressoPDF');
+            const texto = document.getElementById('percentualProgressoPDF');
+            const detalheEl = document.getElementById('detalheProgressoPDF');
+            if (modal) {
+                modal.classList.add('ativo');
+                modal.setAttribute('aria-hidden', 'false');
+            }
+            if (barra) barra.style.width = `${valor}%`;
+            if (texto) texto.textContent = `${valor}%`;
+            if (detalheEl && detalhe) detalheEl.textContent = detalhe;
+        }
+
+        function abrirProgressoPDF(detalhe = 'Preparando leitura do PDF...') {
+            atualizarProgressoPDF(0, detalhe);
+        }
+
+        function fecharProgressoPDF() {
+            const modal = document.getElementById('modalProgressoPDF');
+            if (modal) {
+                modal.classList.remove('ativo');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+            const barra = document.getElementById('preenchimentoProgressoPDF');
+            const texto = document.getElementById('percentualProgressoPDF');
+            const detalheEl = document.getElementById('detalheProgressoPDF');
+            if (barra) barra.style.width = '0%';
+            if (texto) texto.textContent = '0%';
+            if (detalheEl) detalheEl.textContent = 'Preparando leitura do PDF...';
+        }
+
         function selecionarRelacaoPagamentosPDF() {
             const input = document.getElementById('inputRelacaoPagamentosPDF');
             if (!input) return;
@@ -1861,13 +1979,31 @@
             return String(texto || '').replace(/\s+/g, ' ').trim();
         }
 
-        async function extrairLinhasTextoPDF(file) {
+        async function extrairLinhasTextoPDF(file, onProgress) {
+            const progresso = typeof onProgress === 'function' ? onProgress : () => {};
+            progresso(5, 'Carregando PDF.js...');
             const pdfjsLib = await carregarPDFJS();
-            const buffer = await file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-            const linhas = [];
 
+            progresso(14, 'Lendo arquivo selecionado...');
+            const buffer = await file.arrayBuffer();
+
+            progresso(24, 'Abrindo PDF...');
+            const tarefaCarregamento = pdfjsLib.getDocument({ data: buffer });
+            tarefaCarregamento.onProgress = dadosProgresso => {
+                const carregado = Number(dadosProgresso?.loaded || 0);
+                const total = Number(dadosProgresso?.total || 0);
+                if (total > 0) {
+                    const parcial = carregado / total;
+                    progresso(24 + (parcial * 16), 'Abrindo PDF...');
+                }
+            };
+            const pdf = await tarefaCarregamento.promise;
+            const linhas = [];
+            const totalPaginas = Math.max(1, Number(pdf.numPages || 1));
+
+            progresso(42, `PDF aberto. Processando ${totalPaginas} página(s)...`);
             for (let pagina = 1; pagina <= pdf.numPages; pagina++) {
+                progresso(42 + ((pagina - 1) / totalPaginas) * 40, `Lendo página ${pagina} de ${totalPaginas}...`);
                 const page = await pdf.getPage(pagina);
                 const textContent = await page.getTextContent();
                 const itens = textContent.items.map(item => ({
@@ -1893,6 +2029,7 @@
                     const texto = normalizarLinhaTextoPDF(grupo.itens.map(i => i.texto).join(' '));
                     if (texto) linhas.push(texto);
                 });
+                progresso(42 + (pagina / totalPaginas) * 40, `Lendo página ${pagina} de ${totalPaginas}...`);
             }
             return linhas;
         }
@@ -1919,8 +2056,10 @@
             };
         }
 
-        async function extrairPagamentosDoPDF(file) {
-            const linhas = await extrairLinhasTextoPDF(file);
+        async function extrairPagamentosDoPDF(file, onProgress) {
+            const progresso = typeof onProgress === 'function' ? onProgress : () => {};
+            const linhas = await extrairLinhasTextoPDF(file, progresso);
+            progresso(86, 'Interpretando dados da relação de pagamentos...');
             const pagamentos = [];
             linhas.forEach(linha => {
                 const item = interpretarLinhaPagamento(linha);
@@ -1976,25 +2115,37 @@
                 if (campoData) campoData.value = dataBasePrazo;
             }
 
-            const pagamentosExtraidos = await extrairPagamentosDoPDF(arquivoRelacaoPagamentosPendente);
-            if (!pagamentosExtraidos.length) {
-                throw new Error('Não foi possível identificar pagamentos no PDF carregado. Verifique se o arquivo é uma relação de pagamentos efetuados.');
+            abrirProgressoPDF('Preparando leitura do PDF...');
+            try {
+                atualizarProgressoPDF(2, 'Iniciando processamento da relação de pagamentos...');
+                const pagamentosExtraidos = await extrairPagamentosDoPDF(arquivoRelacaoPagamentosPendente, atualizarProgressoPDF);
+                if (!pagamentosExtraidos.length) {
+                    throw new Error('Não foi possível identificar pagamentos no PDF carregado. Verifique se o arquivo é uma relação de pagamentos efetuados.');
+                }
+
+                atualizarProgressoPDF(90, 'Filtrando pagamentos...');
+                const pagamentos = opcao === 'prazo'
+                    ? filtrarPagamentosDentroDoPrazo(pagamentosExtraidos, dataBasePrazo)
+                    : pagamentosExtraidos;
+
+                if (!pagamentos.length) {
+                    throw new Error(opcao === 'prazo'
+                        ? 'Nenhum pagamento foi encontrado dentro do prazo de 5 anos a partir da data-base informada.'
+                        : 'Nenhum pagamento foi identificado para carregar.');
+                }
+
+                atualizarProgressoPDF(94, 'Preenchendo demonstrativo de cálculo...');
+                await preencherTabelaComPagamentos(pagamentos);
+                definirStatusRelacaoPagamentos(true);
+                atualizarStatus(`✅ ${pagamentos.length} pagamento(s) carregado(s) da relação de pagamentos`, true);
+                mostrarAlerta(`✅ ${pagamentos.length} pagamento(s) carregado(s).`, 'success');
+                atualizarProgressoPDF(100, 'Relação de pagamentos carregada com sucesso.');
+                await new Promise(resolve => setTimeout(resolve, 280));
+                fecharProgressoPDF();
+            } catch (erro) {
+                fecharProgressoPDF();
+                throw erro;
             }
-
-            const pagamentos = opcao === 'prazo'
-                ? filtrarPagamentosDentroDoPrazo(pagamentosExtraidos, dataBasePrazo)
-                : pagamentosExtraidos;
-
-            if (!pagamentos.length) {
-                throw new Error(opcao === 'prazo'
-                    ? 'Nenhum pagamento foi encontrado dentro do prazo de 5 anos a partir da data-base informada.'
-                    : 'Nenhum pagamento foi identificado para carregar.');
-            }
-
-            await preencherTabelaComPagamentos(pagamentos);
-            definirStatusRelacaoPagamentos(true);
-            atualizarStatus(`✅ ${pagamentos.length} pagamento(s) carregado(s) da relação de pagamentos`, true);
-            mostrarAlerta(`✅ ${pagamentos.length} pagamento(s) carregado(s).`, 'success');
         }
 
         async function preencherTabelaComPagamentos(pagamentos) {
