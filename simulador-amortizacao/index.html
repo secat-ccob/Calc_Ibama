@@ -6,7 +6,7 @@
   <title>Simulador de amortização</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_amortizacao_portal_v_6 -->
+  <!-- Versão: simulador_amortizacao_portal_v_7 -->
 
   <style>
     :root {
@@ -444,6 +444,72 @@
     }
 
 
+
+    .modal-progresso-pdf {
+      position: fixed;
+      inset: 0;
+      z-index: 99998;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.38);
+      padding: 24px;
+    }
+
+    .modal-progresso-pdf.ativo {
+      display: flex;
+    }
+
+    .caixa-progresso-pdf {
+      width: min(430px, 92vw);
+      background: #ffffff;
+      border: 1px solid #c9d2d0;
+      border-radius: 8px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+      padding: 20px 22px 18px;
+      color: #1f2933;
+    }
+
+    .titulo-progresso-pdf {
+      font-size: 15px;
+      font-weight: bold;
+      margin-bottom: 8px;
+      color: #1f4e79;
+      text-align: center;
+    }
+
+    .detalhe-progresso-pdf {
+      min-height: 18px;
+      font-size: 13px;
+      color: #4b5563;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .barra-progresso-pdf {
+      width: 100%;
+      height: 14px;
+      border: 1px solid #b8c4c0;
+      border-radius: 999px;
+      background: #edf1f0;
+      overflow: hidden;
+    }
+
+    .preenchimento-progresso-pdf {
+      width: 0%;
+      height: 100%;
+      background: #1f6f54;
+      transition: width 0.16s linear;
+    }
+
+    .percentual-progresso-pdf {
+      margin-top: 8px;
+      text-align: center;
+      font-size: 12px;
+      font-weight: bold;
+      color: #1f2933;
+    }
+
     /* TOAST (notificações no canto inferior direito) */
     #toastContainer {
       position: fixed;
@@ -683,6 +749,17 @@
     </div>
   </div>
 
+  <div id="modalProgressoPDF" class="modal-progresso-pdf" aria-hidden="true">
+    <div class="caixa-progresso-pdf" role="dialog" aria-modal="true" aria-labelledby="tituloProgressoPDF">
+      <div id="tituloProgressoPDF" class="titulo-progresso-pdf">Carregando memória de cálculo</div>
+      <div id="detalheProgressoPDF" class="detalhe-progresso-pdf">Preparando leitura do PDF...</div>
+      <div class="barra-progresso-pdf" aria-hidden="true">
+        <div id="preenchimentoProgressoPDF" class="preenchimento-progresso-pdf"></div>
+      </div>
+      <div id="percentualProgressoPDF" class="percentual-progresso-pdf">0%</div>
+    </div>
+  </div>
+
   <div id="toastContainer"></div>
 
   <footer class="rodape">
@@ -830,6 +907,49 @@ function setValueSilent(input, value){
 }
 function setStatus(msg) {
   document.getElementById('statusInfo').textContent = msg;
+}
+
+function limitarPercentualProgresso(valor) {
+  const n = Number(valor || 0);
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(100, Math.round(n)));
+}
+
+function atualizarProgressoPDF(percentual, detalhe) {
+  const valor = limitarPercentualProgresso(percentual);
+  const modal = document.getElementById('modalProgressoPDF');
+  const barra = document.getElementById('preenchimentoProgressoPDF');
+  const texto = document.getElementById('percentualProgressoPDF');
+  const detalheEl = document.getElementById('detalheProgressoPDF');
+  if (modal) {
+    modal.classList.add('ativo');
+    modal.setAttribute('aria-hidden', 'false');
+  }
+  if (barra) barra.style.width = `${valor}%`;
+  if (texto) texto.textContent = `${valor}%`;
+  if (detalheEl && detalhe) detalheEl.textContent = detalhe;
+}
+
+function abrirProgressoPDF(detalhe = 'Preparando leitura do PDF...') {
+  atualizarProgressoPDF(0, detalhe);
+}
+
+function fecharProgressoPDF() {
+  const modal = document.getElementById('modalProgressoPDF');
+  if (modal) {
+    modal.classList.remove('ativo');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+  const barra = document.getElementById('preenchimentoProgressoPDF');
+  const texto = document.getElementById('percentualProgressoPDF');
+  const detalheEl = document.getElementById('detalheProgressoPDF');
+  if (barra) barra.style.width = '0%';
+  if (texto) texto.textContent = '0%';
+  if (detalheEl) detalheEl.textContent = 'Preparando leitura do PDF...';
+}
+
+function aguardarFechamentoProgressoPDF(ms = 250) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function setDepositHeaderComputed(simId, computed) {
@@ -1853,15 +1973,33 @@ function validatePdfTypeAgainstSelection(expectedType, detectedType) {
   }
 }
 
-async function parsePdfFile(file) {
+async function parsePdfFile(file, onProgress) {
+  const progresso = typeof onProgress === 'function' ? onProgress : () => {};
+  progresso(4, 'Carregando PDF.js...');
   const pdfjsLib = await ensurePdfJsLoaded();
-  const data = new Uint8Array(await file.arrayBuffer());
-  const pdf = await pdfjsLib.getDocument({ data }).promise;
+
+  progresso(12, 'Lendo arquivo selecionado...');
+  const buffer = await file.arrayBuffer();
+
+  progresso(22, 'Abrindo PDF...');
+  const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buffer) });
+  loadingTask.onProgress = dadosProgresso => {
+    const carregado = Number(dadosProgresso?.loaded || 0);
+    const total = Number(dadosProgresso?.total || 0);
+    if (total > 0) {
+      const parcial = carregado / total;
+      progresso(22 + (parcial * 20), 'Abrindo PDF...');
+    }
+  };
+  const pdf = await loadingTask.promise;
 
   const pages = [];
   const allLines = [];
+  const totalPaginas = Math.max(1, Number(pdf.numPages || 1));
+  progresso(44, `PDF aberto. Processando ${totalPaginas} página(s)...`);
 
   for (let p = 1; p <= pdf.numPages; p++) {
+    progresso(44 + ((p - 1) / totalPaginas) * 44, `Lendo página ${p} de ${totalPaginas}...`);
     const page = await pdf.getPage(p);
     const tc = await page.getTextContent();
     const items = (tc.items || []).map(it => {
@@ -1880,8 +2018,10 @@ async function parsePdfFile(file) {
     const lines = _buildPdfLinesFromItems(p, items);
     pages.push({ pageNumber: p, items, lines });
     allLines.push(...lines);
+    progresso(44 + (p / totalPaginas) * 44, `Lendo página ${p} de ${totalPaginas}...`);
   }
 
+  progresso(90, 'Interpretando dados da memória de cálculo...');
   const fullText = allLines.map(l => l.text).join('\n');
   const model = { pages, lines: allLines, fullText };
   model.detectedType = detectPdfDebitoType(model);
@@ -3955,9 +4095,12 @@ function getTcfaSimplesTrimestreAno() {
 }
 
 
-async function handleUploadArquivo01(sim, file) {
+async function handleUploadArquivo01(sim, file, onProgress) {
+  const progresso = typeof onProgress === 'function' ? onProgress : () => {};
   setStatus('Lendo Arquivo01...');
-  const model = await parsePdfFile(file);
+  progresso(2, 'Preparando leitura do Arquivo01...');
+  const model = await parsePdfFile(file, progresso);
+  progresso(92, 'Interpretando dados do Arquivo01...');
   const simId = state.simulations.indexOf(sim) + 1;
 
   if (sim.tipododebito === 'TCFA_ACUMULADO') {
@@ -4036,12 +4179,16 @@ async function handleUploadArquivo01(sim, file) {
     }
   }
 
+  progresso(96, 'Preenchendo campos/tabelas...');
   setStatus('Arquivo01 lido com sucesso.');
 }
 
-async function handleUploadArquivo02(sim, file) {
+async function handleUploadArquivo02(sim, file, onProgress) {
+  const progresso = typeof onProgress === 'function' ? onProgress : () => {};
   setStatus('Lendo Arquivo02...');
-  const model = await parsePdfFile(file);
+  progresso(2, 'Preparando leitura do Arquivo02...');
+  const model = await parsePdfFile(file, progresso);
+  progresso(92, 'Interpretando dados do Arquivo02...');
   const simId = state.simulations.indexOf(sim) + 1;
 
   let snapshot = null;
@@ -4097,6 +4244,7 @@ async function handleUploadArquivo02(sim, file) {
     applyConsolidacaoSnapshotToTitular(simId, snapshot, 'arquivo02');
   }
 
+  progresso(96, 'Preenchendo campos/tabelas...');
   setStatus('Arquivo02 lido com sucesso.');
 }
 
@@ -5040,8 +5188,10 @@ function addSimulation(opts = {}) {
   document.getElementById(`file01_${simId}`).addEventListener('change', async (e) => {
     const f = e.target.files[0];
     if (!f) return;
+    abrirProgressoPDF('Preparando leitura do Arquivo01...');
     try {
-      await handleUploadArquivo01(sim, f);
+      await handleUploadArquivo01(sim, f, atualizarProgressoPDF);
+      atualizarProgressoPDF(97, 'Preenchendo campos/tabelas...');
       invalidateCascadeFrom(simId);
       sim._arquivo01Carregado = true;
       setValueSilent(dataInput, sim.datadodeposito || '');
@@ -5055,14 +5205,18 @@ function addSimulation(opts = {}) {
       }
       selectConsolidacaoSource(simId, 'arquivo01');
       updateUploadButtonsState(simId);
+      atualizarProgressoPDF(100, 'Finalizando...');
+      await aguardarFechamentoProgressoPDF(250);
       showAlert('Arquivo01 processado. Campos preenchidos.', 'success');
     } catch (err) {
       if (simId >= 2) refreshArquivo01Status(simId);
       else clearUploadOk(`statusUpload01_${simId}`);
       syncConsolidacaoSourceUi(simId);
       showAlert(String(err.message || err), 'error');
+    } finally {
+      fecharProgressoPDF();
+      e.target.value = '';
     }
-    e.target.value = '';
   });
 
   // Upload 02
@@ -5077,8 +5231,10 @@ function addSimulation(opts = {}) {
   document.getElementById(`file02_${simId}`).addEventListener('change', async (e) => {
     const f = e.target.files[0];
     if (!f) return;
+    abrirProgressoPDF('Preparando leitura do Arquivo02...');
     try {
-      await handleUploadArquivo02(sim, f);
+      await handleUploadArquivo02(sim, f, atualizarProgressoPDF);
+      atualizarProgressoPDF(97, 'Preenchendo campos/tabelas...');
       invalidateCascadeFrom(simId);
       sim._arquivo02Carregado = true;
       if (sim._consolidacaoMode !== 'arquivo01') {
@@ -5089,12 +5245,16 @@ function addSimulation(opts = {}) {
         setValueSilent(pctEncInput, formatPercentDisplay(sim._pctEncargosArquivo02));
       }
       updateArquivo02StatusForMode(simId);
+      atualizarProgressoPDF(100, 'Finalizando...');
+      await aguardarFechamentoProgressoPDF(250);
       showAlert('Arquivo02 processado.', 'success');
     } catch (err) {
       clearUploadOk(`statusUpload02_${simId}`);
       showAlert(String(err.message || err), 'error');
+    } finally {
+      fecharProgressoPDF();
+      e.target.value = '';
     }
-    e.target.value = '';
   });
 
   const chkUseDepositData = document.getElementById(`chkUseDepositData_${simId}`);
