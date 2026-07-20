@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_40 -->
+  <!-- Versão: simulador_consolidacao_debito_v_41 -->
 
   <style>
     :root {
@@ -598,7 +598,15 @@
 
     .tabela-atualizacao td,
     .tabela-atualizacao th {
-      font-size: 11.5px;
+      font-size: 12px;
+    }
+
+    .tabela-atualizacao td.percentual.percentual-texto {
+      text-align: center;
+    }
+
+    .tabela-atualizacao td.percentual.percentual-periodo {
+      text-align: left;
     }
 
     .campo-simulado-nao-editavel {
@@ -628,7 +636,14 @@
     }
 
     .painel-upload-atualizacao .btnbar {
-      grid-template-columns: 1fr;
+      grid-template-columns: max-content minmax(150px, 1fr) minmax(150px, 1fr);
+      align-items: stretch;
+      width: 100%;
+    }
+
+    .painel-upload-atualizacao .btn,
+    .painel-upload-atualizacao .upload-status {
+      min-height: 34px;
     }
 
     .modal-modo-atualizacao {
@@ -665,6 +680,71 @@
     }
 
     .acoes-modo-atualizacao {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .modal-data-atualizacao {
+      position: fixed;
+      inset: 0;
+      z-index: 99997;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.38);
+      padding: 24px;
+    }
+
+    .modal-data-atualizacao.ativo {
+      display: flex;
+    }
+
+    .caixa-data-atualizacao {
+      width: min(420px, 92vw);
+      background: #ffffff;
+      border: 1px solid #c9d2d0;
+      border-radius: 8px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+      padding: 20px 22px 18px;
+      color: #1f2933;
+      text-align: center;
+    }
+
+    .titulo-data-atualizacao {
+      font-size: 15px;
+      font-weight: bold;
+      color: #1f4e79;
+      margin-bottom: 14px;
+    }
+
+    .rotulo-data-atualizacao {
+      display: block;
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #1f2933;
+    }
+
+    .campo-data-atualizacao-modal {
+      width: 150px;
+      max-width: 100%;
+      border: 1px solid #b8c3bd;
+      border-radius: 4px;
+      padding: 7px 9px;
+      text-align: center;
+      font-size: 14px;
+      margin-bottom: 14px;
+    }
+
+    .campo-data-atualizacao-modal:focus {
+      outline: 2px solid #4CAF50;
+      outline-offset: 0;
+      background: #ffffff;
+    }
+
+    .acoes-data-atualizacao {
       display: flex;
       gap: 10px;
       justify-content: center;
@@ -1082,6 +1162,17 @@
           </div>
         </div>
       </div>
+      <div id="modalDataAtualizacao" class="modal-data-atualizacao" aria-hidden="true">
+        <div class="caixa-data-atualizacao" role="dialog" aria-modal="true" aria-labelledby="tituloDataAtualizacao">
+          <div id="tituloDataAtualizacao" class="titulo-data-atualizacao">Data da atualização</div>
+          <label for="campoDataAtualizacaoModal" class="rotulo-data-atualizacao">Informe a data da nova consolidação (dd/mm/aaaa).</label>
+          <input id="campoDataAtualizacaoModal" class="campo-data-atualizacao-modal" type="text" inputmode="numeric" maxlength="10" autocomplete="off" />
+          <div class="acoes-data-atualizacao">
+            <button type="button" class="btn btn-primary" id="btnConfirmarDataAtualizacao">OK</button>
+            <button type="button" class="btn" id="btnCancelarDataAtualizacao">Cancelar</button>
+          </div>
+        </div>
+      </div>
       <div id="toastContainer"></div>
       <div class="conteudo-ferramenta" id="areaTabelaSimples" style="display:none;">
         <table class="tabela-consolidacao" aria-label="Tabela de consolidação do débito">
@@ -1343,6 +1434,7 @@
     let uploadAtualizacaoPendente = false;
     let indiceAtualizacaoUploadPendente = null;
     let resolverModalModoAtualizacao = null;
+    let resolverModalDataAtualizacao = null;
     const MENSAGEM_DATA_ATUALIZACAO_INVALIDA = 'A data de consolidação da atualização deve ser igual ou mais recente que a data de consolidação anterior';
 
     function carregarImagemComoJPEGParaPDF(url) {
@@ -3000,14 +3092,16 @@
       });
     }
 
+    function mascaraDataTexto(valor) {
+      const digits = String(valor || '').replace(/[^\d/]/g, '').replace(/\//g, '').slice(0, 8);
+      if (digits.length <= 2) return digits;
+      if (digits.length <= 4) return digits.slice(0, 2) + '/' + digits.slice(2);
+      return digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4);
+    }
+
     function maskDateDdMmYyyyRealtime(input) {
       if (!input) return;
-      let digits = String(input.value || '').replace(/[^\d/]/g, '').replace(/\//g, '').slice(0, 8);
-      let out = '';
-      if (digits.length <= 2) out = digits;
-      else if (digits.length <= 4) out = digits.slice(0, 2) + '/' + digits.slice(2);
-      else out = digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4);
-      input.value = out;
+      input.value = mascaraDataTexto(input.value);
       try {
         const len = input.value.length;
         input.setSelectionRange(len, len);
@@ -3265,6 +3359,10 @@
         resolverModalModoAtualizacao = resolve;
         modal.classList.add('ativo');
         modal.setAttribute('aria-hidden', 'false');
+        setTimeout(() => {
+          const btn = document.getElementById('btnModoAtualizacaoAutomatica');
+          if (btn) btn.focus();
+        }, 0);
       });
     }
 
@@ -3277,6 +3375,38 @@
       if (resolverModalModoAtualizacao) {
         const resolver = resolverModalModoAtualizacao;
         resolverModalModoAtualizacao = null;
+        resolver(resultado);
+      }
+    }
+
+    function abrirModalDataAtualizacao(valorPadrao = '') {
+      return new Promise(resolve => {
+        const modal = document.getElementById('modalDataAtualizacao');
+        const campo = document.getElementById('campoDataAtualizacaoModal');
+        if (!modal || !campo) {
+          resolve(null);
+          return;
+        }
+        resolverModalDataAtualizacao = resolve;
+        campo.value = valorPadrao || '';
+        modal.classList.add('ativo');
+        modal.setAttribute('aria-hidden', 'false');
+        setTimeout(() => {
+          campo.focus();
+          campo.select();
+        }, 0);
+      });
+    }
+
+    function fecharModalDataAtualizacao(resultado = null) {
+      const modal = document.getElementById('modalDataAtualizacao');
+      if (modal) {
+        modal.classList.remove('ativo');
+        modal.setAttribute('aria-hidden', 'true');
+      }
+      if (resolverModalDataAtualizacao) {
+        const resolver = resolverModalDataAtualizacao;
+        resolverModalDataAtualizacao = null;
         resolver(resultado);
       }
     }
@@ -3484,11 +3614,14 @@
       };
     }
 
-    async function criarAtualizacaoAutomatica(dataNova) {
+    async function criarAtualizacaoAutomatica(dataNova, indiceDestino = null) {
       const tipo = getTipoDebitoSelecionado();
-      const anterior = simulacoesAdicionais.length ? simulacoesAdicionais[simulacoesAdicionais.length - 1] : coletarDadosPdf();
+      const anterior = Number.isInteger(indiceDestino)
+        ? (indiceDestino > 0 ? simulacoesAdicionais[indiceDestino - 1] : coletarDadosPdf())
+        : (simulacoesAdicionais.length ? simulacoesAdicionais[simulacoesAdicionais.length - 1] : coletarDadosPdf());
+      const anteriorEhAtualizacao = Number.isInteger(indiceDestino) ? indiceDestino > 0 : simulacoesAdicionais.length > 0;
       if (tipo === 'TCFA_ACUMULADO') {
-        const estadoBase = simulacoesAdicionais.length ? {
+        const estadoBase = anteriorEhAtualizacao ? {
           numeroDebito: anterior.numeroDebito,
           dataConsolidacao: anterior.dataConsolidacao,
           rows: clonarRowsComposicao(anterior.composicao || []),
@@ -3579,7 +3712,7 @@
       if (modo !== 'automatica') return;
 
       const limite = textoDataHojeLimiteMesVigente();
-      const dataNova = window.prompt(`Informe a data da nova consolidação (dd/mm/aaaa). Limite: ${limite}`, textoDataAtualPtBr());
+      const dataNova = await abrirModalDataAtualizacao(textoDataAtualPtBr());
       if (dataNova === null) return;
       const dataNormalizada = String(dataNova || '').trim();
       if (!validarDataAtualizacaoAutomatica(dataNormalizada)) {
@@ -3593,6 +3726,7 @@
       try {
         const dados = await criarAtualizacaoAutomatica(dataNormalizada);
         dados.tituloSecao = `Atualização ${String(simulacoesAdicionais.length + 2).padStart(2, '0')}`;
+        dados.statusMemoria = dados.statusMemoria || 'vazio';
         simulacoesAdicionais.push(dados);
         renderizarAtualizacoes();
         showToast('Atualização adicionada com sucesso.', 'success');
@@ -3636,6 +3770,7 @@
         if (!validarDataAtualizacaoContraAnterior(dados.dataConsolidacao, indiceDestino)) {
           throw new Error(MENSAGEM_DATA_ATUALIZACAO_INVALIDA);
         }
+        dados.statusMemoria = 'carregado';
         if (indiceDestino !== null && simulacoesAdicionais[indiceDestino]) {
           dados.tituloSecao = simulacoesAdicionais[indiceDestino].tituloSecao || `Atualização ${String(indiceDestino + 2).padStart(2, '0')}`;
           simulacoesAdicionais[indiceDestino] = dados;
@@ -3671,15 +3806,19 @@
         <table class="tabela-consolidacao tabela-atualizacao" aria-label="Consolidação do débito">
           <colgroup><col class="col-descricao" /><col class="col-percentual" /><col class="col-valores" /></colgroup>
           <tbody>
-            ${dados.numeroDebito ? `<tr class="linha-topo"><th>Nº do débito:</th><td class="valor" colspan="2"><input class="campo-simulado-nao-editavel" value="${escapeHtml(dados.numeroDebito)}" readonly></td></tr>` : ''}
-            <tr class="linha-topo"><th>Consolidação do débito em (data):</th><td class="valor" colspan="2"><input class="campo-simulado-nao-editavel" value="${escapeHtml(dados.dataConsolidacao || '')}" readonly></td></tr>
+            ${dados.numeroDebito ? `<tr class="linha-topo"><th>Nº do débito:</th><td class="valor" colspan="2"><input class="campo-simulado-nao-editavel campo-numero" value="${escapeHtml(dados.numeroDebito)}" readonly></td></tr>` : ''}
+            <tr class="linha-topo"><th>Consolidação do débito em (data):</th><td class="valor" colspan="2"><input class="campo-simulado-nao-editavel campo-data" value="${escapeHtml(dados.dataConsolidacao || '')}" readonly></td></tr>
             <tr><th class="rotulo">Descrição</th><th class="percentual">Percentual</th><th class="valor">Valores</th></tr>`;
-      const corpo = (dados.linhas || []).map(l => `
+      const corpo = (dados.linhas || []).map(l => {
+        const percentualPeriodo = /^De:/i.test(String(l.percentual || ''));
+        const classePercentual = l.percentual === '-' ? 'percentual-vazio' : (percentualPeriodo ? 'percentual-periodo' : 'percentual-texto');
+        return `
             <tr class="${l.destaque ? 'linha-destaque' : 'linha-comum'}">
               <td class="rotulo">${escapeHtml(l.descricao)}</td>
-              <td class="percentual ${l.percentual === '-' ? 'percentual-vazio' : ''}">${escapeHtml(l.percentual)}</td>
+              <td class="percentual ${classePercentual}">${escapeHtml(l.percentual)}</td>
               <td class="valor ${l.valorNegrito ? 'valor-nao-editavel' : ''}"><input class="campo-simulado-nao-editavel" value="${escapeHtml(l.valor)}" readonly></td>
-            </tr>`).join('');
+            </tr>`;
+      }).join('');
       return topo + corpo + '</tbody></table>';
     }
 
@@ -3707,6 +3846,50 @@
         </table></div>`;
     }
 
+    function classeStatusMemoriaAtualizacao(status) {
+      if (status === 'carregado') return 'ok';
+      if (status === 'alterado') return 'alterado';
+      if (status === 'corrigido') return 'corrigido';
+      return '';
+    }
+
+    function textoStatusMemoriaAtualizacao(status) {
+      if (status === 'carregado') return 'CARREGADO / ORIGINAL';
+      if (status === 'alterado') return 'CARREGADO / ALTERADO';
+      if (status === 'corrigido') return 'CARREGADO / CORRIGIDO';
+      return '';
+    }
+
+    function assinaturaAtualizacao(dados) {
+      if (!dados) return '';
+      const copia = JSON.parse(JSON.stringify(dados));
+      delete copia.statusMemoria;
+      delete copia.tituloSecao;
+      return JSON.stringify(copia);
+    }
+
+    async function reprocessarAtualizacao(indice) {
+      if (!Number.isInteger(indice) || !simulacoesAdicionais[indice]) return;
+      const dadosAtuais = simulacoesAdicionais[indice];
+      const dataAtualizacao = String(dadosAtuais.dataConsolidacao || '').trim();
+      if (!validarDataAtualizacaoContraAnterior(dataAtualizacao, indice)) {
+        showToast(MENSAGEM_DATA_ATUALIZACAO_INVALIDA, 'error');
+        return;
+      }
+      try {
+        const assinaturaAntes = assinaturaAtualizacao(dadosAtuais);
+        const dadosReprocessados = await criarAtualizacaoAutomatica(dataAtualizacao, indice);
+        dadosReprocessados.tituloSecao = dadosAtuais.tituloSecao || `Atualização ${String(indice + 2).padStart(2, '0')}`;
+        const assinaturaDepois = assinaturaAtualizacao(dadosReprocessados);
+        dadosReprocessados.statusMemoria = assinaturaAntes !== assinaturaDepois ? 'corrigido' : (dadosAtuais.statusMemoria || 'vazio');
+        simulacoesAdicionais[indice] = dadosReprocessados;
+        renderizarAtualizacoes();
+        showToast('Cálculos reprocessados com sucesso.', 'success');
+      } catch (erro) {
+        showToast(normalizarMensagemErro(erro, 'Não foi possível reprocessar os cálculos.'), 'error');
+      }
+    }
+
     function renderizarAtualizacoes() {
       const tipo = getTipoDebitoSelecionado();
       const containerSimples = document.getElementById('areaAtualizacoesSimples');
@@ -3721,6 +3904,8 @@
           <div class="painel-upload-memoria painel-upload-atualizacao no-print">
             <div class="btnbar">
               <button type="button" class="btn" data-carregar-atualizacao="${idx}">Carregar memória de cálculo para preenchimento automático (PDF)</button>
+              <div class="upload-status ${classeStatusMemoriaAtualizacao(dados.statusMemoria)}" aria-live="polite">${textoStatusMemoriaAtualizacao(dados.statusMemoria)}</div>
+              <button type="button" class="btn btn-reprocessar" data-reprocessar-atualizacao="${idx}">Reprocessar Cálculos 🔁</button>
             </div>
           </div>
           ${dados.tipoDebito === 'TCFA_ACUMULADO' ? htmlTabelaComposicaoDados(dados) : ''}
@@ -3731,6 +3916,9 @@
         </div>`).join('');
       container.querySelectorAll('[data-carregar-atualizacao]').forEach(btn => {
         btn.addEventListener('click', () => selecionarMemoriaAtualizacaoPDF(Number(btn.dataset.carregarAtualizacao)));
+      });
+      container.querySelectorAll('[data-reprocessar-atualizacao]').forEach(btn => {
+        btn.addEventListener('click', () => reprocessarAtualizacao(Number(btn.dataset.reprocessarAtualizacao)));
       });
       container.querySelectorAll('[data-pdf-atualizacao]').forEach(btn => {
         btn.addEventListener('click', () => gerarPdfAtualizacao(Number(btn.dataset.pdfAtualizacao)));
@@ -4399,6 +4587,38 @@
       if (modalModoAtualizacao) {
         modalModoAtualizacao.addEventListener('click', (event) => {
           if (event.target === modalModoAtualizacao) fecharModalModoAtualizacao(null);
+        });
+        modalModoAtualizacao.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape') fecharModalModoAtualizacao(null);
+        });
+      }
+
+      const btnConfirmarDataAtualizacao = document.getElementById('btnConfirmarDataAtualizacao');
+      if (btnConfirmarDataAtualizacao) btnConfirmarDataAtualizacao.addEventListener('click', () => {
+        fecharModalDataAtualizacao(document.getElementById('campoDataAtualizacaoModal')?.value || '');
+      });
+      const btnCancelarDataAtualizacao = document.getElementById('btnCancelarDataAtualizacao');
+      if (btnCancelarDataAtualizacao) btnCancelarDataAtualizacao.addEventListener('click', () => fecharModalDataAtualizacao(null));
+      const modalDataAtualizacao = document.getElementById('modalDataAtualizacao');
+      if (modalDataAtualizacao) {
+        modalDataAtualizacao.addEventListener('click', (event) => {
+          if (event.target === modalDataAtualizacao) fecharModalDataAtualizacao(null);
+        });
+      }
+      const campoDataAtualizacaoModal = document.getElementById('campoDataAtualizacaoModal');
+      if (campoDataAtualizacaoModal) {
+        campoDataAtualizacaoModal.addEventListener('input', () => {
+          campoDataAtualizacaoModal.value = mascaraDataTexto(campoDataAtualizacaoModal.value);
+        });
+        campoDataAtualizacaoModal.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            fecharModalDataAtualizacao(campoDataAtualizacaoModal.value || '');
+          }
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            fecharModalDataAtualizacao(null);
+          }
         });
       }
 
