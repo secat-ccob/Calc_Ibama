@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_47 -->
+  <!-- Versão: simulador_consolidacao_debito_v_48 -->
 
   <style>
     :root {
@@ -2310,7 +2310,7 @@
     function validarDatasAutomaticasAcumulado(tipo) {
       const fim = dataFinalConsolidacaoAcumuladoValida();
       if (!fim || !todasLinhasTemVencimentoValidoAcumulado()) {
-        showToast(tipo === 'multa' ? 'preencha as datas para cobrança da Multa' : 'preencha as datas para cobrança da Selic', 'error');
+        showToast(tipo === 'multa' ? 'Preencha as datas para cobrança da Multa.' : 'Preencha as datas para cobrança da Selic.', 'error');
         return '';
       }
       return fim;
@@ -2869,6 +2869,34 @@
       return ensureInputDate(el) ? el.value.trim() : '';
     }
 
+    function mensagemDatasEncargo(tipo) {
+      return tipo === 'multa' ? 'Preencha as datas para cobrança da Multa.' : 'Preencha as datas para cobrança da Selic.';
+    }
+
+    function focarPrimeiraDataFaltanteEncargo(tipo) {
+      const ids = tipo === 'multa'
+        ? ['dataInicioMulta', 'dataFimMulta']
+        : ['dataInicioSelic', 'dataFimSelic'];
+      const alvo = ids.map(id => document.getElementById(id)).find(el => el && !String(el.value || '').trim()) || document.getElementById(ids[0]);
+      if (!alvo) return;
+      setTimeout(() => {
+        alvo.focus();
+        if (typeof alvo.select === 'function') alvo.select();
+      }, 0);
+    }
+
+    function focarPrimeiraDataFaltanteEncargoAtualizacao(indice, tipo) {
+      const base = `[data-data-encargo-atualizacao][data-atualizacao="${indice}"][data-tipo="${tipo}"]`;
+      const inicio = document.querySelector(`${base}[data-campo="inicio"]`);
+      const fim = document.querySelector(`${base}[data-campo="fim"]`);
+      const alvo = (!String(inicio?.value || '').trim() ? inicio : null) || (!String(fim?.value || '').trim() ? fim : null) || inicio;
+      if (!alvo) return;
+      setTimeout(() => {
+        alvo.focus();
+        if (typeof alvo.select === 'function') alvo.select();
+      }, 0);
+    }
+
     function parseDataPtBr(data) {
       const m = String(data || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
       if (!m) return null;
@@ -2970,10 +2998,10 @@
       const inicio = dataInputValidaOuVazia('dataInicioMulta');
       const fim = dataInputValidaOuVazia('dataFimMulta');
       if (!inicio || !fim) {
-        selecionarModoEncargo('multa', 'sicafi');
-        restaurarPercentualSicafi('multa');
+        atualizarEstadoPercentuaisEncargos();
         atualizarCalculos();
-        showToast('preencha as datas para cobrança da Multa', 'error');
+        if (opcoes.focarCampoFaltante) focarPrimeiraDataFaltanteEncargo('multa');
+        if (opcoes.mostrarAvisoDatas !== false) showToast(mensagemDatasEncargo('multa'), 'error');
         return false;
       }
       setPercentual('percentualMulta', calcularPercentualMultaAutomatica(inicio, fim));
@@ -2990,10 +3018,10 @@
       const inicio = dataInputValidaOuVazia('dataInicioSelic');
       const fim = dataInputValidaOuVazia('dataFimSelic');
       if (!inicio || !fim) {
-        selecionarModoEncargo('selic', 'sicafi');
-        restaurarPercentualSicafi('selic');
+        atualizarEstadoPercentuaisEncargos();
         atualizarCalculos();
-        showToast('preencha as datas para cobrança da Selic', 'error');
+        if (opcoes.focarCampoFaltante) focarPrimeiraDataFaltanteEncargo('selic');
+        if (opcoes.mostrarAvisoDatas !== false) showToast(mensagemDatasEncargo('selic'), 'error');
         return false;
       }
       try {
@@ -3025,9 +3053,7 @@
           setPercentual('percentualMulta', calcularPercentualMultaAutomatica(inicio, fim));
         } else {
           ok = false;
-          selecionarModoEncargo('multa', 'sicafi');
-          restaurarPercentualSicafi('multa');
-          if (mostrarAviso) showToast('preencha as datas para cobrança da Multa', 'error');
+          if (mostrarAviso) showToast(mensagemDatasEncargo('multa'), 'error');
         }
       }
       if (modoEncargoSelecionado('selic') === 'sicalc') {
@@ -3044,9 +3070,7 @@
           }
         } else {
           ok = false;
-          selecionarModoEncargo('selic', 'sicafi');
-          restaurarPercentualSicafi('selic');
-          if (mostrarAviso) showToast('preencha as datas para cobrança da Selic', 'error');
+          if (mostrarAviso) showToast(mensagemDatasEncargo('selic'), 'error');
         }
       }
       atualizarEstadoPercentuaisEncargos();
@@ -3057,7 +3081,7 @@
     async function aoAlterarModoMulta(event) {
       if (event.target?.value === 'automatica') {
         armazenarPercentualSicafiAtual('multa');
-        await aplicarModoMultaAutomatica({ mostrarSucesso: true });
+        await aplicarModoMultaAutomatica({ mostrarSucesso: true, mostrarAvisoDatas: false, focarCampoFaltante: true });
       } else {
         if (deveSolicitarMemoriaParaModoManualSicafi() && event?.isTrusted) {
           selecionarMemoriaCalculoPDF();
@@ -3073,7 +3097,7 @@
     async function aoAlterarModoSelic(event) {
       if (event.target?.value === 'sicalc') {
         armazenarPercentualSicafiAtual('selic');
-        await aplicarModoSelicSicalc({ mostrarSucesso: true });
+        await aplicarModoSelicSicalc({ mostrarSucesso: true, mostrarAvisoDatas: false, focarCampoFaltante: true });
       } else {
         if (deveSolicitarMemoriaParaModoManualSicafi() && event?.isTrusted) {
           selecionarMemoriaCalculoPDF();
@@ -3605,6 +3629,10 @@
       destino.dataFimMultaSicafi = origem.dataFimMultaSicafi || destino.dataFimMultaSicafi || '';
       destino.dataInicioSelicSicafi = origem.dataInicioSelicSicafi || destino.dataInicioSelicSicafi || '';
       destino.dataFimSelicSicafi = origem.dataFimSelicSicafi || destino.dataFimSelicSicafi || '';
+      destino.dataInicioMultaAuto = origem.dataInicioMultaAuto || destino.dataInicioMultaAuto || '';
+      destino.dataFimMultaAuto = origem.dataFimMultaAuto || destino.dataFimMultaAuto || '';
+      destino.dataInicioSelicAuto = origem.dataInicioSelicAuto || destino.dataInicioSelicAuto || '';
+      destino.dataFimSelicAuto = origem.dataFimSelicAuto || destino.dataFimSelicAuto || '';
       destino.modoMultaAcumulado = origem.modoMultaAcumulado || destino.modoMultaAcumulado;
       destino.modoSelicAcumulado = origem.modoSelicAcumulado || destino.modoSelicAcumulado;
       destino.modoSapiensAtualizacao = origem.modoSapiensAtualizacao || destino.modoSapiensAtualizacao;
@@ -3627,12 +3655,16 @@
       const name = `${ehMulta ? 'modoMulta' : 'modoSelic'}Atualizacao_${indice}`;
       const percentual = numeroParaPercentual(parseNumeroFlexivel(periodo.percentual || '0'));
       const datasReadOnly = modo === 'sicafi' ? 'readonly tabindex="-1"' : '';
+      const inicioAuto = ehMulta ? dados.dataInicioMultaAuto : dados.dataInicioSelicAuto;
+      const fimAuto = ehMulta ? dados.dataFimMultaAuto : dados.dataFimSelicAuto;
+      const valorInicio = modo === modoAuto ? (inicioAuto || periodo.inicio || '') : (periodo.inicio || '');
+      const valorFim = modo === modoAuto ? (fimAuto || periodo.fim || dados.dataConsolidacao || '') : (periodo.fim || dados.dataConsolidacao || '');
       return `
                 <div class="controle-encargo controle-encargo-atualizacao" data-encargo="${tipo}" data-atualizacao="${indice}">
                   <span class="texto-periodo">De:</span>
-                  <input class="campo-data-encargo" type="text" inputmode="numeric" placeholder="00/00/0000" maxlength="10" autocomplete="off" value="${escapeHtml(periodo.inicio || '')}" ${datasReadOnly} data-data-encargo-atualizacao="1" data-atualizacao="${indice}" data-tipo="${tipo}" data-campo="inicio" />
+                  <input class="campo-data-encargo" type="text" inputmode="numeric" placeholder="00/00/0000" maxlength="10" autocomplete="off" value="${escapeHtml(valorInicio)}" ${datasReadOnly} data-data-encargo-atualizacao="1" data-atualizacao="${indice}" data-tipo="${tipo}" data-campo="inicio" />
                   <span class="texto-periodo">até</span>
-                  <input class="campo-data-encargo" type="text" inputmode="numeric" placeholder="00/00/0000" maxlength="10" autocomplete="off" value="${escapeHtml(periodo.fim || dados.dataConsolidacao || '')}" ${datasReadOnly} data-data-encargo-atualizacao="1" data-atualizacao="${indice}" data-tipo="${tipo}" data-campo="fim" />
+                  <input class="campo-data-encargo" type="text" inputmode="numeric" placeholder="00/00/0000" maxlength="10" autocomplete="off" value="${escapeHtml(valorFim)}" ${datasReadOnly} data-data-encargo-atualizacao="1" data-atualizacao="${indice}" data-tipo="${tipo}" data-campo="fim" />
                   <label class="opcao-encargo"><input type="radio" name="${name}" value="${modoAuto}" autocomplete="off" ${modo === modoAuto ? 'checked' : ''} data-modo-encargo-atualizacao="1" data-atualizacao="${indice}" data-tipo="${tipo}" /> Automático</label>
                   <label class="opcao-encargo"><input type="radio" name="${name}" value="sicafi" autocomplete="off" ${modo === 'sicafi' ? 'checked' : ''} data-modo-encargo-atualizacao="1" data-atualizacao="${indice}" data-tipo="${tipo}" /> SICAFI</label>
                   <input class="campo-tabela campo-percentual campo-percentual-encargo" type="text" inputmode="decimal" value="${escapeHtml(percentual)}" autocomplete="off" readonly tabindex="-1" data-percentual-encargo-atualizacao="1" data-atualizacao="${indice}" data-tipo="${tipo}" />
@@ -3657,34 +3689,64 @@
       const fimEl = document.querySelector(`[data-data-encargo-atualizacao][data-atualizacao="${indice}"][data-tipo="${tipo}"][data-campo="fim"]`);
       const inicio = inicioEl && ensureInputDate(inicioEl) ? inicioEl.value.trim() : '';
       const fim = fimEl && ensureInputDate(fimEl) ? fimEl.value.trim() : '';
+      const campos = dadosSimplesParaCampos(dados);
+
+      if (tipo === 'multa') {
+        if (modoEncargoAtualizacao(dados, 'multa') !== 'automatica') {
+          dados.percentualMultaSicafi = campos.percentualMulta;
+          dados.dataInicioMultaSicafi = campos.dataInicioMulta || '';
+          dados.dataFimMultaSicafi = campos.dataFimMulta || '';
+        }
+        dados.modoMulta = 'automatica';
+        dados.dataInicioMultaAuto = inicio;
+        dados.dataFimMultaAuto = fim;
+        campos.dataInicioMulta = inicio;
+        campos.dataFimMulta = fim;
+      } else {
+        if (modoEncargoAtualizacao(dados, 'selic') !== 'sicalc') {
+          dados.percentualSelicSicafi = campos.percentualSelic;
+          dados.dataInicioSelicSicafi = campos.dataInicioSelic || '';
+          dados.dataFimSelicSicafi = campos.dataFimSelic || '';
+        }
+        dados.modoSelic = 'sicalc';
+        dados.dataInicioSelicAuto = inicio;
+        dados.dataFimSelicAuto = fim;
+        campos.dataInicioSelic = inicio;
+        campos.dataFimSelic = fim;
+      }
+
       if (!inicio || !fim) {
-        showToast(tipo === 'multa' ? 'preencha as datas para cobrança da Multa' : 'preencha as datas para cobrança da Selic', 'error');
+        substituirAtualizacaoSimplesRecalculada(indice, campos, tipo === 'multa'
+          ? { modoMulta: 'automatica', percentualMultaSicafi: dados.percentualMultaSicafi, dataInicioMultaSicafi: dados.dataInicioMultaSicafi || '', dataFimMultaSicafi: dados.dataFimMultaSicafi || '', dataInicioMultaAuto: inicio, dataFimMultaAuto: fim }
+          : { modoSelic: 'sicalc', percentualSelicSicafi: dados.percentualSelicSicafi, dataInicioSelicSicafi: dados.dataInicioSelicSicafi || '', dataFimSelicSicafi: dados.dataFimSelicSicafi || '', dataInicioSelicAuto: inicio, dataFimSelicAuto: fim });
         renderizarAtualizacoes();
+        if (opcoes.focarCampoFaltante) focarPrimeiraDataFaltanteEncargoAtualizacao(indice, tipo);
+        if (opcoes.mostrarAvisoDatas !== false) showToast(mensagemDatasEncargo(tipo), 'error');
         return false;
       }
+
       try {
-        const campos = dadosSimplesParaCampos(dados);
         if (tipo === 'multa') {
-          if (modoEncargoAtualizacao(dados, 'multa') !== 'automatica') {
-            dados.percentualMultaSicafi = campos.percentualMulta;
-            dados.dataInicioMultaSicafi = campos.dataInicioMulta || '';
-            dados.dataFimMultaSicafi = campos.dataFimMulta || '';
-          }
-          campos.dataInicioMulta = inicio;
-          campos.dataFimMulta = fim;
           campos.percentualMulta = calcularPercentualMultaAutomatica(inicio, fim);
-          substituirAtualizacaoSimplesRecalculada(indice, campos, { modoMulta: 'automatica', percentualMultaSicafi: dados.percentualMultaSicafi });
+          substituirAtualizacaoSimplesRecalculada(indice, campos, {
+            modoMulta: 'automatica',
+            percentualMultaSicafi: dados.percentualMultaSicafi,
+            dataInicioMultaSicafi: dados.dataInicioMultaSicafi || '',
+            dataFimMultaSicafi: dados.dataFimMultaSicafi || '',
+            dataInicioMultaAuto: inicio,
+            dataFimMultaAuto: fim
+          });
           if (opcoes.mostrarSucesso) showToast('Cálculo automático da multa ativado com sucesso.', 'success');
         } else {
-          if (modoEncargoAtualizacao(dados, 'selic') !== 'sicalc') {
-            dados.percentualSelicSicafi = campos.percentualSelic;
-            dados.dataInicioSelicSicafi = campos.dataInicioSelic || '';
-            dados.dataFimSelicSicafi = campos.dataFimSelic || '';
-          }
-          campos.dataInicioSelic = inicio;
-          campos.dataFimSelic = fim;
           campos.percentualSelic = await calcularPercentualSelicSicalc(inicio, fim);
-          substituirAtualizacaoSimplesRecalculada(indice, campos, { modoSelic: 'sicalc', percentualSelicSicafi: dados.percentualSelicSicafi });
+          substituirAtualizacaoSimplesRecalculada(indice, campos, {
+            modoSelic: 'sicalc',
+            percentualSelicSicafi: dados.percentualSelicSicafi,
+            dataInicioSelicSicafi: dados.dataInicioSelicSicafi || '',
+            dataFimSelicSicafi: dados.dataFimSelicSicafi || '',
+            dataInicioSelicAuto: inicio,
+            dataFimSelicAuto: fim
+          });
           if (opcoes.mostrarSucesso) showToast('Selic automática ativada com base no Sicalc/RFB. Pode haver divergência com o SICAFI, em razão de registros antigos equivocados no sistema do Ibama.', 'success');
         }
         marcarAtualizacoesPosterioresParaReprocessar(indice);
@@ -3736,7 +3798,7 @@
         renderizarAtualizacoes();
         return;
       }
-      await aplicarModoAutomaticoEncargoAtualizacao(indice, tipo, { mostrarSucesso: true });
+      await aplicarModoAutomaticoEncargoAtualizacao(indice, tipo, { mostrarSucesso: true, mostrarAvisoDatas: false, focarCampoFaltante: true });
     }
 
     async function aoAlterarDataEncargoAtualizacao(event) {
@@ -4350,6 +4412,10 @@
       delete copia.dataFimMultaSicafi;
       delete copia.dataInicioSelicSicafi;
       delete copia.dataFimSelicSicafi;
+      delete copia.dataInicioMultaAuto;
+      delete copia.dataFimMultaAuto;
+      delete copia.dataInicioSelicAuto;
+      delete copia.dataFimSelicAuto;
       delete copia.modoMultaAcumulado;
       delete copia.modoSelicAcumulado;
       delete copia.modoSapiensAtualizacao;
@@ -4489,7 +4555,7 @@
       if (!dados || dados.tipoDebito !== 'TCFA_ACUMULADO') return false;
       const dataFinal = String(dados.dataConsolidacao || '').trim();
       if (!parseDataPtBr(dataFinal) || !(dados.composicao || []).every(row => parseDataPtBr(row.vencimento))) {
-        showToast(tipo === 'multa' ? 'preencha as datas para cobrança da Multa' : 'preencha as datas para cobrança da Selic', 'error');
+        showToast(tipo === 'multa' ? 'Preencha as datas para cobrança da Multa.' : 'Preencha as datas para cobrança da Selic.', 'error');
         renderizarAtualizacoes();
         return false;
       }
