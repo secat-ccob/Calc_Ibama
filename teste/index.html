@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_39 -->
+  <!-- Versão: simulador_consolidacao_debito_v_40 -->
 
   <style>
     :root {
@@ -621,6 +621,56 @@
       clear: both;
     }
 
+    .painel-upload-atualizacao {
+      margin: 0 0 12px;
+      padding: 0;
+      border-bottom: none;
+    }
+
+    .painel-upload-atualizacao .btnbar {
+      grid-template-columns: 1fr;
+    }
+
+    .modal-modo-atualizacao {
+      position: fixed;
+      inset: 0;
+      z-index: 99997;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.38);
+      padding: 24px;
+    }
+
+    .modal-modo-atualizacao.ativo {
+      display: flex;
+    }
+
+    .caixa-modo-atualizacao {
+      width: min(460px, 92vw);
+      background: #ffffff;
+      border: 1px solid #c9d2d0;
+      border-radius: 8px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+      padding: 20px 22px 18px;
+      color: #1f2933;
+      text-align: center;
+    }
+
+    .titulo-modo-atualizacao {
+      font-size: 15px;
+      font-weight: bold;
+      color: #1f4e79;
+      margin-bottom: 14px;
+    }
+
+    .acoes-modo-atualizacao {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
 
 
     .modal-progresso-pdf {
@@ -1023,6 +1073,15 @@
           <div id="percentualProgressoPDF" class="percentual-progresso-pdf">0%</div>
         </div>
       </div>
+      <div id="modalModoAtualizacao" class="modal-modo-atualizacao" aria-hidden="true">
+        <div class="caixa-modo-atualizacao" role="dialog" aria-modal="true" aria-labelledby="tituloModoAtualizacao">
+          <div id="tituloModoAtualizacao" class="titulo-modo-atualizacao">Modo de atualização</div>
+          <div class="acoes-modo-atualizacao">
+            <button type="button" class="btn btn-primary" id="btnModoAtualizacaoAutomatica">Atualização automática</button>
+            <button type="button" class="btn" id="btnModoAtualizacaoMemoria">Atualização a partir de nova memória de cálculo</button>
+          </div>
+        </div>
+      </div>
       <div id="toastContainer"></div>
       <div class="conteudo-ferramenta" id="areaTabelaSimples" style="display:none;">
         <table class="tabela-consolidacao" aria-label="Tabela de consolidação do débito">
@@ -1282,6 +1341,9 @@
     let verificacaoStatusMemoriaPendente = false;
     let simulacoesAdicionais = [];
     let uploadAtualizacaoPendente = false;
+    let indiceAtualizacaoUploadPendente = null;
+    let resolverModalModoAtualizacao = null;
+    const MENSAGEM_DATA_ATUALIZACAO_INVALIDA = 'A data de consolidação da atualização deve ser igual ou mais recente que a data de consolidação anterior';
 
     function carregarImagemComoJPEGParaPDF(url) {
       return new Promise(resolve => {
@@ -1622,6 +1684,8 @@
       }
       const input = document.getElementById('inputMemoriaCalculoPDF');
       if (!input) return;
+      uploadAtualizacaoPendente = false;
+      indiceAtualizacaoUploadPendente = null;
       input.value = '';
       input.click();
     }
@@ -2774,6 +2838,10 @@
         armazenarPercentualSicafiAtual('multa');
         await aplicarModoMultaAutomatica({ mostrarSucesso: true });
       } else {
+        if (deveSolicitarMemoriaParaModoManualSicafi() && event?.isTrusted) {
+          selecionarMemoriaCalculoPDF();
+          return;
+        }
         restaurarPercentualSicafi('multa');
         atualizarEstadoPercentuaisEncargos();
         atualizarCalculos();
@@ -2786,6 +2854,10 @@
         armazenarPercentualSicafiAtual('selic');
         await aplicarModoSelicSicalc({ mostrarSucesso: true });
       } else {
+        if (deveSolicitarMemoriaParaModoManualSicafi() && event?.isTrusted) {
+          selecionarMemoriaCalculoPDF();
+          return;
+        }
         restaurarPercentualSicafi('selic');
         atualizarEstadoPercentuaisEncargos();
         atualizarCalculos();
@@ -3142,6 +3214,77 @@
       return dt.getTime() <= limite.getTime();
     }
 
+    function textoDataAtualPtBr() {
+      const hoje = new Date();
+      return `${String(hoje.getDate()).padStart(2, '0')}/${String(hoje.getMonth() + 1).padStart(2, '0')}/${hoje.getFullYear()}`;
+    }
+
+    function compararDatasPtBr(dataA, dataB) {
+      const a = parseDataPtBr(dataA);
+      const b = parseDataPtBr(dataB);
+      if (!a || !b) return null;
+      const ta = a.getTime();
+      const tb = b.getTime();
+      if (ta === tb) return 0;
+      return ta < tb ? -1 : 1;
+    }
+
+    function obterDataConsolidacaoAtualTela() {
+      const tipo = getTipoDebitoSelecionado();
+      if (tipo === 'TCFA_ACUMULADO') {
+        return String(document.getElementById('dataConsolidacaoAcumulado')?.value || dadosTcfaAcumulado?.dataConsolidacao || '').trim();
+      }
+      return String(document.getElementById('dataConsolidacao')?.value || '').trim();
+    }
+
+    function obterDataConsolidacaoAnteriorParaAtualizacao(indiceDestino = null) {
+      if (Number.isInteger(indiceDestino)) {
+        if (indiceDestino > 0) return String(simulacoesAdicionais[indiceDestino - 1]?.dataConsolidacao || '').trim();
+        return obterDataConsolidacaoAtualTela();
+      }
+      if (simulacoesAdicionais.length) {
+        return String(simulacoesAdicionais[simulacoesAdicionais.length - 1]?.dataConsolidacao || '').trim();
+      }
+      return obterDataConsolidacaoAtualTela();
+    }
+
+    function validarDataAtualizacaoContraAnterior(dataNova, indiceDestino = null) {
+      const dataAnterior = obterDataConsolidacaoAnteriorParaAtualizacao(indiceDestino);
+      if (!dataAnterior || !parseDataPtBr(dataAnterior)) return true;
+      const comparacao = compararDatasPtBr(dataNova, dataAnterior);
+      return comparacao !== null && comparacao >= 0;
+    }
+
+    function abrirModalModoAtualizacao() {
+      return new Promise(resolve => {
+        const modal = document.getElementById('modalModoAtualizacao');
+        if (!modal) {
+          resolve(null);
+          return;
+        }
+        resolverModalModoAtualizacao = resolve;
+        modal.classList.add('ativo');
+        modal.setAttribute('aria-hidden', 'false');
+      });
+    }
+
+    function fecharModalModoAtualizacao(resultado = null) {
+      const modal = document.getElementById('modalModoAtualizacao');
+      if (modal) {
+        modal.classList.remove('ativo');
+        modal.setAttribute('aria-hidden', 'true');
+      }
+      if (resolverModalModoAtualizacao) {
+        const resolver = resolverModalModoAtualizacao;
+        resolverModalModoAtualizacao = null;
+        resolver(resultado);
+      }
+    }
+
+    function deveSolicitarMemoriaParaModoManualSicafi() {
+      return statusMemoriaPDF === 'vazio' && !assinaturaMemoriaCarregada;
+    }
+
     function parsePeriodoPercentualPdf(texto) {
       const s = String(texto || '');
       const m = s.match(/De:\s*(\d{2}\/\d{2}\/\d{4})\s+até\s+(\d{2}\/\d{2}\/\d{4}):?\s*([\d.,]+%?)/i);
@@ -3424,23 +3567,27 @@
         showToast('Carregue a memória de cálculo para o preenchimento automático.', 'error');
         return;
       }
-      const escolha = window.prompt('Digite 1 para atualização automática ou 2 para atualização a partir de nova memória de cálculo.', '1');
-      if (escolha === null) return;
-      const opcao = String(escolha).trim();
-      if (opcao === '2') {
-        selecionarMemoriaAtualizacaoPDF();
+
+      const modo = await abrirModalModoAtualizacao();
+      if (!modo) return;
+
+      if (modo === 'memoria') {
+        selecionarMemoriaAtualizacaoPDF(null);
         return;
       }
-      if (opcao !== '1') {
-        showToast('Opção inválida.', 'error');
-        return;
-      }
+
+      if (modo !== 'automatica') return;
+
       const limite = textoDataHojeLimiteMesVigente();
-      const dataNova = window.prompt(`Informe a data da nova consolidação (dd/mm/aaaa). Limite: ${limite}`, limite);
+      const dataNova = window.prompt(`Informe a data da nova consolidação (dd/mm/aaaa). Limite: ${limite}`, textoDataAtualPtBr());
       if (dataNova === null) return;
       const dataNormalizada = String(dataNova || '').trim();
       if (!validarDataAtualizacaoAutomatica(dataNormalizada)) {
         showToast(`Data inválida. A data deve estar no formato dd/mm/aaaa e ser limitada ao último dia do mês vigente (${limite}).`, 'error');
+        return;
+      }
+      if (!validarDataAtualizacaoContraAnterior(dataNormalizada, null)) {
+        showToast(MENSAGEM_DATA_ATUALIZACAO_INVALIDA, 'error');
         return;
       }
       try {
@@ -3454,7 +3601,7 @@
       }
     }
 
-    function selecionarMemoriaAtualizacaoPDF() {
+    function selecionarMemoriaAtualizacaoPDF(indiceDestino = null) {
       const tipo = getTipoDebitoSelecionado();
       if (!tipo) {
         showToast('Selecione o tipo do débito.', 'error');
@@ -3463,13 +3610,16 @@
       const input = document.getElementById('inputMemoriaCalculoPDF');
       if (!input) return;
       uploadAtualizacaoPendente = true;
+      indiceAtualizacaoUploadPendente = Number.isInteger(indiceDestino) ? indiceDestino : null;
       input.value = '';
       input.click();
     }
 
     async function arquivoMemoriaAtualizacaoSelecionado(input) {
       const file = input?.files?.[0];
+      const indiceDestino = Number.isInteger(indiceAtualizacaoUploadPendente) ? indiceAtualizacaoUploadPendente : null;
       uploadAtualizacaoPendente = false;
+      indiceAtualizacaoUploadPendente = null;
       if (!file) return;
       const tipo = getTipoDebitoSelecionado();
       abrirProgressoPDF('Preparando leitura do PDF...');
@@ -3483,8 +3633,16 @@
         } else {
           dados = dadosPdfDeMemoriaSimples(parseMemoriaSimples(modelo, tipo), tipo);
         }
-        dados.tituloSecao = `Atualização ${String(simulacoesAdicionais.length + 2).padStart(2, '0')}`;
-        simulacoesAdicionais.push(dados);
+        if (!validarDataAtualizacaoContraAnterior(dados.dataConsolidacao, indiceDestino)) {
+          throw new Error(MENSAGEM_DATA_ATUALIZACAO_INVALIDA);
+        }
+        if (indiceDestino !== null && simulacoesAdicionais[indiceDestino]) {
+          dados.tituloSecao = simulacoesAdicionais[indiceDestino].tituloSecao || `Atualização ${String(indiceDestino + 2).padStart(2, '0')}`;
+          simulacoesAdicionais[indiceDestino] = dados;
+        } else {
+          dados.tituloSecao = `Atualização ${String(simulacoesAdicionais.length + 2).padStart(2, '0')}`;
+          simulacoesAdicionais.push(dados);
+        }
         renderizarAtualizacoes();
         atualizarProgressoPDF(100, 'Memória de cálculo carregada com sucesso.');
         setTimeout(fecharProgressoPDF, 350);
@@ -3560,12 +3718,20 @@
       container.innerHTML = simulacoesAdicionais.map((dados, idx) => `
         <div class="bloco-atualizacao" data-atualizacao="${idx}">
           <div class="subtitulo-atualizacao">${escapeHtml(dados.tituloSecao || `Atualização ${String(idx + 2).padStart(2, '0')}`)}</div>
+          <div class="painel-upload-memoria painel-upload-atualizacao no-print">
+            <div class="btnbar">
+              <button type="button" class="btn" data-carregar-atualizacao="${idx}">Carregar memória de cálculo para preenchimento automático (PDF)</button>
+            </div>
+          </div>
           ${dados.tipoDebito === 'TCFA_ACUMULADO' ? htmlTabelaComposicaoDados(dados) : ''}
           ${dados.tipoDebito === 'TCFA_ACUMULADO' ? '<div class="subtitulo-tabela">Consolidação do débito</div>' : ''}
           ${htmlTabelaConsolidacaoDados(dados)}
           <button type="button" class="btn btn-primary btn-pdf-atualizacao" data-pdf-atualizacao="${idx}">Gerar PDF</button>
           <div class="limpar-flutuacao"></div>
         </div>`).join('');
+      container.querySelectorAll('[data-carregar-atualizacao]').forEach(btn => {
+        btn.addEventListener('click', () => selecionarMemoriaAtualizacaoPDF(Number(btn.dataset.carregarAtualizacao)));
+      });
       container.querySelectorAll('[data-pdf-atualizacao]').forEach(btn => {
         btn.addEventListener('click', () => gerarPdfAtualizacao(Number(btn.dataset.pdfAtualizacao)));
       });
@@ -4224,6 +4390,17 @@
         const btn = document.getElementById(id);
         if (btn) btn.addEventListener('click', gerarPdfConsolidadoTodasSimulacoes);
       });
+
+      const btnModoAtualizacaoAutomatica = document.getElementById('btnModoAtualizacaoAutomatica');
+      if (btnModoAtualizacaoAutomatica) btnModoAtualizacaoAutomatica.addEventListener('click', () => fecharModalModoAtualizacao('automatica'));
+      const btnModoAtualizacaoMemoria = document.getElementById('btnModoAtualizacaoMemoria');
+      if (btnModoAtualizacaoMemoria) btnModoAtualizacaoMemoria.addEventListener('click', () => fecharModalModoAtualizacao('memoria'));
+      const modalModoAtualizacao = document.getElementById('modalModoAtualizacao');
+      if (modalModoAtualizacao) {
+        modalModoAtualizacao.addEventListener('click', (event) => {
+          if (event.target === modalModoAtualizacao) fecharModalModoAtualizacao(null);
+        });
+      }
 
       const inputMemoriaPDF = document.getElementById('inputMemoriaCalculoPDF');
       if (inputMemoriaPDF) {
