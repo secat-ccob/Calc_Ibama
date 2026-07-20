@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_46 -->
+  <!-- Versão: simulador_consolidacao_debito_v_47 -->
 
   <style>
     :root {
@@ -387,6 +387,16 @@
       outline: 2px solid #4CAF50;
       outline-offset: 0;
       background: #ffffff;
+    }
+
+    .controle-encargo .campo-data-encargo[readonly] {
+      background: #eeeeee;
+      cursor: default;
+    }
+
+    .controle-encargo .campo-data-encargo[readonly]:focus {
+      outline: none;
+      background: #eeeeee;
     }
 
     .controle-encargo .opcao-encargo {
