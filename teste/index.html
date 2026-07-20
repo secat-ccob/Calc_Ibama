@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_38 -->
+  <!-- Versão: simulador_consolidacao_debito_v_39 -->
 
   <style>
     :root {
@@ -554,6 +554,74 @@
     }
 
 
+    .acoes-pdf-individual {
+      justify-content: flex-end;
+      border-top: 1px solid #e2e8e5;
+      padding-top: 12px;
+    }
+
+    .acoes-atualizacao {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+      padding: 12px;
+      background: #ffffff;
+      border-top: 1px solid #e2e8e5;
+    }
+
+    .area-atualizacoes {
+      background: #ffffff;
+      border-top: 1px solid #d9e2dd;
+    }
+
+    .bloco-atualizacao {
+      padding: 14px 12px 12px;
+      border-top: 1px solid #d9e2dd;
+      background: #ffffff;
+    }
+
+    .bloco-atualizacao:first-child {
+      border-top: none;
+    }
+
+    .subtitulo-atualizacao {
+      margin: 0 0 10px;
+      padding: 8px 10px;
+      background: #1f4e79;
+      color: #ffffff;
+      font-weight: bold;
+      text-align: center;
+      font-size: 13px;
+    }
+
+    .tabela-atualizacao td,
+    .tabela-atualizacao th {
+      font-size: 11.5px;
+    }
+
+    .campo-simulado-nao-editavel {
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: #000000;
+      font: inherit;
+      padding: 2px 3px;
+      text-align: right;
+      font-weight: inherit;
+    }
+
+    .btn-pdf-atualizacao {
+      margin-top: 10px;
+      float: right;
+    }
+
+    .limpar-flutuacao {
+      clear: both;
+    }
+
+
 
     .modal-progresso-pdf {
       position: fixed;
@@ -1074,8 +1142,16 @@
           </tbody>
         </table>
 
-        <div class="acoes-pdf no-print">
+        <div class="acoes-pdf no-print acoes-pdf-individual">
           <button type="button" class="btn btn-primary" id="btnGerarPdf">Gerar PDF</button>
+        </div>
+
+        <div id="areaAtualizacoesSimples" class="area-atualizacoes"></div>
+
+        <div class="acoes-atualizacao no-print" id="acoesAtualizacaoSimples">
+          <button type="button" class="btn" id="btnAdicionarAtualizacaoSimples">Adicionar atualização</button>
+          <button type="button" class="btn" id="btnRemoverAtualizacaoSimples">Remover atualização</button>
+          <button type="button" class="btn btn-primary" id="btnGerarPdfConsolidadoSimples">Gerar PDF consolidado (todas as simulações)</button>
         </div>
 
 
@@ -1164,8 +1240,16 @@
             <tbody id="tbodyConsolidacaoAcumulado"></tbody>
           </table>
 
-          <div class="acoes-pdf no-print">
+          <div class="acoes-pdf no-print acoes-pdf-individual">
             <button type="button" class="btn btn-primary" id="btnGerarPdfTcfaAcumulado">Gerar PDF</button>
+          </div>
+
+          <div id="areaAtualizacoesAcumulado" class="area-atualizacoes"></div>
+
+          <div class="acoes-atualizacao no-print" id="acoesAtualizacaoAcumulado">
+            <button type="button" class="btn" id="btnAdicionarAtualizacaoAcumulado">Adicionar atualização</button>
+            <button type="button" class="btn" id="btnRemoverAtualizacaoAcumulado">Remover atualização</button>
+            <button type="button" class="btn btn-primary" id="btnGerarPdfConsolidadoAcumulado">Gerar PDF consolidado (todas as simulações)</button>
           </div>
         </div>
       </div>
@@ -1196,6 +1280,8 @@
     let assinaturaMemoriaCarregada = '';
     let assinaturaMemoriaCorrigida = '';
     let verificacaoStatusMemoriaPendente = false;
+    let simulacoesAdicionais = [];
+    let uploadAtualizacaoPendente = false;
 
     function carregarImagemComoJPEGParaPDF(url) {
       return new Promise(resolve => {
@@ -1465,6 +1551,9 @@
     function limparDadosExibidos() {
       limparTabelaSimples();
       limparTcfaAcumulado();
+      simulacoesAdicionais = [];
+      renderizarAtualizacoes();
+      uploadAtualizacaoPendente = false;
       setUploadMemoriaOk(false);
     }
 
@@ -3033,6 +3122,495 @@
       };
     }
 
+
+    function escapeHtml(texto) {
+      return String(texto ?? '').replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+    }
+
+    function textoDataHojeLimiteMesVigente() {
+      const hoje = new Date();
+      const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+      return `${String(fimMes.getDate()).padStart(2, '0')}/${String(fimMes.getMonth() + 1).padStart(2, '0')}/${fimMes.getFullYear()}`;
+    }
+
+    function validarDataAtualizacaoAutomatica(data) {
+      const dt = parseDataPtBr(data);
+      if (!dt) return false;
+      const hoje = new Date();
+      const limite = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+      limite.setHours(0, 0, 0, 0);
+      return dt.getTime() <= limite.getTime();
+    }
+
+    function parsePeriodoPercentualPdf(texto) {
+      const s = String(texto || '');
+      const m = s.match(/De:\s*(\d{2}\/\d{2}\/\d{4})\s+até\s+(\d{2}\/\d{2}\/\d{4}):?\s*([\d.,]+%?)/i);
+      return m ? { inicio: m[1], fim: m[2], percentual: m[3] } : { inicio: '', fim: '', percentual: s };
+    }
+
+    function obterLinhaPorDescricao(dados, trecho) {
+      const norm = normalizarTextoBusca(trecho);
+      return (dados?.linhas || []).find(l => normalizarTextoBusca(l.descricao).includes(norm)) || null;
+    }
+
+    function valorNumeroLinha(dados, trecho) {
+      return moedaParaNumero(obterLinhaPorDescricao(dados, trecho)?.valor || '0,00');
+    }
+
+    function percentualNumeroLinha(dados, trecho) {
+      const pct = obterLinhaPorDescricao(dados, trecho)?.percentual || '0,00%';
+      return parseNumeroFlexivel(parsePeriodoPercentualPdf(pct).percentual);
+    }
+
+    function dadosSimplesParaCampos(dados) {
+      const pMulta = parsePeriodoPercentualPdf(obterLinhaPorDescricao(dados, '(+)Multa')?.percentual || '');
+      const pSelic = parsePeriodoPercentualPdf(obterLinhaPorDescricao(dados, '(+)SELIC')?.percentual || '');
+      return {
+        tipoDebito: dados.tipoDebito || getTipoDebitoSelecionado() || 'AI',
+        numeroDebito: dados.numeroDebito || '',
+        dataConsolidacao: dados.dataConsolidacao || '',
+        valorPrincipal: valorNumeroLinha(dados, 'Valor Principal'),
+        somatorioAmortizacao: valorNumeroLinha(dados, 'Somatório da amortização'),
+        percentualDesconto: percentualNumeroLinha(dados, 'Desconto'),
+        compensacaoEstadual: valorNumeroLinha(dados, 'Compensação Estadual'),
+        percentualSapiens: percentualNumeroLinha(dados, 'Sapiens Dívida'),
+        somatorioSapiens: valorNumeroLinha(dados, 'Sapiens Dívida'),
+        correcaoMonetaria: valorNumeroLinha(dados, 'Correção Monetária'),
+        dataInicioMulta: pMulta.inicio,
+        dataFimMulta: pMulta.fim || dados.dataConsolidacao || '',
+        percentualMulta: parseNumeroFlexivel(pMulta.percentual),
+        percentualJuros: percentualNumeroLinha(dados, '(+)Juros'),
+        dataInicioSelic: pSelic.inicio,
+        dataFimSelic: pSelic.fim || dados.dataConsolidacao || '',
+        percentualSelic: parseNumeroFlexivel(pSelic.percentual),
+        percentualEncargos: percentualNumeroLinha(dados, 'Encargos Legais')
+      };
+    }
+
+    function calcularCamposSimples(campos) {
+      const c = { ...campos };
+      c.valorDesconto = roundMoneyValue(c.valorPrincipal * (Number(c.percentualDesconto || 0) / 100));
+      c.saldoParcial = roundMoneyValue(c.valorPrincipal - c.somatorioAmortizacao - c.valorDesconto - c.compensacaoEstadual);
+      if (typeof c.somatorioSapiens !== 'number') c.somatorioSapiens = roundMoneyValue(c.saldoParcial * (Number(c.percentualSapiens || 0) / 100));
+      if (!Number.isFinite(c.percentualSapiens) || c.percentualSapiens === null) c.percentualSapiens = c.saldoParcial ? (c.somatorioSapiens / c.saldoParcial) * 100 : 0;
+      c.saldoAtualizado = roundMoneyValue(c.saldoParcial - c.somatorioSapiens + c.correcaoMonetaria);
+      c.valorMulta = roundMoneyValue(c.saldoAtualizado * (Number(c.percentualMulta || 0) / 100));
+      c.valorJuros = roundMoneyValue(c.saldoAtualizado * (Number(c.percentualJuros || 0) / 100));
+      c.valorSelic = roundMoneyValue(c.saldoAtualizado * (Number(c.percentualSelic || 0) / 100));
+      c.totalParcial = roundMoneyValue(c.saldoAtualizado + c.valorMulta + c.valorJuros + c.valorSelic);
+      c.valorEncargos = roundMoneyValue(c.totalParcial * (Number(c.percentualEncargos || 0) / 100));
+      c.valorConsolidado = roundMoneyValue(c.totalParcial + c.valorEncargos);
+      return c;
+    }
+
+    function dadosPdfDeCamposSimples(campos) {
+      const c = calcularCamposSimples(campos);
+      return {
+        tipoDebito: c.tipoDebito || getTipoDebitoSelecionado() || 'AI',
+        numeroDebito: c.numeroDebito || '',
+        dataConsolidacao: c.dataConsolidacao || '',
+        linhas: [
+          { descricao: 'Valor Principal', percentual: '-', valor: numeroParaMoeda(c.valorPrincipal), destaque: true, valorNegrito: false },
+          { descricao: '(-)Somatório da amortização', percentual: '-', valor: numeroParaMoeda(c.somatorioAmortizacao), destaque: false, valorNegrito: false },
+          { descricao: '(-)Desconto', percentual: numeroParaPercentual(c.percentualDesconto), valor: numeroParaMoeda(c.valorDesconto), destaque: false, valorNegrito: true },
+          { descricao: '(-)Compensação Estadual', percentual: '-', valor: numeroParaMoeda(c.compensacaoEstadual), destaque: false, valorNegrito: false },
+          { descricao: '(=)Saldo Parcial', percentual: '-', valor: numeroParaMoeda(c.saldoParcial), destaque: true, valorNegrito: false },
+          { descricao: '(-)Somatório da amortização Sapiens Dívida', percentual: numeroParaPercentual(c.percentualSapiens), valor: numeroParaMoeda(c.somatorioSapiens), destaque: false, valorNegrito: false },
+          { descricao: '(+)Correção Monetária', percentual: '-', valor: numeroParaMoeda(c.correcaoMonetaria), destaque: false, valorNegrito: false },
+          { descricao: '(=)Saldo Atualizado', percentual: '-', valor: numeroParaMoeda(c.saldoAtualizado), destaque: true, valorNegrito: false },
+          { descricao: '(+)Multa', percentual: c.dataInicioMulta && c.dataFimMulta ? `De: ${c.dataInicioMulta} até ${c.dataFimMulta}: ${numeroParaPercentual(c.percentualMulta)}` : numeroParaPercentual(c.percentualMulta), valor: numeroParaMoeda(c.valorMulta), destaque: false, valorNegrito: true },
+          { descricao: '(+)Juros', percentual: numeroParaPercentual(c.percentualJuros), valor: numeroParaMoeda(c.valorJuros), destaque: false, valorNegrito: true },
+          { descricao: '(+)SELIC', percentual: c.dataInicioSelic && c.dataFimSelic ? `De: ${c.dataInicioSelic} até ${c.dataFimSelic}: ${numeroParaPercentual(c.percentualSelic)}` : numeroParaPercentual(c.percentualSelic), valor: numeroParaMoeda(c.valorSelic), destaque: false, valorNegrito: true },
+          { descricao: '(=)Total Parcial', percentual: '-', valor: numeroParaMoeda(c.totalParcial), destaque: true, valorNegrito: true },
+          { descricao: '(+)Encargos Legais', percentual: numeroParaPercentual(c.percentualEncargos), valor: numeroParaMoeda(c.valorEncargos), destaque: false, valorNegrito: true },
+          { descricao: '(=)Valor Consolidado', percentual: '-', valor: numeroParaMoeda(c.valorConsolidado), destaque: true, valorNegrito: true }
+        ]
+      };
+    }
+
+    function dadosPdfDeMemoriaSimples(dados, tipo) {
+      return {
+        tipoDebito: tipo || getTipoDebitoSelecionado() || 'AI',
+        numeroDebito: onlyDigits(dados.numeroDebito || ''),
+        dataConsolidacao: dados.dataConsolidacao || '',
+        linhas: [
+          { descricao: 'Valor Principal', percentual: '-', valor: numeroParaMoeda(dados.valorPrincipal || 0), destaque: true, valorNegrito: false },
+          { descricao: '(-)Somatório da amortização', percentual: '-', valor: numeroParaMoeda(dados.somatorioAmortizacao || 0), destaque: false, valorNegrito: false },
+          { descricao: '(-)Desconto', percentual: numeroParaPercentual(dados.percentualDesconto || 0), valor: numeroParaMoeda(dados.valorDesconto || 0), destaque: false, valorNegrito: true },
+          { descricao: '(-)Compensação Estadual', percentual: '-', valor: numeroParaMoeda(dados.compensacaoEstadual || 0), destaque: false, valorNegrito: false },
+          { descricao: '(=)Saldo Parcial', percentual: '-', valor: numeroParaMoeda(dados.saldoParcial || 0), destaque: true, valorNegrito: false },
+          { descricao: '(-)Somatório da amortização Sapiens Dívida', percentual: numeroParaPercentual(dados.percentualSapiens || 0), valor: numeroParaMoeda(dados.somatorioSapiens || 0), destaque: false, valorNegrito: false },
+          { descricao: '(+)Correção Monetária', percentual: '-', valor: numeroParaMoeda(dados.correcaoMonetaria || 0), destaque: false, valorNegrito: false },
+          { descricao: '(=)Saldo Atualizado', percentual: '-', valor: numeroParaMoeda(dados.saldoAtualizado || 0), destaque: true, valorNegrito: false },
+          { descricao: '(+)Multa', percentual: dados.dataInicioMulta && dados.dataFimMulta ? `De: ${dados.dataInicioMulta} até ${dados.dataFimMulta}: ${numeroParaPercentual(dados.percentualMulta || 0)}` : numeroParaPercentual(dados.percentualMulta || 0), valor: numeroParaMoeda(dados.valorMulta || 0), destaque: false, valorNegrito: true },
+          { descricao: '(+)Juros', percentual: numeroParaPercentual(dados.percentualJuros || 0), valor: numeroParaMoeda(dados.valorJuros || 0), destaque: false, valorNegrito: true },
+          { descricao: '(+)SELIC', percentual: dados.dataInicioSelic && dados.dataFimSelic ? `De: ${dados.dataInicioSelic} até ${dados.dataFimSelic}: ${numeroParaPercentual(dados.percentualSelic || 0)}` : numeroParaPercentual(dados.percentualSelic || 0), valor: numeroParaMoeda(dados.valorSelic || 0), destaque: false, valorNegrito: true },
+          { descricao: '(=)Total Parcial', percentual: '-', valor: numeroParaMoeda(dados.totalParcial || 0), destaque: true, valorNegrito: true },
+          { descricao: '(+)Encargos Legais', percentual: numeroParaPercentual(dados.percentualEncargos || 0), valor: numeroParaMoeda(dados.valorEncargos || 0), destaque: false, valorNegrito: true },
+          { descricao: '(=)Valor Consolidado', percentual: '-', valor: numeroParaMoeda(dados.valorConsolidado || 0), destaque: true, valorNegrito: true }
+        ]
+      };
+    }
+
+    function clonarRowsComposicao(rows) {
+      return (rows || []).map(r => ({ ...r }));
+    }
+
+    function somarRowsComposicao(rows, recalcular = false) {
+      const total = {
+        valorOriginal: 0, saldo: 0, compensacaoRegular: 0, compensacaoManual: 0,
+        correcaoValor: 0, saldoAtualizado: 0, multaValor: 0, jurosValor: 0,
+        selicValor: 0, encargosValor: 0, valorConsolidado: 0
+      };
+      (rows || []).forEach(row => {
+        if (recalcular) recalcularLinhaComposicao(row);
+        Object.keys(total).forEach(k => { total[k] = roundMoneyValue(total[k] + Number(row[k] || 0)); });
+      });
+      return total;
+    }
+
+    function dadosPdfAcumuladoDeEstado(estado) {
+      const rows = clonarRowsComposicao(estado.rows || []);
+      const total = estado.totalComposicao || somarRowsComposicao(rows, false);
+      const valorPrincipal = Number(estado.valorPrincipal ?? total.valorOriginal ?? 0);
+      const somatorio = Number(estado.somatorioAmortizacao ?? 0);
+      const pctDesconto = Number(estado.percentualDesconto ?? 0);
+      const valorDesconto = Number(estado.valorDesconto ?? roundMoneyValue(valorPrincipal * pctDesconto / 100));
+      const compensacao = Number(estado.compensacaoEstadual ?? roundMoneyValue((total.compensacaoRegular || 0) + (total.compensacaoManual || 0)));
+      const saldoParcial = Number(estado.saldoParcial ?? roundMoneyValue(valorPrincipal - somatorio - valorDesconto - compensacao));
+      const pctSapiens = Number(estado.percentualSapiens ?? 0);
+      const sapiens = Number(estado.somatorioSapiens ?? 0);
+      const correcao = Number(estado.correcaoMonetaria ?? total.correcaoValor ?? 0);
+      const saldoAtualizado = Number(estado.saldoAtualizado ?? roundMoneyValue(saldoParcial - sapiens + correcao));
+      const multa = Number(estado.valorMulta ?? total.multaValor ?? 0);
+      const juros = Number(estado.valorJuros ?? total.jurosValor ?? 0);
+      const selic = Number(estado.valorSelic ?? total.selicValor ?? 0);
+      const totalParcial = Number(estado.totalParcial ?? roundMoneyValue(saldoAtualizado + multa + juros + selic));
+      const pctEncargos = Number(estado.percentualEncargos ?? 20);
+      const encargos = Number(estado.valorEncargos ?? roundMoneyValue(totalParcial * pctEncargos / 100));
+      const consolidado = Number(estado.valorConsolidado ?? roundMoneyValue(totalParcial + encargos));
+      return {
+        tipoDebito: 'TCFA_ACUMULADO',
+        numeroDebito: onlyDigits(estado.numeroDebito || ''),
+        dataConsolidacao: estado.dataConsolidacao || '',
+        composicao: rows,
+        totalComposicao: total,
+        linhas: [
+          { descricao: 'Valor Principal', percentual: '-', valor: numeroParaMoeda(valorPrincipal), destaque: true, valorNegrito: true },
+          { descricao: '(-)Somatório da amortização', percentual: '-', valor: numeroParaMoeda(somatorio), destaque: false, valorNegrito: false },
+          { descricao: '(-)Desconto', percentual: numeroParaPercentual(pctDesconto), valor: numeroParaMoeda(valorDesconto), destaque: false, valorNegrito: true },
+          { descricao: '(-)Compensação Estadual', percentual: '-', valor: numeroParaMoeda(compensacao), destaque: false, valorNegrito: true },
+          { descricao: '(=)Saldo Parcial', percentual: '-', valor: numeroParaMoeda(saldoParcial), destaque: true, valorNegrito: true },
+          { descricao: '(-)Somatório da amortização Sapiens Dívida', percentual: numeroParaPercentual(pctSapiens), valor: numeroParaMoeda(sapiens), destaque: false, valorNegrito: false },
+          { descricao: '(+)Correção Monetária', percentual: '-', valor: numeroParaMoeda(correcao), destaque: false, valorNegrito: true },
+          { descricao: '(=)Saldo Atualizado', percentual: '-', valor: numeroParaMoeda(saldoAtualizado), destaque: true, valorNegrito: true },
+          { descricao: '(+)Multa', percentual: '-', valor: numeroParaMoeda(multa), destaque: false, valorNegrito: true },
+          { descricao: '(+)Juros', percentual: '-', valor: numeroParaMoeda(juros), destaque: false, valorNegrito: true },
+          { descricao: '(+)SELIC', percentual: '-', valor: numeroParaMoeda(selic), destaque: false, valorNegrito: true },
+          { descricao: '(=)Total Parcial', percentual: '-', valor: numeroParaMoeda(totalParcial), destaque: true, valorNegrito: true },
+          { descricao: '(+)Encargos Legais', percentual: numeroParaPercentual(pctEncargos), valor: numeroParaMoeda(encargos), destaque: false, valorNegrito: true },
+          { descricao: '(=)Valor Consolidado', percentual: '-', valor: numeroParaMoeda(consolidado), destaque: true, valorNegrito: true }
+        ]
+      };
+    }
+
+    function estadoAcumuladoDaTela() {
+      if (!dadosTcfaAcumulado) return null;
+      return {
+        numeroDebito: valorCampo('numeroDebitoAcumulado'),
+        dataConsolidacao: valorCampo('dataConsolidacaoAcumulado'),
+        rows: clonarRowsComposicao(dadosTcfaAcumulado.rows || []),
+        totalComposicao: obterTotalComposicaoAtual(),
+        valorPrincipal: moedaParaNumero(valorCampo('acumValorPrincipal')),
+        somatorioAmortizacao: moedaParaNumero(valorCampo('acumSomatorioAmortizacao')),
+        percentualDesconto: parseNumeroFlexivel(valorCampo('acumPercentualDesconto')),
+        valorDesconto: moedaParaNumero(valorCampo('acumValorDesconto')),
+        compensacaoEstadual: moedaParaNumero(valorCampo('acumCompensacaoEstadual')),
+        saldoParcial: moedaParaNumero(valorCampo('acumSaldoParcial')),
+        percentualSapiens: parseNumeroFlexivel(valorCampo('acumPercentualSapiens')),
+        somatorioSapiens: moedaParaNumero(valorCampo('acumSomatorioSapiens')),
+        correcaoMonetaria: moedaParaNumero(valorCampo('acumCorrecaoMonetaria')),
+        saldoAtualizado: moedaParaNumero(valorCampo('acumSaldoAtualizado')),
+        valorMulta: moedaParaNumero(valorCampo('acumValorMulta')),
+        valorJuros: moedaParaNumero(valorCampo('acumValorJuros')),
+        valorSelic: moedaParaNumero(valorCampo('acumValorSelic')),
+        totalParcial: moedaParaNumero(valorCampo('acumTotalParcial')),
+        percentualEncargos: parseNumeroFlexivel(valorCampo('acumPercentualEncargos')),
+        valorEncargos: moedaParaNumero(valorCampo('acumValorEncargos')),
+        valorConsolidado: moedaParaNumero(valorCampo('acumValorConsolidado'))
+      };
+    }
+
+    async function criarAtualizacaoAutomatica(dataNova) {
+      const tipo = getTipoDebitoSelecionado();
+      const anterior = simulacoesAdicionais.length ? simulacoesAdicionais[simulacoesAdicionais.length - 1] : coletarDadosPdf();
+      if (tipo === 'TCFA_ACUMULADO') {
+        const estadoBase = simulacoesAdicionais.length ? {
+          numeroDebito: anterior.numeroDebito,
+          dataConsolidacao: anterior.dataConsolidacao,
+          rows: clonarRowsComposicao(anterior.composicao || []),
+          valorPrincipal: valorNumeroLinha(anterior, 'Valor Principal'),
+          somatorioAmortizacao: valorNumeroLinha(anterior, 'Somatório da amortização'),
+          percentualDesconto: percentualNumeroLinha(anterior, 'Desconto'),
+          percentualSapiens: percentualNumeroLinha(anterior, 'Sapiens Dívida'),
+          somatorioSapiens: valorNumeroLinha(anterior, 'Sapiens Dívida'),
+          percentualEncargos: percentualNumeroLinha(anterior, 'Encargos Legais')
+        } : estadoAcumuladoDaTela();
+        if (!estadoBase || !(estadoBase.rows || []).length) throw new Error('Carregue a memória de cálculo para o preenchimento automático.');
+        const rows = clonarRowsComposicao(estadoBase.rows);
+        await carregarBaseSelicRfb();
+        rows.forEach(row => {
+          row.multaPct = calcularPercentualMultaAutomatica(row.vencimento, dataNova);
+          row.selicPct = calcularTaxaSelicSicalcPorCompetencia(competenciaMesAnoDeData(row.vencimento), competenciaMesAnoDeData(dataNova));
+          recalcularLinhaComposicao(row);
+        });
+        const total = somarRowsComposicao(rows, false);
+        const valorPrincipal = total.valorOriginal;
+        const somatorio = Number(estadoBase.somatorioAmortizacao || 0);
+        const pctDesconto = Number(estadoBase.percentualDesconto || 0);
+        const valorDesconto = roundMoneyValue(valorPrincipal * pctDesconto / 100);
+        const compensacao = roundMoneyValue((total.compensacaoRegular || 0) + (total.compensacaoManual || 0));
+        const saldoParcial = roundMoneyValue(valorPrincipal - somatorio - valorDesconto - compensacao);
+        const pctSapiens = Number(estadoBase.percentualSapiens || 0);
+        const sapiens = roundMoneyValue(saldoParcial * pctSapiens / 100);
+        const correcao = total.correcaoValor;
+        const saldoAtualizado = roundMoneyValue(saldoParcial - sapiens + correcao);
+        const totalParcial = roundMoneyValue(saldoAtualizado + total.multaValor + total.jurosValor + total.selicValor);
+        const pctEncargos = Number(estadoBase.percentualEncargos || 20);
+        const encargos = roundMoneyValue(totalParcial * pctEncargos / 100);
+        return dadosPdfAcumuladoDeEstado({
+          numeroDebito: estadoBase.numeroDebito || anterior.numeroDebito || '',
+          dataConsolidacao: dataNova,
+          rows,
+          totalComposicao: total,
+          valorPrincipal,
+          somatorioAmortizacao: somatorio,
+          percentualDesconto: pctDesconto,
+          valorDesconto,
+          compensacaoEstadual: compensacao,
+          saldoParcial,
+          percentualSapiens: pctSapiens,
+          somatorioSapiens: sapiens,
+          correcaoMonetaria: correcao,
+          saldoAtualizado,
+          valorMulta: total.multaValor,
+          valorJuros: total.jurosValor,
+          valorSelic: total.selicValor,
+          totalParcial,
+          percentualEncargos: pctEncargos,
+          valorEncargos: encargos,
+          valorConsolidado: roundMoneyValue(totalParcial + encargos)
+        });
+      }
+
+      const campos = dadosSimplesParaCampos(anterior);
+      campos.dataConsolidacao = dataNova;
+      campos.dataFimMulta = dataNova;
+      campos.dataFimSelic = dataNova;
+      if (!campos.dataInicioMulta) campos.dataInicioMulta = dataNova;
+      if (!campos.dataInicioSelic) campos.dataInicioSelic = dataNova;
+      campos.percentualMulta = calcularPercentualMultaAutomatica(campos.dataInicioMulta, dataNova);
+      campos.percentualSelic = await calcularPercentualSelicSicalc(campos.dataInicioSelic, dataNova);
+      return dadosPdfDeCamposSimples(campos);
+    }
+
+    async function adicionarAtualizacao() {
+      const tipo = getTipoDebitoSelecionado();
+      if (!tipo) {
+        showToast('Selecione o tipo do débito.', 'error');
+        return;
+      }
+      if (tipo === 'TCFA_ACUMULADO' && !dadosTcfaAcumulado && !simulacoesAdicionais.length) {
+        showToast('Carregue a memória de cálculo para o preenchimento automático.', 'error');
+        return;
+      }
+      const escolha = window.prompt('Digite 1 para atualização automática ou 2 para atualização a partir de nova memória de cálculo.', '1');
+      if (escolha === null) return;
+      const opcao = String(escolha).trim();
+      if (opcao === '2') {
+        selecionarMemoriaAtualizacaoPDF();
+        return;
+      }
+      if (opcao !== '1') {
+        showToast('Opção inválida.', 'error');
+        return;
+      }
+      const limite = textoDataHojeLimiteMesVigente();
+      const dataNova = window.prompt(`Informe a data da nova consolidação (dd/mm/aaaa). Limite: ${limite}`, limite);
+      if (dataNova === null) return;
+      const dataNormalizada = String(dataNova || '').trim();
+      if (!validarDataAtualizacaoAutomatica(dataNormalizada)) {
+        showToast(`Data inválida. A data deve estar no formato dd/mm/aaaa e ser limitada ao último dia do mês vigente (${limite}).`, 'error');
+        return;
+      }
+      try {
+        const dados = await criarAtualizacaoAutomatica(dataNormalizada);
+        dados.tituloSecao = `Atualização ${String(simulacoesAdicionais.length + 2).padStart(2, '0')}`;
+        simulacoesAdicionais.push(dados);
+        renderizarAtualizacoes();
+        showToast('Atualização adicionada com sucesso.', 'success');
+      } catch (erro) {
+        showToast(normalizarMensagemErro(erro, 'Não foi possível adicionar a atualização.'), 'error');
+      }
+    }
+
+    function selecionarMemoriaAtualizacaoPDF() {
+      const tipo = getTipoDebitoSelecionado();
+      if (!tipo) {
+        showToast('Selecione o tipo do débito.', 'error');
+        return;
+      }
+      const input = document.getElementById('inputMemoriaCalculoPDF');
+      if (!input) return;
+      uploadAtualizacaoPendente = true;
+      input.value = '';
+      input.click();
+    }
+
+    async function arquivoMemoriaAtualizacaoSelecionado(input) {
+      const file = input?.files?.[0];
+      uploadAtualizacaoPendente = false;
+      if (!file) return;
+      const tipo = getTipoDebitoSelecionado();
+      abrirProgressoPDF('Preparando leitura do PDF...');
+      try {
+        const modelo = await extrairModeloPDF(file, atualizarProgressoPDF);
+        atualizarProgressoPDF(92, 'Aplicando dados extraídos...');
+        let dados;
+        if (tipo === 'TCFA_ACUMULADO') {
+          const estado = parseMemoriaTcfaAcumulado(modelo);
+          dados = dadosPdfAcumuladoDeEstado(estado);
+        } else {
+          dados = dadosPdfDeMemoriaSimples(parseMemoriaSimples(modelo, tipo), tipo);
+        }
+        dados.tituloSecao = `Atualização ${String(simulacoesAdicionais.length + 2).padStart(2, '0')}`;
+        simulacoesAdicionais.push(dados);
+        renderizarAtualizacoes();
+        atualizarProgressoPDF(100, 'Memória de cálculo carregada com sucesso.');
+        setTimeout(fecharProgressoPDF, 350);
+        showToast('Atualização adicionada com sucesso.', 'success');
+      } catch (erro) {
+        console.error(erro);
+        fecharProgressoPDF();
+        showToast(normalizarMensagemErro(erro, 'Não foi possível carregar a memória de cálculo.'), 'error');
+      } finally {
+        if (input) input.value = '';
+      }
+    }
+
+    function removerUltimaAtualizacao() {
+      if (!simulacoesAdicionais.length) {
+        showToast('Não há atualização para remover.', 'error');
+        return;
+      }
+      simulacoesAdicionais.pop();
+      renderizarAtualizacoes();
+      showToast('Última atualização removida.', 'success');
+    }
+
+    function htmlTabelaConsolidacaoDados(dados) {
+      const topo = `
+        <table class="tabela-consolidacao tabela-atualizacao" aria-label="Consolidação do débito">
+          <colgroup><col class="col-descricao" /><col class="col-percentual" /><col class="col-valores" /></colgroup>
+          <tbody>
+            ${dados.numeroDebito ? `<tr class="linha-topo"><th>Nº do débito:</th><td class="valor" colspan="2"><input class="campo-simulado-nao-editavel" value="${escapeHtml(dados.numeroDebito)}" readonly></td></tr>` : ''}
+            <tr class="linha-topo"><th>Consolidação do débito em (data):</th><td class="valor" colspan="2"><input class="campo-simulado-nao-editavel" value="${escapeHtml(dados.dataConsolidacao || '')}" readonly></td></tr>
+            <tr><th class="rotulo">Descrição</th><th class="percentual">Percentual</th><th class="valor">Valores</th></tr>`;
+      const corpo = (dados.linhas || []).map(l => `
+            <tr class="${l.destaque ? 'linha-destaque' : 'linha-comum'}">
+              <td class="rotulo">${escapeHtml(l.descricao)}</td>
+              <td class="percentual ${l.percentual === '-' ? 'percentual-vazio' : ''}">${escapeHtml(l.percentual)}</td>
+              <td class="valor ${l.valorNegrito ? 'valor-nao-editavel' : ''}"><input class="campo-simulado-nao-editavel" value="${escapeHtml(l.valor)}" readonly></td>
+            </tr>`).join('');
+      return topo + corpo + '</tbody></table>';
+    }
+
+    function htmlTabelaComposicaoDados(dados) {
+      if (!Array.isArray(dados.composicao) || !dados.composicao.length) return '';
+      const linhas = dados.composicao.map((row, idx) => `
+        <tr class="${idx % 2 === 0 ? 'linha-composicao-par' : 'linha-composicao-impar'}">
+          <td>${escapeHtml(row.debito)}</td><td>${escapeHtml(row.trimestreAno)}</td><td>${escapeHtml(row.vencimento)}</td>
+          <td>${numeroParaMoeda(row.valorOriginal)}</td><td>${numeroParaMoeda(row.saldo)}</td>
+          <td>${numeroParaMoeda(row.compensacaoRegular)}</td><td>${numeroParaMoeda(row.compensacaoManual)}</td>
+          <td>${numeroParaPercentual(row.correcaoPct)}</td><td>${numeroParaMoeda(row.correcaoValor)}</td><td>${numeroParaMoeda(row.saldoAtualizado)}</td>
+          <td>${numeroParaPercentual(row.multaPct)}</td><td>${numeroParaMoeda(row.multaValor)}</td>
+          <td>${numeroParaPercentual(row.jurosPct)}</td><td>${numeroParaMoeda(row.jurosValor)}</td>
+          <td>${numeroParaPercentual(row.selicPct)}</td><td>${numeroParaMoeda(row.selicValor)}</td>
+          <td>${numeroParaPercentual(row.encargosPct)}</td><td>${numeroParaMoeda(row.encargosValor)}</td><td>${numeroParaMoeda(row.valorConsolidado)}</td>
+        </tr>`).join('');
+      return `
+        <div class="subtitulo-tabela">Composição do débito</div>
+        <div class="tabela-wrapper"><table class="tabela-composicao-acumulado" aria-label="Composição do débito acumulado">
+          <thead>
+            <tr class="linha-grupo-composicao"><th rowspan="2">Débito</th><th rowspan="2">Trim.</th><th rowspan="2">Venc.</th><th rowspan="2">Valor<br>Original</th><th rowspan="2">Saldo</th><th colspan="2">Compensação</th><th colspan="3">Correção Monetária</th><th colspan="2">Multa</th><th colspan="2">Juros</th><th colspan="2">SELIC</th><th colspan="2">Encargo Legal</th><th rowspan="2">Valor<br>Consolidado</th></tr>
+            <tr class="linha-subgrupo-composicao"><th>Regular</th><th>Manual</th><th>%</th><th>Valor<br>IPCA</th><th>Saldo<br>Atualizado</th><th>%</th><th>Valor</th><th>%</th><th>Valor</th><th>%</th><th>Valor</th><th>%</th><th>Valor</th></tr>
+          </thead>
+          <tbody>${linhas}</tbody>
+        </table></div>`;
+    }
+
+    function renderizarAtualizacoes() {
+      const tipo = getTipoDebitoSelecionado();
+      const containerSimples = document.getElementById('areaAtualizacoesSimples');
+      const containerAcum = document.getElementById('areaAtualizacoesAcumulado');
+      if (containerSimples) containerSimples.innerHTML = '';
+      if (containerAcum) containerAcum.innerHTML = '';
+      const container = tipo === 'TCFA_ACUMULADO' ? containerAcum : containerSimples;
+      if (!container) return;
+      container.innerHTML = simulacoesAdicionais.map((dados, idx) => `
+        <div class="bloco-atualizacao" data-atualizacao="${idx}">
+          <div class="subtitulo-atualizacao">${escapeHtml(dados.tituloSecao || `Atualização ${String(idx + 2).padStart(2, '0')}`)}</div>
+          ${dados.tipoDebito === 'TCFA_ACUMULADO' ? htmlTabelaComposicaoDados(dados) : ''}
+          ${dados.tipoDebito === 'TCFA_ACUMULADO' ? '<div class="subtitulo-tabela">Consolidação do débito</div>' : ''}
+          ${htmlTabelaConsolidacaoDados(dados)}
+          <button type="button" class="btn btn-primary btn-pdf-atualizacao" data-pdf-atualizacao="${idx}">Gerar PDF</button>
+          <div class="limpar-flutuacao"></div>
+        </div>`).join('');
+      container.querySelectorAll('[data-pdf-atualizacao]').forEach(btn => {
+        btn.addEventListener('click', () => gerarPdfAtualizacao(Number(btn.dataset.pdfAtualizacao)));
+      });
+    }
+
+    async function gerarPdfDados(dados, nomeBase = 'consolidacao_debito') {
+      const imagensCabecalho = await carregarImagensCabecalhoPDF();
+      const pdf = construirPdfConsolidacao(dados, imagensCabecalho);
+      const blob = new Blob([pdf], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      const numero = onlyDigits(dados.numeroDebito || (dados.simulacoes?.[0]?.numeroDebito || ''));
+      link.href = url;
+      link.download = numero ? `${nomeBase}_${numero}.pdf` : `${nomeBase}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    async function gerarPdfAtualizacao(indice) {
+      const dados = simulacoesAdicionais[indice];
+      if (!dados) return;
+      await gerarPdfDados({ ...dados, _mostrarTituloSecao: true }, 'consolidacao_debito');
+    }
+
+    function obterTodasSimulacoesPdf() {
+      const atual = coletarDadosPdf();
+      atual.tituloSecao = 'Consolidação 01';
+      return [atual, ...simulacoesAdicionais.map((d, i) => ({ ...d, tituloSecao: d.tituloSecao || `Atualização ${String(i + 2).padStart(2, '0')}` }))];
+    }
+
+    async function gerarPdfConsolidadoTodasSimulacoes() {
+      const tipo = getTipoDebitoSelecionado();
+      if (!tipo) {
+        showToast('Selecione o tipo do débito.', 'error');
+        return;
+      }
+      if (tipo === 'TCFA_ACUMULADO' && !dadosTcfaAcumulado) {
+        showToast('Carregue a memória de cálculo para o preenchimento automático.', 'error');
+        return;
+      }
+      await gerarPdfDados({ simulacoes: obterTodasSimulacoesPdf() }, 'consolidacao_debito_consolidado');
+    }
+
     function criarAsciiBytes(texto) {
       const bytes = [];
       for (let i = 0; i < texto.length; i++) {
@@ -3285,144 +3863,162 @@
 
       novaPagina();
 
-      if (dados.tipoDebito === 'TCFA_ACUMULADO' && Array.isArray(dados.composicao) && dados.composicao.length) {
-        const colComp = [32, 30, 33, 34, 30, 28, 28, 28, 30, 33, 26, 30, 24, 30, 28, 32, 26, 32, 36];
-        const totalColComp = colComp.reduce((a, b) => a + b, 0);
-        const escalaComp = tabelaLargura / totalColComp;
-        const colsC = colComp.map(v => v * escalaComp);
-        const alturaGrupoCabC = 16;
-        const alturaSubCabC = 22;
-        const alturaCabC = alturaGrupoCabC + alturaSubCabC;
-        const alturaLinhaC = 13;
-
-        function xColunaComposicao(indice) {
-          return x0 + colsC.slice(0, indice).reduce((a, b) => a + b, 0);
+      function desenharConsolidacaoPdf(dadosItem, indiceSimulacao, mostrarTituloSecao) {
+        if (indiceSimulacao > 0) {
+          novaPagina();
         }
 
-        function larguraColunasComposicao(inicio, quantidade) {
-          return colsC.slice(inicio, inicio + quantidade).reduce((a, b) => a + b, 0);
+        if (mostrarTituloSecao || dadosItem._mostrarTituloSecao) {
+          const tituloSecao = dadosItem.tituloSecao || (indiceSimulacao === 0 ? 'Consolidação 01' : `Atualização ${String(indiceSimulacao + 1).padStart(2, '0')}`);
+          garantirEspaco(alturaLinha + 8);
+          celula(x0, y, tabelaLargura, alturaLinha, '0.85', tituloSecao, { negrito: true, alinhamento: 'center', tamanho: 9 });
+          y -= alturaLinha + 8;
         }
 
-        function desenharCabecalhoComposicao() {
-          garantirEspaco(alturaCabC + 18);
-          celula(x0, y, tabelaLargura, 18, '0.85', 'Composição do débito', { negrito: true, alinhamento: 'center', tamanho: 8 });
-          y -= 18;
+        if (dadosItem.tipoDebito === 'TCFA_ACUMULADO' && Array.isArray(dadosItem.composicao) && dadosItem.composicao.length) {
+          const colComp = [32, 30, 33, 34, 30, 28, 28, 28, 30, 33, 26, 30, 24, 30, 28, 32, 26, 32, 36];
+          const totalColComp = colComp.reduce((a, b) => a + b, 0);
+          const escalaComp = tabelaLargura / totalColComp;
+          const colsC = colComp.map(v => v * escalaComp);
+          const alturaGrupoCabC = 16;
+          const alturaSubCabC = 22;
+          const alturaCabC = alturaGrupoCabC + alturaSubCabC;
+          const alturaLinhaC = 13;
 
-          const yTopoCabecalho = y;
-          const ySubCabecalho = yTopoCabecalho - alturaGrupoCabC;
-          const opcoesRotuloFixo = { negrito: true, alinhamento: 'center', tamanho: 4.2, padding: 1 };
-          const opcoesGrupo = { negrito: true, alinhamento: 'center', tamanho: 4.8, padding: 1 };
-          const opcoesSubgrupo = { negrito: true, alinhamento: 'center', tamanho: 4.2, padding: 1 };
-
-          [
-            [0, 'Débito'],
-            [1, 'Trim.'],
-            [2, 'Venc.'],
-            [3, 'Valor\nOriginal'],
-            [4, 'Saldo'],
-            [18, 'Valor\nConsol.']
-          ].forEach(([indice, rotulo]) => {
-            celula(xColunaComposicao(indice), yTopoCabecalho, colsC[indice], alturaCabC, '0.88', rotulo, opcoesRotuloFixo);
-          });
-
-          [
-            [5, 2, 'Compensação'],
-            [7, 3, 'Correção\nMonetária'],
-            [10, 2, 'Multa'],
-            [12, 2, 'Juros'],
-            [14, 2, 'SELIC'],
-            [16, 2, 'Encargo\nLegal']
-          ].forEach(([inicio, quantidade, rotulo]) => {
-            celula(xColunaComposicao(inicio), yTopoCabecalho, larguraColunasComposicao(inicio, quantidade), alturaGrupoCabC, '0.88', rotulo, opcoesGrupo);
-          });
-
-          const subgrupos = [
-            [5, 'Regular'],
-            [6, 'Manual'],
-            [7, '%'],
-            [8, 'Valor\nIPCA'],
-            [9, 'Saldo\nAtual.'],
-            [10, '%'],
-            [11, 'Valor'],
-            [12, '%'],
-            [13, 'Valor'],
-            [14, '%'],
-            [15, 'Valor'],
-            [16, '%'],
-            [17, 'Valor']
-          ];
-
-          subgrupos.forEach(([indice, rotulo]) => {
-            celula(xColunaComposicao(indice), ySubCabecalho, colsC[indice], alturaSubCabC, '0.88', rotulo, opcoesSubgrupo);
-          });
-
-          y -= alturaCabC;
-        }
-
-        function desenharLinhaComposicao(row, total = false) {
-          garantirEspaco(alturaLinhaC);
-          let x = x0;
-          const cinzaLinha = total ? '0.88' : '0.97';
-          const valores = total ? [
-            'TOTAIS', '', '', numeroParaMoeda(row.valorOriginal), numeroParaMoeda(row.saldo), numeroParaMoeda(row.compensacaoRegular), numeroParaMoeda(row.compensacaoManual), '', numeroParaMoeda(row.correcaoValor), numeroParaMoeda(row.saldoAtualizado), '', numeroParaMoeda(row.multaValor), '', numeroParaMoeda(row.jurosValor), '', numeroParaMoeda(row.selicValor), '', numeroParaMoeda(row.encargosValor), numeroParaMoeda(row.valorConsolidado)
-          ] : [
-            row.debito, row.trimestreAno, row.vencimento, numeroParaMoeda(row.valorOriginal), numeroParaMoeda(row.saldo), numeroParaMoeda(row.compensacaoRegular), numeroParaMoeda(row.compensacaoManual), numeroParaPercentual(row.correcaoPct), numeroParaMoeda(row.correcaoValor), numeroParaMoeda(row.saldoAtualizado), numeroParaPercentual(row.multaPct), numeroParaMoeda(row.multaValor), numeroParaPercentual(row.jurosPct), numeroParaMoeda(row.jurosValor), numeroParaPercentual(row.selicPct), numeroParaMoeda(row.selicValor), numeroParaPercentual(row.encargosPct), numeroParaMoeda(row.encargosValor), numeroParaMoeda(row.valorConsolidado)
-          ];
-          valores.forEach((v, i) => {
-            celula(x, y, colsC[i], alturaLinhaC, cinzaLinha, v, { alinhamento: 'center', tamanho: 3.9, padding: 1, negrito: total });
-            x += colsC[i];
-          });
-          y -= alturaLinhaC;
-        }
-
-        desenharCabecalhoComposicao();
-        dados.composicao.forEach(row => {
-          if (y - alturaLinhaC < margemInferior) {
-            novaPagina();
-            desenharCabecalhoComposicao();
+          function xColunaComposicao(indice) {
+            return x0 + colsC.slice(0, indice).reduce((a, b) => a + b, 0);
           }
-          desenharLinhaComposicao(row, false);
-        });
-        if (dados.totalComposicao) desenharLinhaComposicao(dados.totalComposicao, true);
-        y -= 12;
-      }
 
-      if (dados.numeroDebito) {
-        garantirEspaco(alturaLinha);
-        celula(x0, y, colunas[0], alturaLinha, '0.85', 'Nº do débito:', { negrito: true });
-        celula(x0 + colunas[0], y, colunas[1] + colunas[2], alturaLinha, '1', dados.numeroDebito, { alinhamento: 'left' });
-        y -= alturaLinha;
-      }
+          function larguraColunasComposicao(inicio, quantidade) {
+            return colsC.slice(inicio, inicio + quantidade).reduce((a, b) => a + b, 0);
+          }
 
-      garantirEspaco(alturaLinha);
-      const rotuloData = dados.dataConsolidacao ? 'Consolidação do débito em:' : 'Consolidação do débito:';
-      celula(x0, y, colunas[0], alturaLinha, '0.85', rotuloData, { negrito: true });
-      celula(x0 + colunas[0], y, colunas[1] + colunas[2], alturaLinha, '1', dados.dataConsolidacao || '', { alinhamento: 'left' });
-      y -= alturaLinha;
+          function desenharCabecalhoComposicao() {
+            garantirEspaco(alturaCabC + 18);
+            celula(x0, y, tabelaLargura, 18, '0.85', 'Composição do débito', { negrito: true, alinhamento: 'center', tamanho: 8 });
+            y -= 18;
 
-      garantirEspaco(alturaLinha);
-      celula(x0, y, colunas[0], alturaLinha, '0.97', 'Descrição', { negrito: true });
-      celula(x0 + colunas[0], y, colunas[1], alturaLinha, '0.97', 'Percentual', { negrito: true, alinhamento: 'center' });
-      celula(x0 + colunas[0] + colunas[1], y, colunas[2], alturaLinha, '0.97', 'Valores', { negrito: true, alinhamento: 'right' });
-      y -= alturaLinha;
+            const yTopoCabecalho = y;
+            const ySubCabecalho = yTopoCabecalho - alturaGrupoCabC;
+            const opcoesRotuloFixo = { negrito: true, alinhamento: 'center', tamanho: 4.2, padding: 1 };
+            const opcoesGrupo = { negrito: true, alinhamento: 'center', tamanho: 4.8, padding: 1 };
+            const opcoesSubgrupo = { negrito: true, alinhamento: 'center', tamanho: 4.2, padding: 1 };
 
-      dados.linhas.forEach((linha) => {
-        garantirEspaco(alturaLinha);
-        const cinza = linha.destaque ? '0.88' : '0.97';
-        const percentualComDatas = /^De:\s*\d{2}\/\d{2}\/\d{4}\s+até\s+\d{2}\/\d{2}\/\d{4}:/.test(String(linha.percentual || ''));
-        celula(x0, y, colunas[0], alturaLinha, cinza, linha.descricao, { negrito: linha.destaque });
-        if (percentualComDatas) {
-          celulaPercentualEncargoPDF(x0 + colunas[0], y, colunas[1], alturaLinha, cinza, linha.percentual);
-        } else {
-          celula(x0 + colunas[0], y, colunas[1], alturaLinha, cinza, linha.percentual, {
-            alinhamento: 'center',
-            tamanho: 8,
-            padding: 5
-          });
+            [
+              [0, 'Débito'],
+              [1, 'Trim.'],
+              [2, 'Venc.'],
+              [3, 'Valor\nOriginal'],
+              [4, 'Saldo'],
+              [18, 'Valor\nConsol.']
+            ].forEach(([indice, rotulo]) => {
+              celula(xColunaComposicao(indice), yTopoCabecalho, colsC[indice], alturaCabC, '0.88', rotulo, opcoesRotuloFixo);
+            });
+
+            [
+              [5, 2, 'Compensação'],
+              [7, 3, 'Correção\nMonetária'],
+              [10, 2, 'Multa'],
+              [12, 2, 'Juros'],
+              [14, 2, 'SELIC'],
+              [16, 2, 'Encargo\nLegal']
+            ].forEach(([inicio, quantidade, rotulo]) => {
+              celula(xColunaComposicao(inicio), yTopoCabecalho, larguraColunasComposicao(inicio, quantidade), alturaGrupoCabC, '0.88', rotulo, opcoesGrupo);
+            });
+
+            const subgrupos = [
+              [5, 'Regular'],
+              [6, 'Manual'],
+              [7, '%'],
+              [8, 'Valor\nIPCA'],
+              [9, 'Saldo\nAtual.'],
+              [10, '%'],
+              [11, 'Valor'],
+              [12, '%'],
+              [13, 'Valor'],
+              [14, '%'],
+              [15, 'Valor'],
+              [16, '%'],
+              [17, 'Valor']
+            ];
+
+            subgrupos.forEach(([indice, rotulo]) => {
+              celula(xColunaComposicao(indice), ySubCabecalho, colsC[indice], alturaSubCabC, '0.88', rotulo, opcoesSubgrupo);
+            });
+
+            y -= alturaCabC;
+          }
+
+          function desenharLinhaComposicao(row, total = false) {
+            garantirEspaco(alturaLinhaC);
+            let x = x0;
+            const cinzaLinha = total ? '0.88' : '0.97';
+            const valores = total ? [
+              'TOTAIS', '', '', numeroParaMoeda(row.valorOriginal), numeroParaMoeda(row.saldo), numeroParaMoeda(row.compensacaoRegular),
+              numeroParaMoeda(row.compensacaoManual), '', numeroParaMoeda(row.correcaoValor), numeroParaMoeda(row.saldoAtualizado), '',
+              numeroParaMoeda(row.multaValor), '', numeroParaMoeda(row.jurosValor), '', numeroParaMoeda(row.selicValor), '',
+              numeroParaMoeda(row.encargosValor), numeroParaMoeda(row.valorConsolidado)
+            ] : [
+              row.debito, row.trimestreAno, row.vencimento, numeroParaMoeda(row.valorOriginal), numeroParaMoeda(row.saldo),
+              numeroParaMoeda(row.compensacaoRegular), numeroParaMoeda(row.compensacaoManual), numeroParaPercentual(row.correcaoPct),
+              numeroParaMoeda(row.correcaoValor), numeroParaMoeda(row.saldoAtualizado), numeroParaPercentual(row.multaPct),
+              numeroParaMoeda(row.multaValor), numeroParaPercentual(row.jurosPct), numeroParaMoeda(row.jurosValor), numeroParaPercentual(row.selicPct),
+              numeroParaMoeda(row.selicValor), numeroParaPercentual(row.encargosPct), numeroParaMoeda(row.encargosValor), numeroParaMoeda(row.valorConsolidado)
+            ];
+            valores.forEach((valor, i) => {
+              celula(x, y, colsC[i], alturaLinhaC, cinzaLinha, valor, { alinhamento: 'center', tamanho: total ? 4.2 : 4.0, padding: 1, negrito: total });
+              x += colsC[i];
+            });
+            y -= alturaLinhaC;
+          }
+
+          desenharCabecalhoComposicao();
+          dadosItem.composicao.forEach(row => desenharLinhaComposicao(row, false));
+          if (dadosItem.totalComposicao) desenharLinhaComposicao(dadosItem.totalComposicao, true);
+          y -= 14;
         }
-        celula(x0 + colunas[0] + colunas[1], y, colunas[2], alturaLinha, cinza, linha.valor, { alinhamento: 'right', negrito: linha.valorNegrito });
+
+        if (dadosItem.numeroDebito) {
+          garantirEspaco(alturaLinha);
+          celula(x0, y, colunas[0], alturaLinha, '0.88', 'Nº do débito:', { negrito: true });
+          celula(x0 + colunas[0], y, colunas[1] + colunas[2], alturaLinha, '0.97', dadosItem.numeroDebito, { alinhamento: 'left' });
+          y -= alturaLinha;
+        }
+
+        garantirEspaco(alturaLinha);
+        const labelData = dadosItem.dataConsolidacao ? 'Consolidação do débito em:' : 'Consolidação do débito:';
+        celula(x0, y, colunas[0], alturaLinha, '0.88', labelData, { negrito: true });
+        celula(x0 + colunas[0], y, colunas[1] + colunas[2], alturaLinha, '0.97', dadosItem.dataConsolidacao || '', { alinhamento: 'left' });
         y -= alturaLinha;
-      });
+
+        garantirEspaco(alturaLinha);
+        celula(x0, y, colunas[0], alturaLinha, '0.97', 'Descrição', { negrito: true });
+        celula(x0 + colunas[0], y, colunas[1], alturaLinha, '0.97', 'Percentual', { negrito: true, alinhamento: 'center' });
+        celula(x0 + colunas[0] + colunas[1], y, colunas[2], alturaLinha, '0.97', 'Valores', { negrito: true, alinhamento: 'right' });
+        y -= alturaLinha;
+
+        (dadosItem.linhas || []).forEach((linha) => {
+          garantirEspaco(alturaLinha);
+          const cinza = linha.destaque ? '0.88' : '0.97';
+          const percentualComDatas = /^De:\s*\d{2}\/\d{2}\/\d{4}\s+até\s+\d{2}\/\d{2}\/\d{4}:/.test(String(linha.percentual || ''));
+          celula(x0, y, colunas[0], alturaLinha, cinza, linha.descricao, { negrito: linha.destaque });
+          if (percentualComDatas) {
+            celulaPercentualEncargoPDF(x0 + colunas[0], y, colunas[1], alturaLinha, cinza, linha.percentual);
+          } else {
+            celula(x0 + colunas[0], y, colunas[1], alturaLinha, cinza, linha.percentual, {
+              alinhamento: 'center',
+              tamanho: 8,
+              padding: 5
+            });
+          }
+          celula(x0 + colunas[0] + colunas[1], y, colunas[2], alturaLinha, cinza, linha.valor, { alinhamento: 'right', negrito: linha.valorNegrito });
+          y -= alturaLinha;
+        });
+      }
+
+      const listaDadosPdf = Array.isArray(dados.simulacoes) && dados.simulacoes.length ? dados.simulacoes : [dados];
+      const mostrarTitulosSecao = Array.isArray(dados.simulacoes) && dados.simulacoes.length > 1;
+      listaDadosPdf.forEach((dadosItem, indiceSimulacao) => desenharConsolidacaoPdf(dadosItem, indiceSimulacao, mostrarTitulosSecao));
 
       const streamPaginas = paginas.map((pagina) => new Uint8Array(pagina));
       const partes = [];
@@ -3616,9 +4212,28 @@
         btnReprocessarCalculos.addEventListener('click', reprocessarCalculos);
       }
 
+      ['btnAdicionarAtualizacaoSimples', 'btnAdicionarAtualizacaoAcumulado'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.addEventListener('click', adicionarAtualizacao);
+      });
+      ['btnRemoverAtualizacaoSimples', 'btnRemoverAtualizacaoAcumulado'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.addEventListener('click', removerUltimaAtualizacao);
+      });
+      ['btnGerarPdfConsolidadoSimples', 'btnGerarPdfConsolidadoAcumulado'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.addEventListener('click', gerarPdfConsolidadoTodasSimulacoes);
+      });
+
       const inputMemoriaPDF = document.getElementById('inputMemoriaCalculoPDF');
       if (inputMemoriaPDF) {
-        inputMemoriaPDF.addEventListener('change', () => arquivoMemoriaCalculoSelecionado(inputMemoriaPDF));
+        inputMemoriaPDF.addEventListener('change', () => {
+          if (uploadAtualizacaoPendente) {
+            arquivoMemoriaAtualizacaoSelecionado(inputMemoriaPDF);
+          } else {
+            arquivoMemoriaCalculoSelecionado(inputMemoriaPDF);
+          }
+        });
       }
 
       document.querySelectorAll('input[name="tipoDebito"]').forEach(radio => {
