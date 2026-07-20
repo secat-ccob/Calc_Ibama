@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_41 -->
+  <!-- Versão: simulador_consolidacao_debito_v_42 -->
 
   <style>
     :root {
@@ -3435,6 +3435,183 @@
       return parseNumeroFlexivel(parsePeriodoPercentualPdf(pct).percentual);
     }
 
+    function inicializarMetadadosEncargoAtualizacaoSimples(dados, origem = 'manual') {
+      if (!dados || dados.tipoDebito === 'TCFA_ACUMULADO') return dados;
+      const pctMulta = percentualNumeroLinha(dados, '(+)Multa');
+      const pctSelic = percentualNumeroLinha(dados, '(+)SELIC');
+      if (typeof dados.percentualMultaSicafi !== 'number' || !Number.isFinite(dados.percentualMultaSicafi)) {
+        dados.percentualMultaSicafi = pctMulta;
+      }
+      if (typeof dados.percentualSelicSicafi !== 'number' || !Number.isFinite(dados.percentualSelicSicafi)) {
+        dados.percentualSelicSicafi = pctSelic;
+      }
+      if (!dados.modoMulta) dados.modoMulta = origem === 'automatica' ? 'automatica' : 'sicafi';
+      if (!dados.modoSelic) dados.modoSelic = origem === 'automatica' ? 'sicalc' : 'sicafi';
+      return dados;
+    }
+
+    function copiarMetadadosAtualizacao(origem, destino) {
+      if (!origem || !destino) return destino;
+      destino.tituloSecao = origem.tituloSecao || destino.tituloSecao;
+      destino.statusMemoria = origem.statusMemoria || destino.statusMemoria;
+      destino.modoMulta = origem.modoMulta || destino.modoMulta;
+      destino.modoSelic = origem.modoSelic || destino.modoSelic;
+      destino.percentualMultaSicafi = origem.percentualMultaSicafi;
+      destino.percentualSelicSicafi = origem.percentualSelicSicafi;
+      return destino;
+    }
+
+    function modoEncargoAtualizacao(dados, tipo) {
+      if (!dados || dados.tipoDebito === 'TCFA_ACUMULADO') return '';
+      if (tipo === 'multa') return dados.modoMulta || (dados.statusMemoria === 'vazio' ? 'automatica' : 'sicafi');
+      if (tipo === 'selic') return dados.modoSelic || (dados.statusMemoria === 'vazio' ? 'sicalc' : 'sicafi');
+      return '';
+    }
+
+    function gerarControleEncargoAtualizacao(dados, indice, tipo) {
+      const ehMulta = tipo === 'multa';
+      const linha = obterLinhaPorDescricao(dados, ehMulta ? '(+)Multa' : '(+)SELIC') || {};
+      const periodo = parsePeriodoPercentualPdf(linha.percentual || '');
+      const modo = modoEncargoAtualizacao(dados, tipo);
+      const modoAuto = ehMulta ? 'automatica' : 'sicalc';
+      const name = `${ehMulta ? 'modoMulta' : 'modoSelic'}Atualizacao_${indice}`;
+      const percentual = numeroParaPercentual(parseNumeroFlexivel(periodo.percentual || '0'));
+      return `
+                <div class="controle-encargo controle-encargo-atualizacao" data-encargo="${tipo}" data-atualizacao="${indice}">
+                  <span class="texto-periodo">De:</span>
+                  <input class="campo-data-encargo" type="text" inputmode="numeric" placeholder="00/00/0000" maxlength="10" autocomplete="off" value="${escapeHtml(periodo.inicio || '')}" data-data-encargo-atualizacao="1" data-atualizacao="${indice}" data-tipo="${tipo}" data-campo="inicio" />
+                  <span class="texto-periodo">até</span>
+                  <input class="campo-data-encargo" type="text" inputmode="numeric" placeholder="00/00/0000" maxlength="10" autocomplete="off" value="${escapeHtml(periodo.fim || dados.dataConsolidacao || '')}" data-data-encargo-atualizacao="1" data-atualizacao="${indice}" data-tipo="${tipo}" data-campo="fim" />
+                  <label class="opcao-encargo"><input type="radio" name="${name}" value="${modoAuto}" autocomplete="off" ${modo === modoAuto ? 'checked' : ''} data-modo-encargo-atualizacao="1" data-atualizacao="${indice}" data-tipo="${tipo}" /> Automático</label>
+                  <label class="opcao-encargo"><input type="radio" name="${name}" value="sicafi" autocomplete="off" ${modo === 'sicafi' ? 'checked' : ''} data-modo-encargo-atualizacao="1" data-atualizacao="${indice}" data-tipo="${tipo}" /> Manual / SICAFI</label>
+                  <input class="campo-tabela campo-percentual campo-percentual-encargo" type="text" inputmode="decimal" value="${escapeHtml(percentual)}" autocomplete="off" ${modo === modoAuto ? 'readonly tabindex="-1"' : ''} data-percentual-encargo-atualizacao="1" data-atualizacao="${indice}" data-tipo="${tipo}" />
+                </div>`;
+    }
+
+    function substituirAtualizacaoSimplesRecalculada(indice, campos, metadados = {}) {
+      const anterior = simulacoesAdicionais[indice];
+      if (!anterior || anterior.tipoDebito === 'TCFA_ACUMULADO') return;
+      const novo = dadosPdfDeCamposSimples(campos);
+      copiarMetadadosAtualizacao(anterior, novo);
+      Object.assign(novo, metadados || {});
+      inicializarMetadadosEncargoAtualizacaoSimples(novo, novo.modoMulta === 'automatica' || novo.modoSelic === 'sicalc' ? 'automatica' : 'manual');
+      simulacoesAdicionais[indice] = novo;
+    }
+
+    async function aplicarModoAutomaticoEncargoAtualizacao(indice, tipo, opcoes = {}) {
+      const dados = simulacoesAdicionais[indice];
+      if (!dados || dados.tipoDebito === 'TCFA_ACUMULADO') return false;
+      const inicioEl = document.querySelector(`[data-data-encargo-atualizacao][data-atualizacao="${indice}"][data-tipo="${tipo}"][data-campo="inicio"]`);
+      const fimEl = document.querySelector(`[data-data-encargo-atualizacao][data-atualizacao="${indice}"][data-tipo="${tipo}"][data-campo="fim"]`);
+      const inicio = inicioEl && ensureInputDate(inicioEl) ? inicioEl.value.trim() : '';
+      const fim = fimEl && ensureInputDate(fimEl) ? fimEl.value.trim() : '';
+      if (!inicio || !fim) {
+        showToast(tipo === 'multa' ? 'preencha as datas para cobrança da Multa' : 'preencha as datas para cobrança da Selic', 'error');
+        renderizarAtualizacoes();
+        return false;
+      }
+      try {
+        const campos = dadosSimplesParaCampos(dados);
+        if (tipo === 'multa') {
+          if (modoEncargoAtualizacao(dados, 'multa') !== 'automatica') dados.percentualMultaSicafi = campos.percentualMulta;
+          campos.dataInicioMulta = inicio;
+          campos.dataFimMulta = fim;
+          campos.percentualMulta = calcularPercentualMultaAutomatica(inicio, fim);
+          substituirAtualizacaoSimplesRecalculada(indice, campos, { modoMulta: 'automatica', percentualMultaSicafi: dados.percentualMultaSicafi });
+          if (opcoes.mostrarSucesso) showToast('Cálculo automático da multa ativado com sucesso.', 'success');
+        } else {
+          if (modoEncargoAtualizacao(dados, 'selic') !== 'sicalc') dados.percentualSelicSicafi = campos.percentualSelic;
+          campos.dataInicioSelic = inicio;
+          campos.dataFimSelic = fim;
+          campos.percentualSelic = await calcularPercentualSelicSicalc(inicio, fim);
+          substituirAtualizacaoSimplesRecalculada(indice, campos, { modoSelic: 'sicalc', percentualSelicSicafi: dados.percentualSelicSicafi });
+          if (opcoes.mostrarSucesso) showToast('Selic automática ativada com base no Sicalc/RFB. Pode haver divergência com o SICAFI, em razão de registros antigos equivocados no sistema do Ibama.', 'success');
+        }
+        renderizarAtualizacoes();
+        return true;
+      } catch (erro) {
+        showToast(normalizarMensagemErro(erro, tipo === 'multa' ? 'Não foi possível calcular a multa automática.' : 'Não foi possível calcular a Selic Sicalc.'), 'error');
+        renderizarAtualizacoes();
+        return false;
+      }
+    }
+
+    async function aoAlterarModoEncargoAtualizacao(event) {
+      const input = event.target;
+      const indice = Number(input?.dataset?.atualizacao);
+      const tipo = input?.dataset?.tipo;
+      const modo = input?.value;
+      const dados = simulacoesAdicionais[indice];
+      if (!dados || dados.tipoDebito === 'TCFA_ACUMULADO') return;
+      if (modo === 'sicafi') {
+        if ((dados.statusMemoria || 'vazio') === 'vazio' && event?.isTrusted) {
+          renderizarAtualizacoes();
+          selecionarMemoriaAtualizacaoPDF(indice);
+          return;
+        }
+        const campos = dadosSimplesParaCampos(dados);
+        if (tipo === 'multa') {
+          campos.percentualMulta = Number.isFinite(dados.percentualMultaSicafi) ? dados.percentualMultaSicafi : campos.percentualMulta;
+          substituirAtualizacaoSimplesRecalculada(indice, campos, { modoMulta: 'sicafi' });
+        } else if (tipo === 'selic') {
+          campos.percentualSelic = Number.isFinite(dados.percentualSelicSicafi) ? dados.percentualSelicSicafi : campos.percentualSelic;
+          substituirAtualizacaoSimplesRecalculada(indice, campos, { modoSelic: 'sicafi' });
+        }
+        renderizarAtualizacoes();
+        return;
+      }
+      await aplicarModoAutomaticoEncargoAtualizacao(indice, tipo, { mostrarSucesso: true });
+    }
+
+    async function aoAlterarDataEncargoAtualizacao(event) {
+      const input = event.target;
+      const indice = Number(input?.dataset?.atualizacao);
+      const tipo = input?.dataset?.tipo;
+      const campoData = input?.dataset?.campo;
+      const dados = simulacoesAdicionais[indice];
+      if (!dados || dados.tipoDebito === 'TCFA_ACUMULADO') return;
+      if (!ensureInputDate(input)) return;
+      const campos = dadosSimplesParaCampos(dados);
+      const valor = input.value.trim();
+      if (tipo === 'multa') {
+        if (campoData === 'inicio') campos.dataInicioMulta = valor;
+        if (campoData === 'fim') campos.dataFimMulta = valor;
+        if (modoEncargoAtualizacao(dados, 'multa') === 'automatica') {
+          await aplicarModoAutomaticoEncargoAtualizacao(indice, 'multa');
+          return;
+        }
+      } else if (tipo === 'selic') {
+        if (campoData === 'inicio') campos.dataInicioSelic = valor;
+        if (campoData === 'fim') campos.dataFimSelic = valor;
+        if (modoEncargoAtualizacao(dados, 'selic') === 'sicalc') {
+          await aplicarModoAutomaticoEncargoAtualizacao(indice, 'selic');
+          return;
+        }
+      }
+      substituirAtualizacaoSimplesRecalculada(indice, campos);
+      renderizarAtualizacoes();
+    }
+
+    function aoAlterarPercentualEncargoAtualizacao(event) {
+      const input = event.target;
+      const indice = Number(input?.dataset?.atualizacao);
+      const tipo = input?.dataset?.tipo;
+      const dados = simulacoesAdicionais[indice];
+      if (!dados || dados.tipoDebito === 'TCFA_ACUMULADO') return;
+      const campos = dadosSimplesParaCampos(dados);
+      const pct = parseNumeroFlexivel(input.value);
+      if (tipo === 'multa') {
+        campos.percentualMulta = pct;
+        dados.percentualMultaSicafi = pct;
+        substituirAtualizacaoSimplesRecalculada(indice, campos, { modoMulta: 'sicafi', percentualMultaSicafi: pct });
+      } else if (tipo === 'selic') {
+        campos.percentualSelic = pct;
+        dados.percentualSelicSicafi = pct;
+        substituirAtualizacaoSimplesRecalculada(indice, campos, { modoSelic: 'sicafi', percentualSelicSicafi: pct });
+      }
+      renderizarAtualizacoes();
+    }
+
     function dadosSimplesParaCampos(dados) {
       const pMulta = parsePeriodoPercentualPdf(obterLinhaPorDescricao(dados, '(+)Multa')?.percentual || '');
       const pSelic = parsePeriodoPercentualPdf(obterLinhaPorDescricao(dados, '(+)SELIC')?.percentual || '');
@@ -3725,6 +3902,9 @@
       }
       try {
         const dados = await criarAtualizacaoAutomatica(dataNormalizada);
+        if (dados.tipoDebito !== 'TCFA_ACUMULADO') {
+          inicializarMetadadosEncargoAtualizacaoSimples(dados, 'automatica');
+        }
         dados.tituloSecao = `Atualização ${String(simulacoesAdicionais.length + 2).padStart(2, '0')}`;
         dados.statusMemoria = dados.statusMemoria || 'vazio';
         simulacoesAdicionais.push(dados);
@@ -3767,6 +3947,9 @@
         } else {
           dados = dadosPdfDeMemoriaSimples(parseMemoriaSimples(modelo, tipo), tipo);
         }
+        if (dados.tipoDebito !== 'TCFA_ACUMULADO') {
+          inicializarMetadadosEncargoAtualizacaoSimples(dados, 'manual');
+        }
         if (!validarDataAtualizacaoContraAnterior(dados.dataConsolidacao, indiceDestino)) {
           throw new Error(MENSAGEM_DATA_ATUALIZACAO_INVALIDA);
         }
@@ -3801,7 +3984,7 @@
       showToast('Última atualização removida.', 'success');
     }
 
-    function htmlTabelaConsolidacaoDados(dados) {
+    function htmlTabelaConsolidacaoDados(dados, indiceAtualizacao = null) {
       const topo = `
         <table class="tabela-consolidacao tabela-atualizacao" aria-label="Consolidação do débito">
           <colgroup><col class="col-descricao" /><col class="col-percentual" /><col class="col-valores" /></colgroup>
@@ -3810,6 +3993,16 @@
             <tr class="linha-topo"><th>Consolidação do débito em (data):</th><td class="valor" colspan="2"><input class="campo-simulado-nao-editavel campo-data" value="${escapeHtml(dados.dataConsolidacao || '')}" readonly></td></tr>
             <tr><th class="rotulo">Descrição</th><th class="percentual">Percentual</th><th class="valor">Valores</th></tr>`;
       const corpo = (dados.linhas || []).map(l => {
+        const descricaoNormalizada = normalizarTextoBusca(l.descricao || '');
+        const tipoEncargo = descricaoNormalizada.includes('MULTA') ? 'multa' : (descricaoNormalizada.includes('SELIC') ? 'selic' : '');
+        if (indiceAtualizacao !== null && dados.tipoDebito !== 'TCFA_ACUMULADO' && tipoEncargo) {
+          return `
+            <tr class="${l.destaque ? 'linha-destaque' : 'linha-comum'}">
+              <td class="rotulo">${escapeHtml(l.descricao)}</td>
+              <td class="percentual percentual-periodo">${gerarControleEncargoAtualizacao(dados, indiceAtualizacao, tipoEncargo)}</td>
+              <td class="valor ${l.valorNegrito ? 'valor-nao-editavel' : ''}"><input class="campo-simulado-nao-editavel" value="${escapeHtml(l.valor)}" readonly></td>
+            </tr>`;
+        }
         const percentualPeriodo = /^De:/i.test(String(l.percentual || ''));
         const classePercentual = l.percentual === '-' ? 'percentual-vazio' : (percentualPeriodo ? 'percentual-periodo' : 'percentual-texto');
         return `
@@ -3880,6 +4073,12 @@
         const assinaturaAntes = assinaturaAtualizacao(dadosAtuais);
         const dadosReprocessados = await criarAtualizacaoAutomatica(dataAtualizacao, indice);
         dadosReprocessados.tituloSecao = dadosAtuais.tituloSecao || `Atualização ${String(indice + 2).padStart(2, '0')}`;
+        if (dadosReprocessados.tipoDebito !== 'TCFA_ACUMULADO') {
+          copiarMetadadosAtualizacao(dadosAtuais, dadosReprocessados);
+          dadosReprocessados.modoMulta = 'automatica';
+          dadosReprocessados.modoSelic = 'sicalc';
+          inicializarMetadadosEncargoAtualizacaoSimples(dadosReprocessados, 'automatica');
+        }
         const assinaturaDepois = assinaturaAtualizacao(dadosReprocessados);
         dadosReprocessados.statusMemoria = assinaturaAntes !== assinaturaDepois ? 'corrigido' : (dadosAtuais.statusMemoria || 'vazio');
         simulacoesAdicionais[indice] = dadosReprocessados;
@@ -3910,7 +4109,7 @@
           </div>
           ${dados.tipoDebito === 'TCFA_ACUMULADO' ? htmlTabelaComposicaoDados(dados) : ''}
           ${dados.tipoDebito === 'TCFA_ACUMULADO' ? '<div class="subtitulo-tabela">Consolidação do débito</div>' : ''}
-          ${htmlTabelaConsolidacaoDados(dados)}
+          ${htmlTabelaConsolidacaoDados(dados, idx)}
           <button type="button" class="btn btn-primary btn-pdf-atualizacao" data-pdf-atualizacao="${idx}">Gerar PDF</button>
           <div class="limpar-flutuacao"></div>
         </div>`).join('');
@@ -3922,6 +4121,23 @@
       });
       container.querySelectorAll('[data-pdf-atualizacao]').forEach(btn => {
         btn.addEventListener('click', () => gerarPdfAtualizacao(Number(btn.dataset.pdfAtualizacao)));
+      });
+      container.querySelectorAll('[data-modo-encargo-atualizacao]').forEach(radio => {
+        radio.addEventListener('change', aoAlterarModoEncargoAtualizacao);
+      });
+      container.querySelectorAll('[data-data-encargo-atualizacao]').forEach(input => {
+        input.addEventListener('input', () => maskDateDdMmYyyyRealtime(input));
+        input.addEventListener('blur', aoAlterarDataEncargoAtualizacao);
+      });
+      container.querySelectorAll('[data-percentual-encargo-atualizacao]').forEach(input => {
+        input.addEventListener('focus', () => input.select());
+        input.addEventListener('blur', aoAlterarPercentualEncargoAtualizacao);
+        input.addEventListener('keydown', event => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            input.blur();
+          }
+        });
       });
     }
 
