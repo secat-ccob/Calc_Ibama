@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_48 -->
+  <!-- Versão: simulador_consolidacao_debito_v_49 -->
 
   <style>
     :root {
@@ -2873,6 +2873,23 @@
       return tipo === 'multa' ? 'Preencha as datas para cobrança da Multa.' : 'Preencha as datas para cobrança da Selic.';
     }
 
+    function preencherDataFinalAutomaticaEncargoPrincipal(tipo) {
+      const idFim = tipo === 'multa' ? 'dataFimMulta' : 'dataFimSelic';
+      const fimEl = document.getElementById(idFim);
+      if (!fimEl || String(fimEl.value || '').trim()) return;
+      const dataConsolidacao = String(document.getElementById('dataConsolidacao')?.value || '').trim();
+      if (dataConsolidacao) fimEl.value = dataConsolidacao;
+    }
+
+    function preencherDataFinalAutomaticaEncargoAtualizacao(indice, tipo) {
+      const base = `[data-data-encargo-atualizacao][data-atualizacao="${indice}"][data-tipo="${tipo}"]`;
+      const fimEl = document.querySelector(`${base}[data-campo="fim"]`);
+      if (!fimEl || String(fimEl.value || '').trim()) return;
+      const dados = simulacoesAdicionais[indice];
+      const dataConsolidacao = String(dados?.dataConsolidacao || '').trim();
+      if (dataConsolidacao) fimEl.value = dataConsolidacao;
+    }
+
     function focarPrimeiraDataFaltanteEncargo(tipo) {
       const ids = tipo === 'multa'
         ? ['dataInicioMulta', 'dataFimMulta']
@@ -2995,6 +3012,7 @@
     }
 
     async function aplicarModoMultaAutomatica(opcoes = {}) {
+      preencherDataFinalAutomaticaEncargoPrincipal('multa');
       const inicio = dataInputValidaOuVazia('dataInicioMulta');
       const fim = dataInputValidaOuVazia('dataFimMulta');
       if (!inicio || !fim) {
@@ -3015,6 +3033,7 @@
     }
 
     async function aplicarModoSelicSicalc(opcoes = {}) {
+      preencherDataFinalAutomaticaEncargoPrincipal('selic');
       const inicio = dataInputValidaOuVazia('dataInicioSelic');
       const fim = dataInputValidaOuVazia('dataFimSelic');
       if (!inicio || !fim) {
@@ -3685,6 +3704,7 @@
     async function aplicarModoAutomaticoEncargoAtualizacao(indice, tipo, opcoes = {}) {
       const dados = simulacoesAdicionais[indice];
       if (!dados || dados.tipoDebito === 'TCFA_ACUMULADO') return false;
+      preencherDataFinalAutomaticaEncargoAtualizacao(indice, tipo);
       const inicioEl = document.querySelector(`[data-data-encargo-atualizacao][data-atualizacao="${indice}"][data-tipo="${tipo}"][data-campo="inicio"]`);
       const fimEl = document.querySelector(`[data-data-encargo-atualizacao][data-atualizacao="${indice}"][data-tipo="${tipo}"][data-campo="fim"]`);
       const inicio = inicioEl && ensureInputDate(inicioEl) ? inicioEl.value.trim() : '';
