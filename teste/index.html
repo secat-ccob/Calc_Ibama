@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_43 -->
+  <!-- Versão: simulador_consolidacao_debito_v_44 -->
 
   <style>
     :root {
@@ -627,6 +627,35 @@
       font-weight: inherit;
     }
 
+    .campo-atualizacao-editavel {
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: #000000;
+      font: inherit;
+      padding: 2px 3px;
+      outline: none;
+      text-align: right;
+      font-weight: inherit;
+    }
+
+    .campo-atualizacao-editavel:focus {
+      outline: 2px solid #4CAF50;
+      background: #ffffff;
+    }
+
+    .indicador-modo-automatico {
+      margin-top: 8px;
+      padding: 8px 12px;
+      border: 1px solid #c8c8c8;
+      border-radius: 4px;
+      background: #e0e0e0;
+      color: #333333;
+      font-weight: bold;
+      text-align: center;
+      font-size: 13px;
+    }
+
     .btn-pdf-atualizacao {
       display: block;
       margin: 10px auto 0;
@@ -1150,6 +1179,7 @@
           <div class="upload-status" id="statusMemoriaPDF" aria-live="polite"></div>
           <button type="button" class="btn btn-reprocessar" id="btnReprocessarCalculos">Reprocessar Cálculos 🔁</button>
         </div>
+        <div id="indicadorModoAutomaticoPrincipal" class="indicador-modo-automatico" style="display:none;">Modo automático</div>
       </div>
       <div id="modalProgressoPDF" class="modal-progresso-pdf" aria-hidden="true">
         <div class="caixa-progresso-pdf" role="dialog" aria-modal="true" aria-labelledby="tituloProgressoPDF">
@@ -1571,7 +1601,7 @@
       el.classList.remove('ok', 'alterado', 'corrigido');
       if (statusMemoriaPDF === 'carregado') {
         el.classList.add('ok');
-        el.textContent = 'CARREGADO / ORIGINAL';
+        el.textContent = 'CARREGADO / INALTERADO';
       } else if (statusMemoriaPDF === 'alterado') {
         el.classList.add('alterado');
         el.textContent = 'CARREGADO / ALTERADO';
@@ -1630,16 +1660,18 @@
     function atualizarVisualBotoesReprocessamentoPendente() {
       document.querySelectorAll('[data-reprocessar-atualizacao]').forEach(btn => {
         const indice = Number(btn.dataset.reprocessarAtualizacao);
-        const pendente = !!simulacoesAdicionais[indice]?.reprocessamentoPendente;
-        btn.classList.toggle('pendente-reprocessamento', pendente);
+        const dados = simulacoesAdicionais[indice];
+        btn.classList.toggle('pendente-reprocessamento', atualizacaoTemReprocessamentoPendente(dados, indice));
       });
     }
 
     function marcarAtualizacoesPosterioresParaReprocessar(indiceAnterior = null) {
       if (!Array.isArray(simulacoesAdicionais) || !simulacoesAdicionais.length) return;
+      const origem = Number.isInteger(indiceAnterior) ? indiceAnterior : -1;
       const inicio = Number.isInteger(indiceAnterior) ? indiceAnterior + 1 : 0;
       for (let i = inicio; i < simulacoesAdicionais.length; i++) {
         simulacoesAdicionais[i].reprocessamentoPendente = true;
+        simulacoesAdicionais[i].reprocessamentoOrigemIndice = origem;
       }
       atualizarVisualBotoesReprocessamentoPendente();
     }
@@ -1726,6 +1758,7 @@
       if (corpoConsolidacao) corpoConsolidacao.innerHTML = '';
       if (msgAcumulado) msgAcumulado.style.display = 'block';
       if (conteudoAcumulado) conteudoAcumulado.style.display = 'none';
+      atualizarIndicadorModoAutomaticoPrincipal();
     }
 
     function limparDadosExibidos() {
@@ -1752,6 +1785,7 @@
       if (areaAcumulado) areaAcumulado.style.display = tipoDebitoAtual === 'TCFA_ACUMULADO' ? 'block' : 'none';
       if (msgAcumulado) msgAcumulado.style.display = tipoDebitoAtual === 'TCFA_ACUMULADO' ? 'block' : 'none';
       if (conteudoAcumulado) conteudoAcumulado.style.display = 'none';
+      atualizarIndicadorModoAutomaticoPrincipal();
     }
 
 
@@ -2439,6 +2473,7 @@
       bindCamposConsolidacaoAcumulado();
       bindCamposPercentuaisComposicao();
       atualizarEstadoPercentuaisComposicaoAcumulado();
+      atualizarIndicadorModoAutomaticoPrincipal();
       if (!dadosTcfaAcumulado._preservarValoresCarregados) atualizarConsolidacaoAcumulado();
     }
 
@@ -2757,6 +2792,7 @@
       const percentualSelic = document.getElementById('percentualSelic');
       if (percentualMulta) percentualMulta.readOnly = modoEncargoSelecionado('multa') === 'automatica';
       if (percentualSelic) percentualSelic.readOnly = modoEncargoSelecionado('selic') === 'sicalc';
+      atualizarIndicadorModoAutomaticoPrincipal();
     }
 
     function dataInputValidaOuVazia(id) {
@@ -3481,12 +3517,16 @@
       destino.tituloSecao = origem.tituloSecao || destino.tituloSecao;
       destino.statusMemoria = origem.statusMemoria || destino.statusMemoria;
       destino.reprocessamentoPendente = origem.reprocessamentoPendente || false;
+      destino.reprocessamentoOrigemIndice = origem.reprocessamentoOrigemIndice;
+      destino.assinaturaMemoriaCarregada = origem.assinaturaMemoriaCarregada || destino.assinaturaMemoriaCarregada || '';
+      destino.assinaturaMemoriaCorrigida = origem.assinaturaMemoriaCorrigida || destino.assinaturaMemoriaCorrigida || '';
       destino.modoMulta = origem.modoMulta || destino.modoMulta;
       destino.modoSelic = origem.modoSelic || destino.modoSelic;
       destino.percentualMultaSicafi = origem.percentualMultaSicafi;
       destino.percentualSelicSicafi = origem.percentualSelicSicafi;
       destino.modoMultaAcumulado = origem.modoMultaAcumulado || destino.modoMultaAcumulado;
       destino.modoSelicAcumulado = origem.modoSelicAcumulado || destino.modoSelicAcumulado;
+      destino.modoSapiensAtualizacao = origem.modoSapiensAtualizacao || destino.modoSapiensAtualizacao;
       return destino;
     }
 
@@ -3524,6 +3564,7 @@
       copiarMetadadosAtualizacao(anterior, novo);
       Object.assign(novo, metadados || {});
       inicializarMetadadosEncargoAtualizacaoSimples(novo, novo.modoMulta === 'automatica' || novo.modoSelic === 'sicalc' ? 'automatica' : 'manual');
+      atualizarStatusMemoriaAtualizacaoConformeDados(novo);
       simulacoesAdicionais[indice] = novo;
     }
 
@@ -3993,6 +4034,7 @@
           throw new Error(MENSAGEM_DATA_ATUALIZACAO_INVALIDA);
         }
         dados.statusMemoria = 'carregado';
+        registrarReferenciaMemoriaAtualizacao(dados);
         if (indiceDestino !== null && simulacoesAdicionais[indiceDestino]) {
           dados.tituloSecao = simulacoesAdicionais[indiceDestino].tituloSecao || `Atualização ${String(indiceDestino + 2).padStart(2, '0')}`;
           simulacoesAdicionais[indiceDestino] = dados;
@@ -4024,6 +4066,41 @@
       showToast('Última atualização removida.', 'success');
     }
 
+    function campoEdicaoConsolidacaoAtualizacao(dados, descricao, coluna) {
+      const desc = normalizarTextoBusca(descricao || '');
+      const acumulado = dados?.tipoDebito === 'TCFA_ACUMULADO';
+      if (desc.includes('SOMATORIO DA AMORTIZACAO SAPIENS DIVIDA')) {
+        if (coluna === 'percentual') return { campo: 'percentualSapiens', tipo: 'percentual' };
+        if (coluna === 'valor') return { campo: 'somatorioSapiens', tipo: 'moeda' };
+      }
+      if (desc.includes('SOMATORIO DA AMORTIZACAO')) {
+        if (coluna === 'valor') return { campo: 'somatorioAmortizacao', tipo: 'moeda' };
+      }
+      if (desc.includes('DESCONTO')) {
+        if (coluna === 'percentual') return { campo: 'percentualDesconto', tipo: 'percentual' };
+      }
+      if (desc.includes('COMPENSACAO ESTADUAL')) {
+        if (coluna === 'valor') return { campo: 'compensacaoEstadual', tipo: 'moeda' };
+      }
+      if (desc.includes('CORRECAO MONETARIA')) {
+        if (coluna === 'valor') return { campo: 'correcaoMonetaria', tipo: 'moeda' };
+      }
+      if (desc.includes('JUROS')) {
+        if (acumulado && coluna === 'valor') return { campo: 'valorJuros', tipo: 'moeda' };
+        if (!acumulado && coluna === 'percentual') return { campo: 'percentualJuros', tipo: 'percentual' };
+      }
+      if (desc.includes('ENCARGOS LEGAIS')) {
+        if (coluna === 'percentual') return { campo: 'percentualEncargos', tipo: 'percentual' };
+      }
+      return null;
+    }
+
+    function inputEdicaoConsolidacaoAtualizacao(indice, campoInfo, valor) {
+      if (!campoInfo) return '';
+      const classeTipo = campoInfo.tipo === 'percentual' ? 'campo-percentual-atualizacao' : 'campo-moeda-atualizacao';
+      return `<input class="campo-atualizacao-editavel ${classeTipo}" data-campo-consolidacao-atualizacao="1" data-atualizacao="${indice}" data-campo="${campoInfo.campo}" data-tipo="${campoInfo.tipo}" type="text" inputmode="${campoInfo.tipo === 'percentual' ? 'decimal' : 'numeric'}" autocomplete="off" value="${escapeHtml(valor)}">`;
+    }
+
     function htmlTabelaConsolidacaoDados(dados, indiceAtualizacao = null) {
       const topo = `
         <table class="tabela-consolidacao tabela-atualizacao" aria-label="Consolidação do débito">
@@ -4045,11 +4122,16 @@
         }
         const percentualPeriodo = /^De:/i.test(String(l.percentual || ''));
         const classePercentual = l.percentual === '-' ? 'percentual-vazio' : (percentualPeriodo ? 'percentual-periodo' : 'percentual-texto');
+        const edicaoPercentual = indiceAtualizacao !== null ? campoEdicaoConsolidacaoAtualizacao(dados, l.descricao, 'percentual') : null;
+        const edicaoValor = indiceAtualizacao !== null ? campoEdicaoConsolidacaoAtualizacao(dados, l.descricao, 'valor') : null;
+        const htmlPercentual = edicaoPercentual ? inputEdicaoConsolidacaoAtualizacao(indiceAtualizacao, edicaoPercentual, l.percentual) : escapeHtml(l.percentual);
+        const htmlValor = edicaoValor ? inputEdicaoConsolidacaoAtualizacao(indiceAtualizacao, edicaoValor, l.valor) : `<input class="campo-simulado-nao-editavel" value="${escapeHtml(l.valor)}" readonly>`;
+        const classeValor = edicaoValor ? '' : (l.valorNegrito ? 'valor-nao-editavel' : '');
         return `
             <tr class="${l.destaque ? 'linha-destaque' : 'linha-comum'}">
               <td class="rotulo">${escapeHtml(l.descricao)}</td>
-              <td class="percentual ${classePercentual}">${escapeHtml(l.percentual)}</td>
-              <td class="valor ${l.valorNegrito ? 'valor-nao-editavel' : ''}"><input class="campo-simulado-nao-editavel" value="${escapeHtml(l.valor)}" readonly></td>
+              <td class="percentual ${edicaoPercentual ? 'percentual-texto' : classePercentual}">${htmlPercentual}</td>
+              <td class="valor ${classeValor}">${htmlValor}</td>
             </tr>`;
       }).join('');
       return topo + corpo + '</tbody></table>';
@@ -4128,7 +4210,7 @@
     }
 
     function textoStatusMemoriaAtualizacao(status) {
-      if (status === 'carregado') return 'CARREGADO / ORIGINAL';
+      if (status === 'carregado') return 'CARREGADO / INALTERADO';
       if (status === 'alterado') return 'CARREGADO / ALTERADO';
       if (status === 'corrigido') return 'CARREGADO / CORRIGIDO';
       return '';
@@ -4140,7 +4222,85 @@
       delete copia.statusMemoria;
       delete copia.tituloSecao;
       delete copia.reprocessamentoPendente;
+      delete copia.reprocessamentoOrigemIndice;
+      delete copia.assinaturaMemoriaCarregada;
+      delete copia.assinaturaMemoriaCorrigida;
+      delete copia.modoMulta;
+      delete copia.modoSelic;
+      delete copia.percentualMultaSicafi;
+      delete copia.percentualSelicSicafi;
+      delete copia.modoMultaAcumulado;
+      delete copia.modoSelicAcumulado;
+      delete copia.modoSapiensAtualizacao;
+      if (Array.isArray(copia.composicao)) {
+        copia.composicao = copia.composicao.map(row => {
+          const r = { ...row };
+          delete r.multaPctManual;
+          delete r.selicPctManual;
+          return r;
+        });
+      }
       return JSON.stringify(copia);
+    }
+
+    function registrarReferenciaMemoriaAtualizacao(dados) {
+      if (!dados) return dados;
+      dados.assinaturaMemoriaCarregada = '';
+      dados.assinaturaMemoriaCorrigida = '';
+      dados.statusMemoria = 'carregado';
+      dados.assinaturaMemoriaCarregada = assinaturaAtualizacao(dados);
+      return dados;
+    }
+
+    function atualizarStatusMemoriaAtualizacaoConformeDados(dados) {
+      if (!dados || (dados.statusMemoria || 'vazio') === 'vazio' || !dados.assinaturaMemoriaCarregada) return dados;
+      const assinaturaAtual = assinaturaAtualizacao(dados);
+      if (assinaturaAtual === dados.assinaturaMemoriaCarregada) {
+        dados.statusMemoria = 'carregado';
+        dados.assinaturaMemoriaCorrigida = '';
+      } else if (dados.assinaturaMemoriaCorrigida && assinaturaAtual === dados.assinaturaMemoriaCorrigida) {
+        dados.statusMemoria = 'corrigido';
+      } else {
+        dados.statusMemoria = 'alterado';
+      }
+      return dados;
+    }
+
+    function salvarAtualizacaoAlterada(indice, dados, marcarPosteriores = true) {
+      if (!Number.isInteger(indice) || !dados) return;
+      atualizarStatusMemoriaAtualizacaoConformeDados(dados);
+      simulacoesAdicionais[indice] = dados;
+      if (marcarPosteriores) {
+        marcarAtualizacoesPosterioresParaReprocessar(indice);
+      } else {
+        atualizarVisualBotoesReprocessamentoPendente();
+      }
+    }
+
+    function atualizacaoTemReprocessamentoPendente(dados, indice) {
+      const origem = Number.isInteger(dados?.reprocessamentoOrigemIndice) ? dados.reprocessamentoOrigemIndice : null;
+      return !!dados?.reprocessamentoPendente && (origem === null || origem < indice);
+    }
+
+    function atualizacaoEmModoAutomaticoTotal(dados) {
+      if (!dados) return false;
+      if (dados.tipoDebito === 'TCFA_ACUMULADO') {
+        return modoComposicaoAtualizacao(dados, 'multa') === 'automatico' && modoComposicaoAtualizacao(dados, 'selic') === 'automatico';
+      }
+      return modoEncargoAtualizacao(dados, 'multa') === 'automatica' && modoEncargoAtualizacao(dados, 'selic') === 'sicalc';
+    }
+
+    function atualizarIndicadorModoAutomaticoPrincipal() {
+      const el = document.getElementById('indicadorModoAutomaticoPrincipal');
+      if (!el) return;
+      const tipo = getTipoDebitoSelecionado();
+      let ativo = false;
+      if (tipo === 'TCFA_ACUMULADO') {
+        ativo = modoComposicaoAcumulado('multa') === 'automatico' && modoComposicaoAcumulado('selic') === 'automatico';
+      } else if (tipo === 'AI' || tipo === 'TCFA_SIMPLES') {
+        ativo = modoEncargoSelecionado('multa') === 'automatica' && modoEncargoSelecionado('selic') === 'sicalc';
+      }
+      el.style.display = ativo ? 'block' : 'none';
     }
 
     function modoComposicaoAtualizacao(dados, tipo) {
@@ -4155,23 +4315,58 @@
       const rows = clonarRowsComposicao(dados.composicao || []);
       rows.forEach(normalizarPercentuaisManuaisComposicao);
       const total = somarRowsComposicao(rows, false);
+      const valorPrincipalAtual = valorNumeroLinha(dados, 'Valor Principal');
+      const valorPrincipal = Number.isFinite(valorPrincipalAtual) && valorPrincipalAtual > 0 ? valorPrincipalAtual : total.valorOriginal;
+      const somatorio = valorNumeroLinha(dados, 'Somatório da amortização');
+      const pctDesconto = percentualNumeroLinha(dados, 'Desconto');
+      const valorDesconto = roundMoneyValue(valorPrincipal * pctDesconto / 100);
+      const compensacao = valorNumeroLinha(dados, 'Compensação Estadual');
+      const saldoParcial = roundMoneyValue(valorPrincipal - somatorio - valorDesconto - compensacao);
+      const pctSapiens = percentualNumeroLinha(dados, 'Sapiens Dívida');
+      const sapiensInformado = valorNumeroLinha(dados, 'Sapiens Dívida');
+      const sapiens = dados.modoSapiensAtualizacao === 'percentual'
+        ? roundMoneyValue(saldoParcial * pctSapiens / 100)
+        : (Number.isFinite(sapiensInformado) ? sapiensInformado : roundMoneyValue(saldoParcial * pctSapiens / 100));
+      const correcao = valorNumeroLinha(dados, 'Correção Monetária');
+      const saldoAtualizado = roundMoneyValue(saldoParcial - sapiens + correcao);
+      const multa = total.multaValor;
+      const juros = valorNumeroLinha(dados, 'Juros');
+      const selic = total.selicValor;
+      const totalParcial = roundMoneyValue(saldoAtualizado + multa + juros + selic);
+      const pctEncargos = percentualNumeroLinha(dados, 'Encargos Legais');
+      const encargos = roundMoneyValue(totalParcial * pctEncargos / 100);
       const novo = dadosPdfAcumuladoDeEstado({
         numeroDebito: dados.numeroDebito || '',
         dataConsolidacao: dados.dataConsolidacao || '',
         rows,
         totalComposicao: total,
-        valorPrincipal: total.valorOriginal,
-        somatorioAmortizacao: valorNumeroLinha(dados, 'Somatório da amortização'),
-        percentualDesconto: percentualNumeroLinha(dados, 'Desconto'),
-        percentualSapiens: percentualNumeroLinha(dados, 'Sapiens Dívida'),
-        somatorioSapiens: valorNumeroLinha(dados, 'Sapiens Dívida'),
-        percentualEncargos: percentualNumeroLinha(dados, 'Encargos Legais')
+        valorPrincipal,
+        somatorioAmortizacao: somatorio,
+        percentualDesconto: pctDesconto,
+        valorDesconto,
+        compensacaoEstadual: compensacao,
+        saldoParcial,
+        percentualSapiens: pctSapiens,
+        somatorioSapiens: sapiens,
+        correcaoMonetaria: correcao,
+        saldoAtualizado,
+        valorMulta: multa,
+        valorJuros: juros,
+        valorSelic: selic,
+        totalParcial,
+        percentualEncargos: pctEncargos,
+        valorEncargos: encargos,
+        valorConsolidado: roundMoneyValue(totalParcial + encargos)
       });
       novo.tituloSecao = dados.tituloSecao;
       novo.statusMemoria = dados.statusMemoria || 'vazio';
       novo.reprocessamentoPendente = !!dados.reprocessamentoPendente;
+      novo.reprocessamentoOrigemIndice = dados.reprocessamentoOrigemIndice;
+      novo.assinaturaMemoriaCarregada = dados.assinaturaMemoriaCarregada || '';
+      novo.assinaturaMemoriaCorrigida = dados.assinaturaMemoriaCorrigida || '';
       novo.modoMultaAcumulado = dados.modoMultaAcumulado || 'manual';
       novo.modoSelicAcumulado = dados.modoSelicAcumulado || 'manual';
+      novo.modoSapiensAtualizacao = dados.modoSapiensAtualizacao || '';
       return novo;
     }
 
@@ -4209,8 +4404,7 @@
           dados.modoSelicAcumulado = 'automatico';
           if (opcoes.mostrarSucesso) showToast('Selic automática ativada com base no Sicalc/RFB. Pode haver divergência com o SICAFI, em razão de registros antigos equivocados no sistema do Ibama.', 'success');
         }
-        simulacoesAdicionais[indice] = recomporDadosAcumuladoAtualizacao(dados);
-        marcarAtualizacoesPosterioresParaReprocessar(indice);
+        salvarAtualizacaoAlterada(indice, recomporDadosAcumuladoAtualizacao(dados), true);
         renderizarAtualizacoes();
         return true;
       } catch (erro) {
@@ -4244,8 +4438,7 @@
       });
       if (tipo === 'multa') dados.modoMultaAcumulado = 'manual';
       if (tipo === 'selic') dados.modoSelicAcumulado = 'manual';
-      simulacoesAdicionais[indice] = recomporDadosAcumuladoAtualizacao(dados);
-      marcarAtualizacoesPosterioresParaReprocessar(indice);
+      salvarAtualizacaoAlterada(indice, recomporDadosAcumuladoAtualizacao(dados), true);
       renderizarAtualizacoes();
     }
 
@@ -4262,45 +4455,204 @@
       if (campo === 'multaPct' && modoComposicaoAtualizacao(dados, 'multa') === 'manual') row.multaPctManual = row[campo];
       if (campo === 'selicPct' && modoComposicaoAtualizacao(dados, 'selic') === 'manual') row.selicPctManual = row[campo];
       recalcularLinhaComposicao(row);
-      simulacoesAdicionais[indiceAtualizacao] = recomporDadosAcumuladoAtualizacao(dados);
-      marcarAtualizacoesPosterioresParaReprocessar(indiceAtualizacao);
+      salvarAtualizacaoAlterada(indiceAtualizacao, recomporDadosAcumuladoAtualizacao(dados), true);
+      renderizarAtualizacoes();
+    }
+
+    function alterarLinhaDadosAtualizacao(dados, trecho, alteracoes) {
+      const linha = obterLinhaPorDescricao(dados, trecho);
+      if (!linha) return;
+      if (Object.prototype.hasOwnProperty.call(alteracoes, 'percentual')) linha.percentual = alteracoes.percentual;
+      if (Object.prototype.hasOwnProperty.call(alteracoes, 'valor')) linha.valor = alteracoes.valor;
+    }
+
+    function obterLinhaEmListaPorDescricao(linhas, trecho) {
+      const norm = normalizarTextoBusca(trecho);
+      return (linhas || []).find(l => normalizarTextoBusca(l.descricao || '').includes(norm)) || null;
+    }
+
+    function mesclarLinhasEditaveisAcumuladoParaReprocessamento(linhasBase, linhasAtuais) {
+      const linhas = JSON.parse(JSON.stringify(linhasBase || []));
+      const copiar = (trecho, campos) => {
+        const origem = obterLinhaEmListaPorDescricao(linhasAtuais, trecho);
+        const destino = obterLinhaEmListaPorDescricao(linhas, trecho);
+        if (!origem || !destino) return;
+        campos.forEach(campo => {
+          if (Object.prototype.hasOwnProperty.call(origem, campo)) destino[campo] = origem[campo];
+        });
+      };
+      copiar('Somatório da amortização', ['valor']);
+      copiar('Desconto', ['percentual']);
+      copiar('Compensação Estadual', ['valor']);
+      copiar('Sapiens Dívida', ['percentual', 'valor']);
+      copiar('Correção Monetária', ['valor']);
+      copiar('Juros', ['valor']);
+      copiar('Encargos Legais', ['percentual']);
+      return linhas;
+    }
+
+    function aplicarAlteracaoConsolidacaoAtualizacao(dadosOriginais, campo, valorNumerico) {
+      if (!dadosOriginais) return dadosOriginais;
+      const dados = JSON.parse(JSON.stringify(dadosOriginais));
+      if (dados.tipoDebito !== 'TCFA_ACUMULADO') {
+        const campos = dadosSimplesParaCampos(dados);
+        if (campo === 'somatorioAmortizacao') campos.somatorioAmortizacao = valorNumerico;
+        if (campo === 'percentualDesconto') campos.percentualDesconto = valorNumerico;
+        if (campo === 'compensacaoEstadual') campos.compensacaoEstadual = valorNumerico;
+        if (campo === 'percentualSapiens') {
+          campos.percentualSapiens = valorNumerico;
+          campos.somatorioSapiens = undefined;
+        }
+        if (campo === 'somatorioSapiens') campos.somatorioSapiens = valorNumerico;
+        if (campo === 'correcaoMonetaria') campos.correcaoMonetaria = valorNumerico;
+        if (campo === 'percentualJuros') campos.percentualJuros = valorNumerico;
+        if (campo === 'percentualEncargos') campos.percentualEncargos = valorNumerico;
+        const novo = dadosPdfDeCamposSimples(campos);
+        copiarMetadadosAtualizacao(dadosOriginais, novo);
+        inicializarMetadadosEncargoAtualizacaoSimples(novo, novo.modoMulta === 'automatica' || novo.modoSelic === 'sicalc' ? 'automatica' : 'manual');
+        return novo;
+      }
+
+      if (campo === 'somatorioAmortizacao') alterarLinhaDadosAtualizacao(dados, 'Somatório da amortização', { valor: numeroParaMoeda(valorNumerico) });
+      if (campo === 'percentualDesconto') alterarLinhaDadosAtualizacao(dados, 'Desconto', { percentual: numeroParaPercentual(valorNumerico) });
+      if (campo === 'compensacaoEstadual') alterarLinhaDadosAtualizacao(dados, 'Compensação Estadual', { valor: numeroParaMoeda(valorNumerico) });
+      if (campo === 'percentualSapiens') {
+        dados.modoSapiensAtualizacao = 'percentual';
+        alterarLinhaDadosAtualizacao(dados, 'Sapiens Dívida', { percentual: numeroParaPercentual(valorNumerico) });
+      }
+      if (campo === 'somatorioSapiens') {
+        dados.modoSapiensAtualizacao = 'valor';
+        alterarLinhaDadosAtualizacao(dados, 'Sapiens Dívida', { valor: numeroParaMoeda(valorNumerico) });
+      }
+      if (campo === 'correcaoMonetaria') alterarLinhaDadosAtualizacao(dados, 'Correção Monetária', { valor: numeroParaMoeda(valorNumerico) });
+      if (campo === 'valorJuros') alterarLinhaDadosAtualizacao(dados, 'Juros', { valor: numeroParaMoeda(valorNumerico) });
+      if (campo === 'percentualEncargos') alterarLinhaDadosAtualizacao(dados, 'Encargos Legais', { percentual: numeroParaPercentual(valorNumerico) });
+      const novo = recomporDadosAcumuladoAtualizacao(dados);
+      copiarMetadadosAtualizacao(dadosOriginais, novo);
+      novo.modoSapiensAtualizacao = dados.modoSapiensAtualizacao || dadosOriginais.modoSapiensAtualizacao;
+      return novo;
+    }
+
+    function aoAlterarCampoConsolidacaoAtualizacao(event) {
+      const input = event.target;
+      const indice = Number(input?.dataset?.atualizacao);
+      const campo = input?.dataset?.campo;
+      const tipo = input?.dataset?.tipo;
+      if (!Number.isInteger(indice) || !simulacoesAdicionais[indice] || !campo) return;
+      if (tipo === 'percentual') {
+        input.value = numeroParaPercentual(parseNumeroFlexivel(input.value));
+      } else {
+        const digits = input.value.replace(/\D/g, '');
+        input.value = digits ? formatMoneyDigitsString(digits) : '0,00';
+      }
+      const valor = tipo === 'percentual' ? parseNumeroFlexivel(input.value) : moedaParaNumero(input.value);
+      const novo = aplicarAlteracaoConsolidacaoAtualizacao(simulacoesAdicionais[indice], campo, valor);
+      salvarAtualizacaoAlterada(indice, novo, true);
       renderizarAtualizacoes();
     }
 
     async function criarAtualizacaoReprocessadaConformeModo(dadosAtuais, indice) {
       if (!dadosAtuais) return null;
+      const dataFinal = String(dadosAtuais.dataConsolidacao || '').trim();
+
       if (dadosAtuais.tipoDebito === 'TCFA_ACUMULADO') {
-        const dados = JSON.parse(JSON.stringify(dadosAtuais));
-        const dataFinal = String(dados.dataConsolidacao || '').trim();
-        (dados.composicao || []).forEach(row => {
-          normalizarPercentuaisManuaisComposicao(row);
+        let base;
+        try {
+          base = await criarAtualizacaoAutomatica(dataFinal, indice);
+        } catch (_) {
+          base = JSON.parse(JSON.stringify(dadosAtuais));
+        }
+        const dados = JSON.parse(JSON.stringify(base));
+        dados.tituloSecao = dadosAtuais.tituloSecao;
+        dados.statusMemoria = dadosAtuais.statusMemoria || 'vazio';
+        dados.assinaturaMemoriaCarregada = dadosAtuais.assinaturaMemoriaCarregada || '';
+        dados.assinaturaMemoriaCorrigida = dadosAtuais.assinaturaMemoriaCorrigida || '';
+        dados.reprocessamentoPendente = dadosAtuais.reprocessamentoPendente || false;
+        dados.reprocessamentoOrigemIndice = dadosAtuais.reprocessamentoOrigemIndice;
+        dados.modoMultaAcumulado = dadosAtuais.modoMultaAcumulado || 'manual';
+        dados.modoSelicAcumulado = dadosAtuais.modoSelicAcumulado || 'manual';
+        dados.modoSapiensAtualizacao = dadosAtuais.modoSapiensAtualizacao || '';
+
+        const rowsBase = dados.composicao || [];
+        const rowsAtuais = dadosAtuais.composicao || [];
+        rowsBase.forEach((row, idx) => {
+          const atual = rowsAtuais[idx] || {};
+          normalizarPercentuaisManuaisComposicao(atual);
+          if (Number.isFinite(Number(atual.correcaoPct))) row.correcaoPct = Number(atual.correcaoPct);
+          if (Number.isFinite(Number(atual.jurosPct))) row.jurosPct = Number(atual.jurosPct);
+          if (Number.isFinite(Number(atual.encargosPct))) row.encargosPct = Number(atual.encargosPct);
           if (modoComposicaoAtualizacao(dados, 'multa') === 'automatico') {
             row.multaPct = calcularPercentualMultaAutomatica(row.vencimento, dataFinal);
+          } else if (Number.isFinite(Number(atual.multaPct))) {
+            row.multaPct = Number(atual.multaPct);
+            row.multaPctManual = Number(atual.multaPctManual ?? atual.multaPct ?? 0);
           }
-          recalcularLinhaComposicao(row);
+          if (modoComposicaoAtualizacao(dados, 'selic') === 'automatico') {
+            row._precisaSelicAutomatica = true;
+          } else if (Number.isFinite(Number(atual.selicPct))) {
+            row.selicPct = Number(atual.selicPct);
+            row.selicPctManual = Number(atual.selicPctManual ?? atual.selicPct ?? 0);
+          }
         });
         if (modoComposicaoAtualizacao(dados, 'selic') === 'automatico') {
           await carregarBaseSelicRfb();
-          (dados.composicao || []).forEach(row => {
+          rowsBase.forEach(row => {
             row.selicPct = calcularTaxaSelicSicalcPorCompetencia(competenciaMesAnoDeData(row.vencimento), competenciaMesAnoDeData(dataFinal));
-            recalcularLinhaComposicao(row);
+            delete row._precisaSelicAutomatica;
           });
         }
-        const novo = recomporDadosAcumuladoAtualizacao(dados);
-        copiarMetadadosAtualizacao(dadosAtuais, novo);
-        return novo;
+        rowsBase.forEach(recalcularLinhaComposicao);
+
+        const temp = recomporDadosAcumuladoAtualizacao({
+          ...dados,
+          composicao: rowsBase,
+          linhas: mesclarLinhasEditaveisAcumuladoParaReprocessamento(dados.linhas, dadosAtuais.linhas),
+          modoMultaAcumulado: dados.modoMultaAcumulado,
+          modoSelicAcumulado: dados.modoSelicAcumulado,
+          modoSapiensAtualizacao: dados.modoSapiensAtualizacao
+        });
+        copiarMetadadosAtualizacao(dadosAtuais, temp);
+        temp.modoSapiensAtualizacao = dadosAtuais.modoSapiensAtualizacao || '';
+        return temp;
       }
 
-      const campos = dadosSimplesParaCampos(dadosAtuais);
+      let base;
+      try {
+        base = await criarAtualizacaoAutomatica(dataFinal, indice);
+      } catch (_) {
+        base = dadosAtuais;
+      }
+      const camposBase = dadosSimplesParaCampos(base);
+      const camposAtuais = dadosSimplesParaCampos(dadosAtuais);
+      const campos = {
+        ...camposBase,
+        dataConsolidacao: dataFinal || camposAtuais.dataConsolidacao || camposBase.dataConsolidacao,
+        somatorioAmortizacao: camposAtuais.somatorioAmortizacao,
+        percentualDesconto: camposAtuais.percentualDesconto,
+        compensacaoEstadual: camposAtuais.compensacaoEstadual,
+        percentualSapiens: camposAtuais.percentualSapiens,
+        somatorioSapiens: camposAtuais.somatorioSapiens,
+        correcaoMonetaria: camposAtuais.correcaoMonetaria,
+        percentualJuros: camposAtuais.percentualJuros,
+        percentualEncargos: camposAtuais.percentualEncargos,
+        dataInicioMulta: camposAtuais.dataInicioMulta || camposBase.dataInicioMulta,
+        dataFimMulta: camposAtuais.dataFimMulta || dataFinal || camposBase.dataFimMulta,
+        dataInicioSelic: camposAtuais.dataInicioSelic || camposBase.dataInicioSelic,
+        dataFimSelic: camposAtuais.dataFimSelic || dataFinal || camposBase.dataFimSelic
+      };
       if (modoEncargoAtualizacao(dadosAtuais, 'multa') === 'automatica') {
         campos.percentualMulta = calcularPercentualMultaAutomatica(campos.dataInicioMulta, campos.dataFimMulta || campos.dataConsolidacao);
+      } else {
+        campos.percentualMulta = camposAtuais.percentualMulta;
       }
       if (modoEncargoAtualizacao(dadosAtuais, 'selic') === 'sicalc') {
         campos.percentualSelic = await calcularPercentualSelicSicalc(campos.dataInicioSelic, campos.dataFimSelic || campos.dataConsolidacao);
+      } else {
+        campos.percentualSelic = camposAtuais.percentualSelic;
       }
       const novo = dadosPdfDeCamposSimples(campos);
       copiarMetadadosAtualizacao(dadosAtuais, novo);
-      inicializarMetadadosEncargoAtualizacaoSimples(novo, 'manual');
+      inicializarMetadadosEncargoAtualizacaoSimples(novo, novo.modoMulta === 'automatica' || novo.modoSelic === 'sicalc' ? 'automatica' : 'manual');
       return novo;
     }
 
@@ -4317,8 +4669,19 @@
         const dadosReprocessados = await criarAtualizacaoReprocessadaConformeModo(dadosAtuais, indice);
         dadosReprocessados.tituloSecao = dadosAtuais.tituloSecao || `Atualização ${String(indice + 2).padStart(2, '0')}`;
         dadosReprocessados.reprocessamentoPendente = false;
+        dadosReprocessados.reprocessamentoOrigemIndice = null;
         const assinaturaDepois = assinaturaAtualizacao(dadosReprocessados);
-        dadosReprocessados.statusMemoria = assinaturaAntes !== assinaturaDepois ? 'corrigido' : (dadosAtuais.statusMemoria || 'vazio');
+        if ((dadosAtuais.statusMemoria || 'vazio') !== 'vazio' && assinaturaAntes !== assinaturaDepois) {
+          if (dadosReprocessados.assinaturaMemoriaCarregada && assinaturaDepois === dadosReprocessados.assinaturaMemoriaCarregada) {
+            dadosReprocessados.statusMemoria = 'carregado';
+            dadosReprocessados.assinaturaMemoriaCorrigida = '';
+          } else {
+            dadosReprocessados.statusMemoria = 'corrigido';
+            dadosReprocessados.assinaturaMemoriaCorrigida = assinaturaDepois;
+          }
+        } else {
+          atualizarStatusMemoriaAtualizacaoConformeDados(dadosReprocessados);
+        }
         simulacoesAdicionais[indice] = dadosReprocessados;
         marcarAtualizacoesPosterioresParaReprocessar(indice);
         renderizarAtualizacoes();
@@ -4343,8 +4706,9 @@
             <div class="btnbar">
               <button type="button" class="btn" data-carregar-atualizacao="${idx}">Carregar memória de cálculo para preenchimento automático (PDF)</button>
               <div class="upload-status ${classeStatusMemoriaAtualizacao(dados.statusMemoria)}" aria-live="polite">${textoStatusMemoriaAtualizacao(dados.statusMemoria)}</div>
-              <button type="button" class="btn btn-reprocessar ${dados.reprocessamentoPendente ? 'pendente-reprocessamento' : ''}" data-reprocessar-atualizacao="${idx}">Reprocessar Cálculos 🔁</button>
+              <button type="button" class="btn btn-reprocessar ${atualizacaoTemReprocessamentoPendente(dados, idx) ? 'pendente-reprocessamento' : ''}" data-reprocessar-atualizacao="${idx}">Reprocessar Cálculos 🔁</button>
             </div>
+            ${atualizacaoEmModoAutomaticoTotal(dados) ? '<div class="indicador-modo-automatico">Modo automático</div>' : ''}
           </div>
           ${dados.tipoDebito === 'TCFA_ACUMULADO' ? htmlTabelaComposicaoDados(dados, idx) : ''}
           ${dados.tipoDebito === 'TCFA_ACUMULADO' ? '<div class="subtitulo-tabela">Consolidação do débito</div>' : ''}
@@ -4392,6 +4756,24 @@
           }
         });
       });
+      container.querySelectorAll('[data-campo-consolidacao-atualizacao]').forEach(input => {
+        input.addEventListener('focus', () => input.select());
+        input.addEventListener('input', () => {
+          if (input.dataset.tipo === 'percentual') {
+            input.value = input.value.replace(/[^0-9,.%]/g, '');
+          } else {
+            input.value = formatMoneyDigitsString(input.value) || '';
+          }
+        });
+        input.addEventListener('blur', aoAlterarCampoConsolidacaoAtualizacao);
+        input.addEventListener('keydown', event => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            input.blur();
+          }
+        });
+      });
+      atualizarVisualBotoesReprocessamentoPendente();
     }
 
     async function gerarPdfDados(dados, nomeBase = 'consolidacao_debito') {
