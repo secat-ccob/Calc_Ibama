@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_44 -->
+  <!-- Versão: simulador_consolidacao_debito_v_45 -->
 
   <style>
     :root {
@@ -547,6 +547,13 @@
       letter-spacing: 0.02em;
     }
 
+    .upload-status.modo-automatico {
+      background: #e0e0e0;
+      border-color: #c8c8c8;
+      color: #333333;
+      letter-spacing: 0.02em;
+    }
+
     .btn-reprocessar {
       width: 100%;
       height: 100%;
@@ -614,6 +621,14 @@
 
     .tabela-atualizacao td.percentual.percentual-periodo {
       text-align: left;
+    }
+
+    .tabela-atualizacao td.percentual:not(.percentual-periodo) {
+      text-align: center;
+    }
+
+    .tabela-atualizacao td.percentual:not(.percentual-periodo) .campo-atualizacao-editavel {
+      text-align: center;
     }
 
     .campo-simulado-nao-editavel {
@@ -1594,12 +1609,26 @@
       limparAvisos();
     });
 
+    function principalEmModoAutomaticoTotal() {
+      const tipo = getTipoDebitoSelecionado();
+      if (tipo === 'TCFA_ACUMULADO') {
+        return modoComposicaoAcumulado('multa') === 'automatico' && modoComposicaoAcumulado('selic') === 'automatico';
+      }
+      if (tipo === 'AI' || tipo === 'TCFA_SIMPLES') {
+        return modoEncargoSelecionado('multa') === 'automatica' && modoEncargoSelecionado('selic') === 'sicalc';
+      }
+      return false;
+    }
+
     function atualizarStatusMemoriaPDF(status) {
       statusMemoriaPDF = status || 'vazio';
       const el = document.getElementById('statusMemoriaPDF');
       if (!el) return;
-      el.classList.remove('ok', 'alterado', 'corrigido');
-      if (statusMemoriaPDF === 'carregado') {
+      el.classList.remove('ok', 'alterado', 'corrigido', 'modo-automatico');
+      if (principalEmModoAutomaticoTotal()) {
+        el.classList.add('modo-automatico');
+        el.textContent = 'MODO AUTOMÁTICO';
+      } else if (statusMemoriaPDF === 'carregado') {
         el.classList.add('ok');
         el.textContent = 'CARREGADO / INALTERADO';
       } else if (statusMemoriaPDF === 'alterado') {
@@ -1679,6 +1708,7 @@
     function monitorarAlteracaoDeDadosCarregados(event) {
       const alvo = event?.target;
       if (!alvo || !alvo.matches || !alvo.matches('input, select, textarea')) return;
+      if (alvo.closest('.bloco-atualizacao')) return;
       if (!alvo.closest('#areaTabelaSimples') && !alvo.closest('#areaTcfaAcumulado')) return;
       marcarMemoriaPDFAlterada();
       marcarAtualizacoesPosterioresParaReprocessar(null);
@@ -4216,6 +4246,16 @@
       return '';
     }
 
+    function classeStatusVisualAtualizacao(dados) {
+      if (atualizacaoEmModoAutomaticoTotal(dados)) return 'modo-automatico';
+      return classeStatusMemoriaAtualizacao(dados?.statusMemoria);
+    }
+
+    function textoStatusVisualAtualizacao(dados) {
+      if (atualizacaoEmModoAutomaticoTotal(dados)) return 'MODO AUTOMÁTICO';
+      return textoStatusMemoriaAtualizacao(dados?.statusMemoria);
+    }
+
     function assinaturaAtualizacao(dados) {
       if (!dados) return '';
       const copia = JSON.parse(JSON.stringify(dados));
@@ -4279,7 +4319,7 @@
 
     function atualizacaoTemReprocessamentoPendente(dados, indice) {
       const origem = Number.isInteger(dados?.reprocessamentoOrigemIndice) ? dados.reprocessamentoOrigemIndice : null;
-      return !!dados?.reprocessamentoPendente && (origem === null || origem < indice);
+      return !!dados?.reprocessamentoPendente && origem !== null && origem < indice;
     }
 
     function atualizacaoEmModoAutomaticoTotal(dados) {
@@ -4292,15 +4332,8 @@
 
     function atualizarIndicadorModoAutomaticoPrincipal() {
       const el = document.getElementById('indicadorModoAutomaticoPrincipal');
-      if (!el) return;
-      const tipo = getTipoDebitoSelecionado();
-      let ativo = false;
-      if (tipo === 'TCFA_ACUMULADO') {
-        ativo = modoComposicaoAcumulado('multa') === 'automatico' && modoComposicaoAcumulado('selic') === 'automatico';
-      } else if (tipo === 'AI' || tipo === 'TCFA_SIMPLES') {
-        ativo = modoEncargoSelecionado('multa') === 'automatica' && modoEncargoSelecionado('selic') === 'sicalc';
-      }
-      el.style.display = ativo ? 'block' : 'none';
+      if (el) el.style.display = 'none';
+      atualizarStatusMemoriaPDF(statusMemoriaPDF);
     }
 
     function modoComposicaoAtualizacao(dados, tipo) {
@@ -4705,10 +4738,9 @@
           <div class="painel-upload-memoria painel-upload-atualizacao no-print">
             <div class="btnbar">
               <button type="button" class="btn" data-carregar-atualizacao="${idx}">Carregar memória de cálculo para preenchimento automático (PDF)</button>
-              <div class="upload-status ${classeStatusMemoriaAtualizacao(dados.statusMemoria)}" aria-live="polite">${textoStatusMemoriaAtualizacao(dados.statusMemoria)}</div>
+              <div class="upload-status ${classeStatusVisualAtualizacao(dados)}" aria-live="polite">${textoStatusVisualAtualizacao(dados)}</div>
               <button type="button" class="btn btn-reprocessar ${atualizacaoTemReprocessamentoPendente(dados, idx) ? 'pendente-reprocessamento' : ''}" data-reprocessar-atualizacao="${idx}">Reprocessar Cálculos 🔁</button>
             </div>
-            ${atualizacaoEmModoAutomaticoTotal(dados) ? '<div class="indicador-modo-automatico">Modo automático</div>' : ''}
           </div>
           ${dados.tipoDebito === 'TCFA_ACUMULADO' ? htmlTabelaComposicaoDados(dados, idx) : ''}
           ${dados.tipoDebito === 'TCFA_ACUMULADO' ? '<div class="subtitulo-tabela">Consolidação do débito</div>' : ''}
