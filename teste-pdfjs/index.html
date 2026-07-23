@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Teste PDF.js - CALC-IBAMA</title>
+  <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
+
+  <!-- Versão: teste_pdfjs_calc_ibama_v_1 -->
+
+  <style>
+    :root {
+      --cor-primaria: #1f6f54;
+      --cor-primaria-escura: #15513d;
+      --cor-secundaria: #0f4c81;
+      --cor-fundo: #f4f7f6;
+      --cor-superficie: #ffffff;
+      --cor-texto: #1f2933;
+      --cor-texto-suave: #5b6770;
+      --cor-borda: #d9e2dd;
+      --sombra-suave: 0 10px 30px rgba(15, 76, 81, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--cor-texto);
+      background:
+        radial-gradient(circle at center, rgba(31, 111, 84, 0.07) 0, rgba(31, 111, 84, 0.03) 28%, transparent 55%),
+        linear-gradient(180deg, #ffffff 0%, var(--cor-fundo) 100%);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .cabecalho {
+      flex: 0 0 auto;
+      width: 100%;
+      background: var(--cor-superficie);
+      border-bottom: 1px solid var(--cor-borda);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+      z-index: 10;
+    }
+
+    .cabecalho-conteudo {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0;
+    }
+
+    .marca-topo {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding: 12px 24px;
+      background: #1f4e79;
+      box-shadow: 0 0 0 100vmax #1f4e79;
+      clip-path: inset(0 -100vmax);
+      box-sizing: border-box;
+    }
+
+    .marca-topo strong {
+      font-size: 1.15rem;
+      letter-spacing: 0.08em;
+      color: #ffffff;
+    }
+
+    .marca-topo span {
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.82);
+    }
+
+    .menu-principal {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      padding: 0 24px 10px;
+      box-sizing: border-box;
+    }
+
+    .menu-principal a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 8px 12px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: var(--cor-texto);
+      font-size: 0.92rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+    }
+
+    .menu-principal a:hover,
+    .menu-principal a:focus {
+      background: rgba(31, 111, 84, 0.08);
+      border-color: rgba(31, 111, 84, 0.22);
+      color: var(--cor-primaria-escura);
+      outline: none;
+    }
+
+    .menu-principal a.ativo {
+      background: var(--cor-primaria);
+      color: #ffffff;
+      border-color: var(--cor-primaria);
+    }
+
+    main {
+      flex: 1 1 auto;
+      min-height: 0;
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    .painel {
+      width: min(1000px, 100%);
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid rgba(217, 226, 221, 0.95);
+      border-radius: 18px;
+      box-shadow: var(--sombra-suave);
+      overflow: hidden;
+    }
+
+    .titulo-painel {
+      background: #1f4e79;
+      color: #ffffff;
+      padding: 14px 18px;
+      font-size: 16px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .conteudo {
+      padding: 18px;
+    }
+
+    .bloco {
+      border: 1px solid #d9e2dd;
+      border-radius: 10px;
+      background: #ffffff;
+      padding: 14px;
+      margin-bottom: 14px;
+    }
+
+    .bloco h2 {
+      margin: 0 0 10px 0;
+      color: #1f4e79;
+      font-size: 15px;
+    }
+
+    .linha-info {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 8px;
+      font-size: 13px;
+      margin: 6px 0;
+    }
+
+    .rotulo {
+      font-weight: bold;
+      color: #333;
+    }
+
+    .valor {
+      color: #111;
+      word-break: break-word;
+    }
+
+    .status {
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #d6d8db;
+      background: #e2e3e5;
+      color: #383d41;
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+
+    .status.ok {
+      background: #d4edda;
+      border-color: #c3e6cb;
+      color: #155724;
+    }
+
+    .status.erro {
+      background: #f8d7da;
+      border-color: #f5c6cb;
+      color: #721c24;
+    }
+
+    .botoes {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 10px;
+    }
+
+    .btn {
+      background-color: #e0e0e0;
+      color: black;
+      border: 1px solid #ccc;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .btn:hover {
+      background-color: #d0d0d0;
+    }
+
+    .btn-primary {
+      background-color: #1f4e79;
+      color: white;
+      border-color: #1f4e79;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(0.95);
+    }
+
+    input[type="file"] {
+      width: 100%;
+      max-width: 520px;
+      font-size: 13px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 280px;
+      resize: vertical;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 10px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+      line-height: 1.35;
+      background: #ffffff;
+      color: #111;
+    }
+
+    .rodape {
+      flex: 0 0 auto;
+      width: 100%;
+      padding: 12px 24px;
+      border-top: 1px solid var(--cor-borda);
+      background: rgba(255, 255, 255, 0.88);
+      color: var(--cor-texto-suave);
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 600;
+      z-index: 10;
+    }
+
+    @media (max-width: 720px) {
+      .cabecalho-conteudo {
+        padding: 0;
+      }
+
+      .marca-topo {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        padding: 12px 16px;
+      }
+
+      .menu-principal {
+        gap: 5px;
+        padding: 0 16px 10px;
+      }
+
+      .menu-principal a {
+        font-size: 0.86rem;
+        padding: 7px 10px;
+      }
+
+      main {
+        padding: 18px 14px;
+      }
+
+      .linha-info {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="cabecalho">
+    <div class="cabecalho-conteudo">
+      <div class="marca-topo">
+        <strong>CALC-IBAMA</strong>
+        <span>Ferramentas de apoio administrativo</span>
+      </div>
+
+      <nav class="menu-principal" aria-label="Menu principal">
+        <a href="../">Início</a>
+        <a href="../simulador-amortizacao/">Simulador de amortização</a>
+        <a href="../simulador-consolidacao-debito/">Simulador de consolidação</a>
+        <a href="../calculadora-selic/">Calculadora Selic</a>
+        <a href="../calculadora-restituicao/">Calculadora de restituição</a>
+        <a href="../manuais/">Manuais</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="painel" aria-label="Teste do PDF.js">
+      <div class="titulo-painel">Teste do PDF.js 6.1.200 legacy</div>
+
+      <div class="conteudo">
+        <div class="bloco">
+          <h2>1. Status da biblioteca</h2>
+          <div class="linha-info">
+            <div class="rotulo">Arquivo principal:</div>
+            <div class="valor" id="pdfjsPrincipal">../libs/pdfjs-6.1.200-legacy/build/pdf.mjs</div>
+          </div>
+          <div class="linha-info">
+            <div class="rotulo">Worker:</div>
+            <div class="valor" id="pdfjsWorker">../libs/pdfjs-6.1.200-legacy/build/pdf.worker.mjs</div>
+          </div>
+          <div class="linha-info">
+            <div class="rotulo">Versão carregada:</div>
+            <div class="valor" id="pdfjsVersao">Aguardando carregamento...</div>
+          </div>
+          <div id="statusBiblioteca" class="status">Inicializando teste...</div>
+        </div>
+
+        <div class="bloco">
+          <h2>2. Upload de PDF para teste</h2>
+          <input type="file" id="arquivoPdf" accept="application/pdf,.pdf" />
+          <div class="botoes">
+            <button type="button" class="btn btn-primary" id="btnLerPdf">Ler PDF</button>
+            <button type="button" class="btn" id="btnLimpar">Limpar resultado</button>
+          </div>
+        </div>
+
+        <div class="bloco">
+          <h2>3. Resultado do teste</h2>
+          <div id="statusLeitura" class="status">Nenhum PDF carregado ainda.</div>
+        </div>
+
+        <div class="bloco">
+          <h2>4. Texto extraído</h2>
+          <textarea id="textoExtraido" readonly placeholder="O texto extraído do PDF aparecerá aqui."></textarea>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="rodape">
+    CALC-IBAMA · SECAT/CCOB
+  </footer>
+
+  <script type="module">
+    const PDFJS_MODULE_URL = '../libs/pdfjs-6.1.200-legacy/build/pdf.mjs';
+    const PDFJS_WORKER_URL = '../libs/pdfjs-6.1.200-legacy/build/pdf.worker.mjs';
+
+    const elVersao = document.getElementById('pdfjsVersao');
+    const elStatusBiblioteca = document.getElementById('statusBiblioteca');
+    const elStatusLeitura = document.getElementById('statusLeitura');
+    const elTextoExtraido = document.getElementById('textoExtraido');
+    const elArquivo = document.getElementById('arquivoPdf');
+    const btnLer = document.getElementById('btnLerPdf');
+    const btnLimpar = document.getElementById('btnLimpar');
+
+    let pdfjsLib = null;
+
+    function setStatus(el, texto, tipo = '') {
+      el.textContent = texto;
+      el.classList.remove('ok', 'erro');
+      if (tipo) el.classList.add(tipo);
+    }
+
+    async function carregarPdfJs() {
+      try {
+        setStatus(elStatusBiblioteca, 'Carregando PDF.js novo...');
+        pdfjsLib = await import(PDFJS_MODULE_URL);
+        pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
+
+        elVersao.textContent = pdfjsLib.version || 'Versão não informada pela biblioteca.';
+        setStatus(
+          elStatusBiblioteca,
+          'PDF.js carregado com sucesso. Worker configurado. Agora carregue um PDF para testar a leitura.',
+          'ok'
+        );
+      } catch (erro) {
+        console.error('Erro ao carregar PDF.js:', erro);
+        elVersao.textContent = 'Falha no carregamento.';
+        setStatus(
+          elStatusBiblioteca,
+          'Erro ao carregar o PDF.js novo. Abra o Console do navegador para ver os detalhes.\n\n' + (erro && erro.message ? erro.message : erro),
+          'erro'
+        );
+      }
+    }
+
+    async function lerPdfSelecionado() {
+      if (!pdfjsLib) {
+        setStatus(elStatusLeitura, 'O PDF.js ainda não foi carregado.', 'erro');
+        return;
+      }
+
+      const arquivo = elArquivo.files && elArquivo.files[0];
+      if (!arquivo) {
+        setStatus(elStatusLeitura, 'Selecione um arquivo PDF antes de clicar em Ler PDF.', 'erro');
+        return;
+      }
+
+      try {
+        setStatus(elStatusLeitura, 'Lendo arquivo...');
+        elTextoExtraido.value = '';
+
+        const buffer = await arquivo.arrayBuffer();
+
+        const loadingTask = pdfjsLib.getDocument({
+          data: new Uint8Array(buffer),
+          isEvalSupported: false
+        });
+
+        const pdf = await loadingTask.promise;
+        const totalPaginas = pdf.numPages;
+        const partes = [];
+
+        for (let paginaAtual = 1; paginaAtual <= totalPaginas; paginaAtual++) {
+          setStatus(elStatusLeitura, `Lendo página ${paginaAtual} de ${totalPaginas}...`);
+
+          const pagina = await pdf.getPage(paginaAtual);
+          const conteudo = await pagina.getTextContent();
+          const textoPagina = conteudo.items.map(item => item.str || '').join(' ');
+
+          partes.push(`===== PÁGINA ${paginaAtual} / ${totalPaginas} =====\n${textoPagina}\n`);
+        }
+
+        elTextoExtraido.value = partes.join('\n');
+        setStatus(
+          elStatusLeitura,
+          `PDF lido com sucesso. Arquivo: ${arquivo.name}\nTotal de páginas: ${totalPaginas}\nTexto extraído: ${elTextoExtraido.value.length} caracteres.`,
+          'ok'
+        );
+
+        console.log('Teste PDF.js concluído com sucesso:', {
+          arquivo: arquivo.name,
+          totalPaginas,
+          versao: pdfjsLib.version
+        });
+      } catch (erro) {
+        console.error('Erro ao ler PDF:', erro);
+        setStatus(
+          elStatusLeitura,
+          'Erro ao ler o PDF. Abra o Console do navegador para ver os detalhes.\n\n' + (erro && erro.message ? erro.message : erro),
+          'erro'
+        );
+      }
+    }
+
+    btnLer.addEventListener('click', lerPdfSelecionado);
+
+    btnLimpar.addEventListener('click', () => {
+      elArquivo.value = '';
+      elTextoExtraido.value = '';
+      setStatus(elStatusLeitura, 'Nenhum PDF carregado ainda.');
+    });
+
+    carregarPdfJs();
+  </script>
+</body>
+</html>
