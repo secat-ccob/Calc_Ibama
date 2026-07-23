@@ -7,7 +7,7 @@
     <title>Calculadora de restituição</title>
     <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_restituicao_portal_v_29 -->
+    <!-- Versão: calculadora_restituicao_portal_v_30_pdfjs_6_1_200 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -1202,8 +1202,8 @@
         let dadosPlanilha = {};
         let statusConexao = 'carregando';
         let metadadosSelic = { ultimaCompetencia: '', ultimaTaxa: null, competenciaProvisoria: '', taxaProvisoria: null, fonte: '' };
-        const PDFJS_LOCAL_URL = '../libs/pdfjs/pdf.min.js';
-        const PDFJS_WORKER_LOCAL_URL = '../libs/pdfjs/pdf.worker.min.js';
+        const PDFJS_LOCAL_URL = '../libs/pdfjs-6.1.200-legacy/build/pdf.mjs';
+        const PDFJS_WORKER_LOCAL_URL = '../libs/pdfjs-6.1.200-legacy/build/pdf.worker.mjs';
         const BRASAO_REPUBLICA_PDF_URL = '../assets/img/pdf/brasao_republica.png';
         const LOGO_IBAMA_PDF_URL = '../assets/img/pdf/logo_ibama.png';
         let promessaPDFJS = null;
@@ -1958,20 +1958,21 @@
                 return Promise.resolve(window.pdfjsLib);
             }
             if (promessaPDFJS) return promessaPDFJS;
-            promessaPDFJS = new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = PDFJS_LOCAL_URL;
-                script.onload = () => {
-                    if (!window.pdfjsLib) {
-                        reject(new Error('PDF.js não foi carregado corretamente.'));
-                        return;
+
+            promessaPDFJS = import(PDFJS_LOCAL_URL)
+                .then((pdfjsLib) => {
+                    if (!pdfjsLib || !pdfjsLib.GlobalWorkerOptions) {
+                        throw new Error('PDF.js não foi carregado corretamente.');
                     }
-                    window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_LOCAL_URL;
-                    resolve(window.pdfjsLib);
-                };
-                script.onerror = () => reject(new Error('Não foi possível carregar o PDF.js local do portal.'));
-                document.head.appendChild(script);
-            });
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_LOCAL_URL;
+                    window.pdfjsLib = pdfjsLib;
+                    return pdfjsLib;
+                })
+                .catch((erro) => {
+                    promessaPDFJS = null;
+                    throw new Error('Não foi possível carregar o PDF.js local do portal. ' + (erro && erro.message ? erro.message : erro));
+                });
+
             return promessaPDFJS;
         }
 
@@ -1988,7 +1989,10 @@
             const buffer = await file.arrayBuffer();
 
             progresso(24, 'Abrindo PDF...');
-            const tarefaCarregamento = pdfjsLib.getDocument({ data: buffer });
+            const tarefaCarregamento = pdfjsLib.getDocument({
+                data: new Uint8Array(buffer),
+                isEvalSupported: false
+            });
             tarefaCarregamento.onProgress = dadosProgresso => {
                 const carregado = Number(dadosProgresso?.loaded || 0);
                 const total = Number(dadosProgresso?.total || 0);
