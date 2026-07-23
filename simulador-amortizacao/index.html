@@ -6,7 +6,7 @@
   <title>Simulador de amortização</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_amortizacao_portal_v_7 -->
+  <!-- Versão: simulador_amortizacao_portal_v_8_pdfjs_6_1_200 -->
 
   <style>
     :root {
@@ -1730,8 +1730,8 @@ function cleanText(v) {
 }
 
 
-const PDFJS_CDN_URL = '../libs/pdfjs/pdf.min.js';
-const PDFJS_WORKER_CDN_URL = '../libs/pdfjs/pdf.worker.min.js';
+const PDFJS_CDN_URL = '../libs/pdfjs-6.1.200-legacy/build/pdf.mjs';
+const PDFJS_WORKER_CDN_URL = '../libs/pdfjs-6.1.200-legacy/build/pdf.worker.mjs';
 let _pdfJsLoaderPromise = null;
 
 function _normalizeAsciiUpper(s) {
@@ -1881,33 +1881,19 @@ async function ensurePdfJsLoaded() {
   }
   if (_pdfJsLoaderPromise) return _pdfJsLoaderPromise;
 
-  _pdfJsLoaderPromise = new Promise((resolve, reject) => {
-    const existing = document.querySelector('script[data-pdfjs-loader="1"]');
-    if (existing) {
-      existing.addEventListener('load', () => {
-        if (!window.pdfjsLib) return reject(new Error('Não foi possível inicializar o leitor de PDF.'));
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_CDN_URL;
-        resolve(window.pdfjsLib);
-      }, { once: true });
-      existing.addEventListener('error', () => reject(new Error('Não foi possível carregar o motor de leitura de PDF.')), { once: true });
-      return;
-    }
-
-    const s = document.createElement('script');
-    s.src = PDFJS_CDN_URL;
-    s.async = true;
-    s.dataset.pdfjsLoader = '1';
-    s.onload = () => {
-      if (!window.pdfjsLib) {
-        reject(new Error('Não foi possível inicializar o leitor de PDF.'));
-        return;
+  _pdfJsLoaderPromise = import(PDFJS_CDN_URL)
+    .then((pdfjsLib) => {
+      if (!pdfjsLib || !pdfjsLib.GlobalWorkerOptions) {
+        throw new Error('Não foi possível inicializar o leitor de PDF.');
       }
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_CDN_URL;
-      resolve(window.pdfjsLib);
-    };
-    s.onerror = () => reject(new Error('Não foi possível carregar o motor de leitura de PDF.'));
-    document.head.appendChild(s);
-  });
+      pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_CDN_URL;
+      window.pdfjsLib = pdfjsLib;
+      return pdfjsLib;
+    })
+    .catch((erro) => {
+      _pdfJsLoaderPromise = null;
+      throw new Error('Não foi possível carregar o motor de leitura de PDF. ' + (erro && erro.message ? erro.message : erro));
+    });
 
   return _pdfJsLoaderPromise;
 }
@@ -1982,7 +1968,10 @@ async function parsePdfFile(file, onProgress) {
   const buffer = await file.arrayBuffer();
 
   progresso(22, 'Abrindo PDF...');
-  const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buffer) });
+  const loadingTask = pdfjsLib.getDocument({
+    data: new Uint8Array(buffer),
+    isEvalSupported: false
+  });
   loadingTask.onProgress = dadosProgresso => {
     const carregado = Number(dadosProgresso?.loaded || 0);
     const total = Number(dadosProgresso?.total || 0);
