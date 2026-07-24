@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_51 -->
+  <!-- Versão: simulador_consolidacao_debito_v_52 -->
 
   <style>
     :root {
@@ -606,7 +606,7 @@
     }
 
     .bloco-atualizacao {
-      padding: 14px 12px 12px;
+      padding: 14px 0 12px;
       border-top: 1px solid #d9e2dd;
       background: #ffffff;
     }
@@ -4254,7 +4254,7 @@
           dados.modoMultaAcumulado = 'automatico';
           dados.modoSelicAcumulado = 'automatico';
         }
-        dados.tituloSecao = `Atualização ${String(simulacoesAdicionais.length + 2).padStart(2, '0')}`;
+        dados.tituloSecao = `Consolidação ${String(simulacoesAdicionais.length + 2).padStart(2, '0')}`;
         dados.statusMemoria = dados.statusMemoria || 'vazio';
         simulacoesAdicionais.push(dados);
         renderizarAtualizacoes();
@@ -4308,11 +4308,11 @@
         dados.statusMemoria = 'carregado';
         registrarReferenciaMemoriaAtualizacao(dados);
         if (indiceDestino !== null && simulacoesAdicionais[indiceDestino]) {
-          dados.tituloSecao = simulacoesAdicionais[indiceDestino].tituloSecao || `Atualização ${String(indiceDestino + 2).padStart(2, '0')}`;
+          dados.tituloSecao = simulacoesAdicionais[indiceDestino].tituloSecao || `Consolidação ${String(indiceDestino + 2).padStart(2, '0')}`;
           simulacoesAdicionais[indiceDestino] = dados;
           marcarAtualizacoesPosterioresParaReprocessar(indiceDestino);
         } else {
-          dados.tituloSecao = `Atualização ${String(simulacoesAdicionais.length + 2).padStart(2, '0')}`;
+          dados.tituloSecao = `Consolidação ${String(simulacoesAdicionais.length + 2).padStart(2, '0')}`;
           simulacoesAdicionais.push(dados);
         }
         renderizarAtualizacoes();
@@ -4964,7 +4964,7 @@
       try {
         const assinaturaAntes = assinaturaAtualizacao(dadosAtuais);
         const dadosReprocessados = await criarAtualizacaoReprocessadaConformeModo(dadosAtuais, indice);
-        dadosReprocessados.tituloSecao = dadosAtuais.tituloSecao || `Atualização ${String(indice + 2).padStart(2, '0')}`;
+        dadosReprocessados.tituloSecao = dadosAtuais.tituloSecao || `Consolidação ${String(indice + 2).padStart(2, '0')}`;
         dadosReprocessados.reprocessamentoPendente = false;
         dadosReprocessados.reprocessamentoOrigemIndice = null;
         const assinaturaDepois = assinaturaAtualizacao(dadosReprocessados);
@@ -4998,7 +4998,7 @@
       if (!container) return;
       container.innerHTML = simulacoesAdicionais.map((dados, idx) => `
         <div class="bloco-atualizacao" data-atualizacao="${idx}">
-          <div class="subtitulo-atualizacao">${escapeHtml(dados.tituloSecao || `Atualização ${String(idx + 2).padStart(2, '0')}`)}</div>
+          <div class="subtitulo-atualizacao">${escapeHtml(dados.tituloSecao || `Consolidação ${String(idx + 2).padStart(2, '0')}`)}</div>
           <div class="painel-upload-memoria painel-upload-atualizacao no-print">
             <div class="btnbar">
               <button type="button" class="btn" data-carregar-atualizacao="${idx}">Carregar memória de cálculo para preenchimento automático (PDF)</button>
@@ -5036,7 +5036,15 @@
         input.addEventListener('keydown', event => {
           if (event.key === 'Enter') {
             event.preventDefault();
+            const camposNavegaveis = Array.from(document.querySelectorAll('input:not([readonly]), select:not([disabled]), button:not([disabled])'));
+            const proximoIndice = camposNavegaveis.indexOf(input) + 1;
+            input.value = numeroParaPercentual(parseNumeroFlexivel(input.value));
             input.blur();
+            setTimeout(() => {
+              const camposAtualizados = Array.from(document.querySelectorAll('input:not([readonly]), select:not([disabled]), button:not([disabled])'));
+              const proximo = camposAtualizados[proximoIndice] || camposAtualizados[camposAtualizados.length - 1];
+              if (proximo && typeof proximo.focus === 'function') proximo.focus();
+            }, 0);
           }
         });
       });
@@ -5098,7 +5106,7 @@
     function obterTodasSimulacoesPdf() {
       const atual = coletarDadosPdf();
       atual.tituloSecao = 'Consolidação 01';
-      return [atual, ...simulacoesAdicionais.map((d, i) => ({ ...d, tituloSecao: d.tituloSecao || `Atualização ${String(i + 2).padStart(2, '0')}` }))];
+      return [atual, ...simulacoesAdicionais.map((d, i) => ({ ...d, tituloSecao: d.tituloSecao || `Consolidação ${String(i + 2).padStart(2, '0')}` }))];
     }
 
     async function gerarPdfConsolidadoTodasSimulacoes() {
@@ -5372,7 +5380,7 @@
         }
 
         if (mostrarTituloSecao || dadosItem._mostrarTituloSecao) {
-          const tituloSecao = dadosItem.tituloSecao || (indiceSimulacao === 0 ? 'Consolidação 01' : `Atualização ${String(indiceSimulacao + 1).padStart(2, '0')}`);
+          const tituloSecao = dadosItem.tituloSecao || (indiceSimulacao === 0 ? 'Consolidação 01' : `Consolidação ${String(indiceSimulacao + 1).padStart(2, '0')}`);
           garantirEspaco(alturaLinha + 8);
           celula(x0, y, tabelaLargura, alturaLinha, '0.85', tituloSecao, { negrito: true, alinhamento: 'center', tamanho: 9 });
           y -= alturaLinha + 8;
@@ -5641,6 +5649,22 @@
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
+    function bindEnterComoTabPercentualEncargoPrincipal(id) {
+      const input = document.getElementById(id);
+      if (!input || input.dataset.enterEncargoBound === '1') return;
+      input.dataset.enterEncargoBound = '1';
+      input.addEventListener('keydown', (ev) => {
+        if (ev.key !== 'Enter') return;
+        ev.preventDefault();
+        if (input.readOnly) return;
+        input.value = numeroParaPercentual(parseNumeroFlexivel(input.value));
+        registrarEdicaoCampo(input);
+        atualizarCalculos();
+        focusNextField(input);
+      });
+    }
+
+
     function focusNextField(current) {
       const fields = Array.from(document.querySelectorAll('input:not([readonly]), select:not([disabled]), button:not([disabled])'));
       const idx = fields.indexOf(current);
@@ -5654,6 +5678,8 @@
     document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.campo-moeda').forEach(bindRealtimeMoneyInput);
       document.querySelectorAll('.campo-percentual').forEach(bindPercentInput);
+      bindEnterComoTabPercentualEncargoPrincipal('percentualMulta');
+      bindEnterComoTabPercentualEncargoPrincipal('percentualSelic');
       bindDateInput(document.getElementById('dataConsolidacao'));
       ['dataInicioMulta', 'dataFimMulta', 'dataInicioSelic', 'dataFimSelic'].forEach(id => {
         const el = document.getElementById(id);
