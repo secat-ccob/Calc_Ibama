@@ -7,7 +7,7 @@
     <title>Calculadora de restituição</title>
     <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_restituicao_portal_v_31_limite_mes_atualizacao_pdfjs_6_1_200 -->
+    <!-- Versão: calculadora_restituicao_portal_v_32_valida_mes_atualizacao_pdfjs_6_1_200 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -898,7 +898,7 @@
 
             <div class="update-section">
                 Mês de atualização/restituição (mm/aaaa):
-                <input type="text" id="mesReferencia" value="" maxlength="7" onblur="formatarDataMes(this); atualizarTodasLinhas()">
+                <input type="text" id="mesReferencia" value="" maxlength="7" inputmode="numeric" onfocus="guardarMesReferenciaAnterior(this)" oninput="aplicarMascaraMesReferenciaTempoReal(this)" onblur="aoSairMesReferencia(this)">
             </div>
 
             <div id="alertas" class="alert"></div>
@@ -1211,6 +1211,7 @@
         let arquivoRelacaoPagamentosPendente = null;
         let resolverOpcaoRelacaoPagamentos = null;
         let resolverDataBasePrazo = null;
+        let ultimoMesReferenciaValido = '';
 
         function obterMesVigente() {
             const agora = new Date();
@@ -1221,7 +1222,9 @@
 
         function definirMesVigente() {
             const campoMesReferencia = document.getElementById('mesReferencia');
-            if (campoMesReferencia) campoMesReferencia.value = obterMesVigente();
+            const mesVigente = obterMesVigente();
+            if (campoMesReferencia) campoMesReferencia.value = mesVigente;
+            ultimoMesReferenciaValido = mesVigente;
         }
 
         function atualizarStatus(mensagem, sucesso = true) {
@@ -1474,37 +1477,67 @@
             campo.placeholder = ativo ? 'Descreva resumidamente o motivo da restituição.' : 'Ativo apenas quando o motivo selecionado for Outro.';
         }
 
+        function aplicarMascaraMesReferenciaTempoReal(input) {
+            if (!input) return;
+            let valor = String(input.value || '').replace(/\D/g, '').slice(0, 6);
+            if (valor.length > 2) valor = valor.slice(0, 2) + '/' + valor.slice(2);
+            input.value = valor;
+            try {
+                const len = input.value.length;
+                input.setSelectionRange(len, len);
+            } catch (_) {}
+        }
+
+        function validarValorMesReferencia(valorOriginal) {
+            const digitos = String(valorOriginal || '').replace(/\D/g, '');
+            if (digitos.length !== 6) {
+                return { ok: false, mensagem: 'Data inválida. Use formato MM/AAAA.' };
+            }
+
+            const mes = Number(digitos.slice(0, 2));
+            const ano = Number(digitos.slice(2, 6));
+            if (!mes || mes < 1 || mes > 12) {
+                return { ok: false, mensagem: 'Data inválida. Use formato MM/AAAA.' };
+            }
+            if (ano < 1995 || ano > 2030) {
+                return { ok: false, mensagem: 'Mês/ano inválido. Use entre 1995 e 2030.' };
+            }
+
+            const hoje = new Date();
+            const competenciaInformada = ano * 12 + mes;
+            const competenciaAtual = hoje.getFullYear() * 12 + (hoje.getMonth() + 1);
+            if (competenciaInformada > competenciaAtual) {
+                return { ok: false, mensagem: 'Mês de atualização/restituição não pode ser futuro.' };
+            }
+
+            return { ok: true, valor: `${String(mes).padStart(2, '0')}/${ano}` };
+        }
+
+        function restaurarMesReferenciaAnterior(input) {
+            if (!input) return;
+            input.value = ultimoMesReferenciaValido || obterMesVigente();
+        }
+
+        function guardarMesReferenciaAnterior(input) {
+            const validacao = validarValorMesReferencia(input?.value || '');
+            if (validacao.ok) ultimoMesReferenciaValido = validacao.valor;
+        }
+
         function formatarDataMes(input) {
-            let valor = input.value.replace(/\D/g, '');
-            if (valor.length >= 6) {
-                valor = valor.substring(0, 2) + '/' + valor.substring(2, 6);
-            } else if (valor.length === 5) {
-                valor = '0' + valor.substring(0, 1) + '/' + valor.substring(1, 5);
+            const validacao = validarValorMesReferencia(input?.value || '');
+            if (!validacao.ok) {
+                restaurarMesReferenciaAnterior(input);
+                mostrarAlerta(validacao.mensagem, 'error');
+                return false;
             }
+            input.value = validacao.valor;
+            ultimoMesReferenciaValido = validacao.valor;
+            return true;
+        }
 
-            const regex = /^(0[1-9]|1[0-2])\/\d{4}$/;
-            if (regex.test(valor)) {
-                const [mes, ano] = valor.split('/').map(Number);
-                if (ano < 1995 || ano > 2030) {
-                    input.value = '';
-                    mostrarAlerta('Mês/ano inválido. Use entre 1995 e 2030.', 'error');
-                    return;
-                }
-
-                const hoje = new Date();
-                const competenciaInformada = ano * 12 + mes;
-                const competenciaAtual = hoje.getFullYear() * 12 + (hoje.getMonth() + 1);
-                if (competenciaInformada > competenciaAtual) {
-                    input.value = '';
-                    mostrarAlerta('Mês de atualização/restituição não pode ser futuro.', 'error');
-                    return;
-                }
-
-                input.value = valor;
-            } else if (valor.length >= 6) {
-                input.value = '';
-                mostrarAlerta('Data inválida. Use formato MM/AAAA.', 'error');
-            }
+        async function aoSairMesReferencia(input) {
+            formatarDataMes(input);
+            await atualizarTodasLinhas();
         }
 
         function formatarDataCompleta(input) {
