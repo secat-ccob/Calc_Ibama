@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_19 -->
+    <!-- Versão: calculadora_selic_portal_v_20 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -478,7 +478,7 @@
                         <input type="text" class="valor-pagamento" placeholder="0,00" inputmode="numeric" oninput="aplicarMascaraMoedaTempoReal(this)" onblur="formatarMoeda(this); calcularLinha(0)">
                     </td>
                     <td class="white-cell">
-                        <input type="text" class="data-pagamento" placeholder="MM/AAAA" maxlength="7" onblur="formatarData(this); calcularLinha(0)">
+                        <input type="text" class="data-pagamento" placeholder="MM/AAAA" maxlength="10" onblur="formatarData(this); calcularLinha(0)">
                     </td>
                     <td class="gray-cell">
                         <input type="text" class="taxa-selic" readonly>
@@ -1137,26 +1137,42 @@
         }
         
         function formatarData(input) {
-            let valor = input.value.replace(/\D/g, '');
-            
-            if (valor.length >= 6) {
+            const ehCampoVencimento = input && input.classList && input.classList.contains('data-pagamento');
+            let valor = (input.value || '').replace(/\D/g, '');
+
+            if (!valor) return;
+
+            if (ehCampoVencimento && valor.length >= 8) {
+                valor = valor.substring(2, 4) + '/' + valor.substring(4, 8);
+            } else if (valor.length >= 6) {
                 valor = valor.substring(0, 2) + '/' + valor.substring(2, 6);
             } else if (valor.length === 5) {
                 valor = '0' + valor.substring(0, 1) + '/' + valor.substring(1, 5);
             }
-            
+
             const regex = /^(0[1-9]|1[0-2])\/\d{4}$/;
             if (regex.test(valor)) {
                 const [mes, ano] = valor.split('/').map(Number);
-                if (ano >= 1995 && ano <= 2030) {
-                    input.value = valor;
-                } else {
+                const hoje = new Date();
+                const mesAtual = hoje.getMonth() + 1;
+                const anoAtual = hoje.getFullYear();
+
+                if (ano < 1995 || ano > 2030) {
                     input.value = '';
                     mostrarAlerta('Data inválida. Use entre 1995 e 2030.', 'error');
+                    return;
                 }
+
+                if (ano > anoAtual || (ano === anoAtual && mes > mesAtual)) {
+                    input.value = '';
+                    mostrarAlerta('Data futura não permitida.', 'error');
+                    return;
+                }
+
+                input.value = valor;
             } else if (valor.length >= 6) {
                 input.value = '';
-                mostrarAlerta('Data inválida. Use formato MM/AAAA', 'error');
+                mostrarAlerta(ehCampoVencimento ? 'Data inválida. Use formato MM/AAAA ou DD/MM/AAAA.' : 'Data inválida. Use formato MM/AAAA', 'error');
             }
         }
         
@@ -1285,7 +1301,7 @@
                     <input type="text" class="valor-pagamento" placeholder="0,00" inputmode="numeric" oninput="aplicarMascaraMoedaTempoReal(this)" onblur="formatarMoeda(this); calcularLinha(${contadorLinhas})">
                 </td>
                 <td class="white-cell">
-                    <input type="text" class="data-pagamento" placeholder="MM/AAAA" maxlength="7" onblur="formatarData(this); calcularLinha(${contadorLinhas})">
+                    <input type="text" class="data-pagamento" placeholder="MM/AAAA" maxlength="10" onblur="formatarData(this); calcularLinha(${contadorLinhas})">
                 </td>
                 <td class="gray-cell">
                     <input type="text" class="taxa-selic" readonly>
