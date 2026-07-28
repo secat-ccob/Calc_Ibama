@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_20 -->
+    <!-- Versão: calculadora_selic_portal_v_21 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -457,7 +457,7 @@
         
         <div class="update-section">
             Mês de atualização (mm/aaaa):
-            <input type="text" id="mesReferencia" value="" maxlength="7" onblur="formatarData(this); atualizarTodasLinhas()">
+            <input type="text" id="mesReferencia" value="" maxlength="7" inputmode="numeric" onblur="formatarData(this); atualizarTodasLinhas()">
         </div>
         
         <div id="alertas" class="alert"></div>
@@ -553,6 +553,7 @@
             if (campoMesReferencia) {
                 const mesVigente = obterMesVigente();
                 campoMesReferencia.value = mesVigente;
+                campoMesReferencia.dataset.ultimoValorValido = mesVigente;
                 console.log(`✅ Campo definido para mês vigente: ${mesVigente}`);
             }
         }
@@ -1136,44 +1137,114 @@
             return somaTaxas;
         }
         
+        function obterCompetenciaAtual() {
+            const hoje = new Date();
+            return {
+                mes: hoje.getMonth() + 1,
+                ano: hoje.getFullYear()
+            };
+        }
+
+        function validarDataCompletaReal(dia, mes, ano) {
+            const data = new Date(ano, mes - 1, dia);
+            return data.getFullYear() === ano && data.getMonth() === mes - 1 && data.getDate() === dia;
+        }
+
+        function normalizarCompetencia(valorOriginal, permitirDataCompleta = false) {
+            const valor = String(valorOriginal || '').trim();
+
+            if (!valor) return null;
+
+            if (permitirDataCompleta && (/^\d{8}$/.test(valor) || /^\d{2}\/\d{2}\/\d{4}$/.test(valor))) {
+                const digitosData = valor.replace(/\D/g, '');
+                const dia = Number(digitosData.substring(0, 2));
+                const mes = Number(digitosData.substring(2, 4));
+                const ano = Number(digitosData.substring(4, 8));
+                if (!validarDataCompletaReal(dia, mes, ano)) return null;
+                return `${String(mes).padStart(2, '0')}/${ano}`;
+            }
+
+            if (/^\d{6}$/.test(valor) || /^\d{2}\/\d{4}$/.test(valor)) {
+                const digitosMesAno = valor.replace(/\D/g, '');
+                const mes = Number(digitosMesAno.substring(0, 2));
+                const ano = Number(digitosMesAno.substring(2, 6));
+                if (mes < 1 || mes > 12) return null;
+                return `${String(mes).padStart(2, '0')}/${ano}`;
+            }
+
+            return null;
+        }
+
+        function validarCompetenciaPermitida(competencia) {
+            const [mes, ano] = String(competencia || '').split('/').map(Number);
+            const atual = obterCompetenciaAtual();
+
+            if (!mes || !ano || ano < 1995 || ano > 2030) {
+                return { valido: false, mensagem: 'Data inválida. Use entre 1995 e 2030.' };
+            }
+
+            if (ano > atual.ano || (ano === atual.ano && mes > atual.mes)) {
+                return { valido: false, mensagem: 'Data futura não permitida.' };
+            }
+
+            return { valido: true, mensagem: '' };
+        }
+
+        function validarMesReferencia(input) {
+            if (!input) return false;
+            const ultimoValorValido = input.dataset.ultimoValorValido || obterMesVigente();
+            const competencia = normalizarCompetencia(input.value, false);
+
+            if (!competencia) {
+                input.value = ultimoValorValido;
+                mostrarAlerta('Mês de atualização inválido. Use o formato MMAAAA ou MM/AAAA.', 'error');
+                return false;
+            }
+
+            const validacao = validarCompetenciaPermitida(competencia);
+            if (!validacao.valido) {
+                input.value = ultimoValorValido;
+                mostrarAlerta(validacao.mensagem, 'error');
+                return false;
+            }
+
+            input.value = competencia;
+            input.dataset.ultimoValorValido = competencia;
+            return true;
+        }
+
+        function validarVencimento(input) {
+            if (!input) return false;
+            if (!String(input.value || '').trim()) {
+                input.dataset.ultimoValorValido = '';
+                return true;
+            }
+
+            const ultimoValorValido = input.dataset.ultimoValorValido || '';
+            const competencia = normalizarCompetencia(input.value, true);
+
+            if (!competencia) {
+                input.value = ultimoValorValido;
+                mostrarAlerta('Vencimento inválido. Use o formato MM/AAAA, MMAAAA ou DD/MM/AAAA.', 'error');
+                return false;
+            }
+
+            const validacao = validarCompetenciaPermitida(competencia);
+            if (!validacao.valido) {
+                input.value = ultimoValorValido;
+                mostrarAlerta(validacao.mensagem, 'error');
+                return false;
+            }
+
+            input.value = competencia;
+            input.dataset.ultimoValorValido = competencia;
+            return true;
+        }
+
         function formatarData(input) {
             const ehCampoVencimento = input && input.classList && input.classList.contains('data-pagamento');
-            let valor = (input.value || '').replace(/\D/g, '');
-
-            if (!valor) return;
-
-            if (ehCampoVencimento && valor.length >= 8) {
-                valor = valor.substring(2, 4) + '/' + valor.substring(4, 8);
-            } else if (valor.length >= 6) {
-                valor = valor.substring(0, 2) + '/' + valor.substring(2, 6);
-            } else if (valor.length === 5) {
-                valor = '0' + valor.substring(0, 1) + '/' + valor.substring(1, 5);
-            }
-
-            const regex = /^(0[1-9]|1[0-2])\/\d{4}$/;
-            if (regex.test(valor)) {
-                const [mes, ano] = valor.split('/').map(Number);
-                const hoje = new Date();
-                const mesAtual = hoje.getMonth() + 1;
-                const anoAtual = hoje.getFullYear();
-
-                if (ano < 1995 || ano > 2030) {
-                    input.value = '';
-                    mostrarAlerta('Data inválida. Use entre 1995 e 2030.', 'error');
-                    return;
-                }
-
-                if (ano > anoAtual || (ano === anoAtual && mes > mesAtual)) {
-                    input.value = '';
-                    mostrarAlerta('Data futura não permitida.', 'error');
-                    return;
-                }
-
-                input.value = valor;
-            } else if (valor.length >= 6) {
-                input.value = '';
-                mostrarAlerta(ehCampoVencimento ? 'Data inválida. Use formato MM/AAAA ou DD/MM/AAAA.' : 'Data inválida. Use formato MM/AAAA', 'error');
-            }
+            if (ehCampoVencimento) return validarVencimento(input);
+            return validarMesReferencia(input);
         }
         
         function moedaParaNumero(valorMoeda) {
