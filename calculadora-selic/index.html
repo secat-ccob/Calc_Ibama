@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_21 -->
+    <!-- Versão: calculadora_selic_portal_v_22 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -1468,9 +1468,12 @@ function criarModalUltimaTaxa() {
     document.body.appendChild(modal);
 
     // Fechar APENAS ao clicar no botão OK
-    document.getElementById('btnOkModal').onclick = () => {
-        modal.style.display = 'none';
-    };
+    const btnOkModal = document.getElementById('btnOkModal');
+    if (btnOkModal) {
+        btnOkModal.onclick = () => {
+            modal.style.display = 'none';
+        };
+    }
 }
 
 function mostrarModalUltimaTaxa() {
@@ -1492,6 +1495,11 @@ function mostrarModalUltimaTaxa() {
     const textoFormatado = `ATUALIZADO!<br><br>${ultimaTaxa.toFixed(2).replace('.', ',')}% (${ultimaCompetencia})<br>${taxaProvisoria.toFixed(2).replace('.', ',')}% (${competenciaProvisoria})`;
     textoElemento.innerHTML = textoFormatado;
     modal.style.display = 'block';
+
+    const btnOkModal = document.getElementById('btnOkModal');
+    if (btnOkModal) {
+        setTimeout(() => btnOkModal.focus(), 0);
+    }
 }
 
 
