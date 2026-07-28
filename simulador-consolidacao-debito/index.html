@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_53 -->
+  <!-- Versão: simulador_consolidacao_debito_v_54 -->
 
   <style>
     :root {
@@ -2624,7 +2624,7 @@
     function montarHtmlConsolidacaoAcumulado() {
       return `
         <tr class="linha-topo"><th>Nº do débito acumulado:</th><td class="valor" colspan="2"><input id="numeroDebitoAcumulado" class="campo-tabela campo-numero" type="text" inputmode="numeric" placeholder="opcional" autocomplete="off" value="${onlyDigits(dadosTcfaAcumulado?.numeroDebito || '')}"></td></tr>
-        <tr class="linha-topo"><th>Consolidação do débito em (data):</th><td class="valor" colspan="2">${htmlControleDataConsolidacao('acumulado', dadosTcfaAcumulado?.dataConsolidacao || '', dadosTcfaAcumulado?.modoDataConsolidacao || (dadosTcfaAcumulado?.dataConsolidacao ? 'outra' : 'atual'))}</td></tr>
+        <tr class="linha-topo"><th>Consolidação do débito em (data):</th><td class="valor" colspan="2"><input id="dataConsolidacaoAcumulado" class="campo-tabela campo-data" type="text" inputmode="numeric" value="${escapeHtml(dadosTcfaAcumulado?.dataConsolidacao || '')}" readonly tabindex="-1"></td></tr>
         <tr><th class="rotulo">Descrição</th><th class="percentual">Percentual</th><th class="valor">Valores</th></tr>
         <tr class="linha-destaque"><td class="rotulo">Valor Principal</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumValorPrincipal" class="campo-tabela" type="text" value="${numeroParaMoeda(dadosTcfaAcumulado?.valorPrincipal || 0)}" readonly tabindex="-1"></td></tr>
         <tr class="linha-comum"><td class="rotulo">(-)Somatório da amortização</td><td class="percentual percentual-vazio">-</td><td class="valor"><input id="acumSomatorioAmortizacao" class="campo-tabela campo-moeda-acum" type="text" inputmode="numeric" value="${numeroParaMoeda(dadosTcfaAcumulado?.somatorioAmortizacao || 0)}"></td></tr>
@@ -2710,7 +2710,14 @@
           atualizarConsolidacaoAcumulado();
         });
       });
-      bindControleDataConsolidacao('acumulado');
+      const dataConsolidacaoAcumulado = document.getElementById('dataConsolidacaoAcumulado');
+      if (dataConsolidacaoAcumulado && dataConsolidacaoAcumulado.dataset.bound !== '1') {
+        dataConsolidacaoAcumulado.dataset.bound = '1';
+        dataConsolidacaoAcumulado.readOnly = true;
+        dataConsolidacaoAcumulado.tabIndex = -1;
+        dataConsolidacaoAcumulado.addEventListener('focus', () => setTimeout(() => dataConsolidacaoAcumulado.select(), 0));
+        dataConsolidacaoAcumulado.addEventListener('click', () => setTimeout(() => dataConsolidacaoAcumulado.select(), 0));
+      }
       const numero = document.getElementById('numeroDebitoAcumulado');
       if (numero && numero.dataset.bound !== '1') {
         numero.dataset.bound = '1';
@@ -3681,7 +3688,14 @@
 
     function valorCampo(id) {
       if (id === 'dataConsolidacao') return obterValorDataConsolidacao('principal');
-      if (id === 'dataConsolidacaoAcumulado') return obterValorDataConsolidacao('acumulado');
+      if (id === 'dataConsolidacaoAcumulado') {
+        const controleAcumulado = document.querySelector('[data-controle-data-consolidacao="acumulado"]');
+        if (!controleAcumulado) {
+          const el = document.getElementById(id);
+          return String(el?.value || dadosTcfaAcumulado?.dataConsolidacao || '').trim();
+        }
+        return obterValorDataConsolidacao('acumulado');
+      }
       const el = document.getElementById(id);
       return el ? String(el.value || '').trim() : '';
     }
@@ -5826,7 +5840,10 @@
     async function gerarPdfConsolidacao() {
       const tipo = getTipoDebitoSelecionado();
       const dataInput = tipo === 'TCFA_ACUMULADO' ? document.getElementById('dataConsolidacaoAcumulado') : document.getElementById('dataConsolidacao');
-      const modoData = tipo === 'TCFA_ACUMULADO' ? modoDataConsolidacaoSelecionado('acumulado') : modoDataConsolidacaoSelecionado('principal');
+      const possuiControleDataAcumulado = !!document.querySelector('[data-controle-data-consolidacao="acumulado"]');
+      const modoData = tipo === 'TCFA_ACUMULADO'
+        ? (possuiControleDataAcumulado ? modoDataConsolidacaoSelecionado('acumulado') : 'fixa')
+        : modoDataConsolidacaoSelecionado('principal');
       if (modoData === 'outra' && dataInput && dataInput.value.trim() && !ensureInputDate(dataInput)) {
         return;
       }
