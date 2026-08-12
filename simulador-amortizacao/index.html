@@ -6,7 +6,7 @@
   <title>Simulador de amortização</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_amortizacao_portal_v_8_pdfjs_6_1_200 -->
+  <!-- Versão: simulador_amortizacao_portal_v_9 -->
 
   <style>
     :root {
@@ -4123,7 +4123,7 @@ async function handleUploadArquivo01(sim, file, onProgress) {
       sim._rowsArquivo01Tabela = Array.isArray(parsed.rows) ? parsed.rows : [];
     }
   } else {
-    const parsed = parseAiOrTcfaSimplesFromPdfModel(model, sim.tipododebito, { requirePositiveSaldo: simId < 2 });
+    const parsed = parseAiOrTcfaSimplesFromPdfModel(model, sim.tipododebito, { requirePositiveSaldo: false });
     const parsedDataDeposito = normalizeDateDdMmYyyy(parsed.dataConsolidacao || '');
     if (simId >= 2) {
       const prevSim = state.simulations[simId - 2] || null;
