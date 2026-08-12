@@ -6,7 +6,7 @@
   <title>Simulador de amortização</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_amortizacao_portal_v_9 -->
+  <!-- Versão: simulador_amortizacao_portal_v_10 -->
 
   <style>
     :root {
@@ -841,6 +841,16 @@ function setUploadMuted(id){
   el.classList.remove('auto');
   el.classList.add('muted');
   el.textContent = 'CARREGADO';
+}
+
+function isArquivo01CarregadoVisualmente(simId) {
+  const el = document.getElementById(`statusUpload01_${simId}`);
+  if (!el) return false;
+  return el.classList.contains('ok') && cleanText(el.textContent).toUpperCase() === 'CARREGADO';
+}
+
+function arquivo01PrimeiroDepositoTemSaldoZerado(simId, sim) {
+  return Number(simId) === 1 && isArquivo01CarregadoVisualmente(simId) && !(Number(sim?.saldoatualizadonadatadeposito || 0) > 0);
 }
 
 function promptZeroDepositDecision(simId){
@@ -4321,8 +4331,14 @@ async function calcularSimulacao(simId) {
   sim.valorconsolidadonadatadeposito = moedaParaNumero(document.getElementById(`valorconsolidadonadatadeposito_${simId}`).value);
 
   // validações básicas
-  if (!(sim.saldoatualizadonadatadeposito > 0) || !(sim.valorconsolidadonadatadeposito > 0)) {
-    showAlert(`Depósito/ pagamento ${String(simId).padStart(2,'0')}: preencha o Saldo Atualizado e o Valor Consolidado na data do depósito/ pagamento (manual ou via Arquivo01).`, 'error');
+  const saldoDepositoZeradoOuAusente = !(sim.saldoatualizadonadatadeposito > 0);
+  const valorConsolidadoDepositoAusente = !(sim.valorconsolidadonadatadeposito > 0);
+  if (saldoDepositoZeradoOuAusente || valorConsolidadoDepositoAusente) {
+    if (arquivo01PrimeiroDepositoTemSaldoZerado(simId, sim)) {
+      showAlert('Depósito/ pagamento 01: a memória de cálculo da data do depósito possui Saldo zerado.', 'error');
+    } else {
+      showAlert(`Depósito/ pagamento ${String(simId).padStart(2,'0')}: preencha o Saldo Atualizado e o Valor Consolidado na data do depósito/ pagamento (manual ou via Arquivo01).`, 'error');
+    }
     return;
   }
 
@@ -5197,6 +5213,9 @@ function addSimulation(opts = {}) {
       atualizarProgressoPDF(100, 'Finalizando...');
       await aguardarFechamentoProgressoPDF(250);
       showAlert('Arquivo01 processado. Campos preenchidos.', 'success');
+      if (arquivo01PrimeiroDepositoTemSaldoZerado(simId, sim)) {
+        showAlert('a memória de cálculo carregada apresenta saldo zerado', 'info');
+      }
     } catch (err) {
       if (simId >= 2) refreshArquivo01Status(simId);
       else clearUploadOk(`statusUpload01_${simId}`);
