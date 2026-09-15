@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_59 -->
+  <!-- Versão: simulador_consolidacao_debito_v_60 -->
 
   <style>
     :root {
@@ -5932,7 +5932,62 @@
         celula(x0 + colunas[0] + colunas[1], y, colunas[2], alturaLinha, '0.97', 'Valores', { negrito: true, alinhamento: 'right' });
         y -= alturaLinha;
 
-        (dadosItem.linhas || []).forEach((linha) => {
+        function desenharCorrecaoMonetariaAgrupadaPDF(linhaCorrecao, linhaAmortizacao, linhaSaldo) {
+          const alturaGrupo = 68;
+          const cinzaGrupo = '0.97';
+          const xDescricao = x0;
+          const xPercentual = x0 + colunas[0];
+          const xValor = xPercentual + colunas[1];
+          const margemSubcampo = 6;
+          const alturaSubcampo = 15;
+          const ySubcampo1 = y - 21;
+          const ySubcampo2 = ySubcampo1 - alturaSubcampo - 4;
+          const ySaldoBase = y - alturaGrupo + 8;
+
+          garantirEspaco(alturaGrupo);
+
+          // Campo principal único, com os subcampos visualmente contidos em seu interior.
+          celula(xDescricao, y, colunas[0], alturaGrupo, cinzaGrupo, '', {});
+          celula(xPercentual, y, colunas[1], alturaGrupo, cinzaGrupo, '', {});
+          celula(xValor, y, colunas[2], alturaGrupo, cinzaGrupo, '', {});
+
+          addText('(+)Correção Monetária', xDescricao + 5, y - 12, 8, 'left', colunas[0] - 10, true);
+
+          // Subcampo: Valor da Correção Monetária (percentual + valor monetário na mesma linha).
+          celula(xDescricao + margemSubcampo, ySubcampo1, colunas[0] - (margemSubcampo * 2), alturaSubcampo, '0.96', 'Valor da Correção Monetária', { tamanho: 7, padding: 4 });
+          celula(xPercentual + margemSubcampo, ySubcampo1, colunas[1] - (margemSubcampo * 2), alturaSubcampo, '0.96', linhaCorrecao?.percentual || '-', { alinhamento: 'center', tamanho: 7.4, padding: 4 });
+          celula(xValor + margemSubcampo, ySubcampo1, colunas[2] - (margemSubcampo * 2), alturaSubcampo, '0.96', linhaCorrecao?.valor || '0,00', { alinhamento: 'right', tamanho: 7.4, padding: 4 });
+
+          // Subcampo: amortização da correção monetária.
+          celula(xDescricao + margemSubcampo, ySubcampo2, colunas[0] - (margemSubcampo * 2), alturaSubcampo, '0.96', linhaAmortizacao?.descricao || '(-)Amortização da Correção Monetária Sapiens Dívida', { tamanho: 6.6, padding: 4 });
+          celula(xPercentual + margemSubcampo, ySubcampo2, colunas[1] - (margemSubcampo * 2), alturaSubcampo, '0.96', '-', { alinhamento: 'center', tamanho: 7.4, padding: 4 });
+          celula(xValor + margemSubcampo, ySubcampo2, colunas[2] - (margemSubcampo * 2), alturaSubcampo, '0.96', linhaAmortizacao?.valor || '0,00', { alinhamento: 'right', tamanho: 7.4, padding: 4 });
+
+          // O saldo líquido fica fora dos subcampos, como valor efetivamente contabilizado pelo campo.
+          addText('-', xPercentual + 5, ySaldoBase, 8, 'center', colunas[1] - 10, false);
+          addText(linhaSaldo?.valor || '0,00', xValor + 5, ySaldoBase, 8, 'right', colunas[2] - 10, true);
+
+          y -= alturaGrupo;
+        }
+
+        const linhasPdf = dadosItem.linhas || [];
+        for (let indiceLinha = 0; indiceLinha < linhasPdf.length; indiceLinha++) {
+          const linha = linhasPdf[indiceLinha];
+          const descricaoNormalizada = normalizarTextoBusca(linha?.descricao || '');
+
+          if (dadosItem.tipoDebito !== 'TCFA_ACUMULADO' && descricaoNormalizada === normalizarTextoBusca('(+)Correção Monetária')) {
+            const linhaAmortizacao = linhasPdf[indiceLinha + 1];
+            const linhaSaldo = linhasPdf[indiceLinha + 2];
+            const ehAmortizacao = normalizarTextoBusca(linhaAmortizacao?.descricao || '').includes(normalizarTextoBusca('Amortização da Correção Monetária Sapiens Dívida'));
+            const ehSaldo = normalizarTextoBusca(linhaSaldo?.descricao || '') === normalizarTextoBusca('(=)Saldo da amortização');
+
+            if (ehAmortizacao && ehSaldo) {
+              desenharCorrecaoMonetariaAgrupadaPDF(linha, linhaAmortizacao, linhaSaldo);
+              indiceLinha += 2;
+              continue;
+            }
+          }
+
           garantirEspaco(alturaLinha);
           const cinza = linha.destaque ? '0.88' : '0.97';
           const percentualComDatas = /^De:\s*\d{2}\/\d{2}\/\d{4}\s+até\s+\d{2}\/\d{2}\/\d{4}:/.test(String(linha.percentual || ''));
@@ -5949,7 +6004,7 @@
           }
           celula(x0 + colunas[0] + colunas[1], y, colunas[2], alturaLinha, cinza, linha.valor, { alinhamento: 'right', negrito: linha.valorNegrito });
           y -= alturaLinha;
-        });
+        }
       }
 
       const listaDadosPdf = Array.isArray(dados.simulacoes) && dados.simulacoes.length ? dados.simulacoes : [dados];
