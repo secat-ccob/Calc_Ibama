@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_61 -->
+  <!-- Versão: simulador_consolidacao_debito_v_62 -->
 
   <style>
     :root {
@@ -1741,8 +1741,9 @@
       }
 
       if (input.id === 'amortizacaoCorrecaoMonetariaSapiensDivida') {
-        // A amortização altera apenas o saldo da correção, sem modificar o valor bruto.
-        modoCorrecaoMonetaria = 'percentual';
+        // A amortização altera somente o saldo líquido da correção.
+        // Nesta atualização, preserva exatamente o percentual e o valor bruto exibidos.
+        modoCorrecaoMonetaria = 'preservar';
       }
 
       if (input.id === 'percentualMulta' && modoEncargoSelecionado('multa') === 'sicafi') {
@@ -3651,11 +3652,16 @@
       if (modoCorrecaoMonetaria === 'percentual') {
         correcaoMonetaria = roundMoneyValue(saldoParcial * pctCorrecaoMonetaria);
         setValor('correcaoMonetaria', correcaoMonetaria);
-      } else {
+      } else if (modoCorrecaoMonetaria === 'valor') {
         const percentualCorrecaoCalculado = saldoParcial !== 0 ? (correcaoMonetaria / saldoParcial) * 100 : 0;
         setPercentual('percentualCorrecaoMonetaria', percentualCorrecaoCalculado);
-        modoCorrecaoMonetaria = 'percentual';
+      } else if (modoCorrecaoMonetaria === 'preservar') {
+        // Ao editar a amortização, não recalcula nem o valor bruto nem o percentual
+        // da Correção Monetária. Apenas o saldo líquido abaixo será atualizado.
       }
+      // Depois de qualquer edição pontual, o percentual volta a ser a referência
+      // para futuras alterações do Saldo Parcial.
+      modoCorrecaoMonetaria = 'percentual';
 
       const saldoAmortizacaoCorrecaoMonetaria = roundMoneyValue(correcaoMonetaria - amortizacaoCorrecaoMonetariaSapiensDivida);
       setValor('saldoAmortizacaoCorrecaoMonetaria', saldoAmortizacaoCorrecaoMonetaria);
@@ -4356,15 +4362,19 @@
       c.saldoParcial = roundMoneyValue(c.valorPrincipal - c.somatorioAmortizacao - c.valorDesconto - c.compensacaoEstadual);
       if (typeof c.somatorioSapiens !== 'number') c.somatorioSapiens = roundMoneyValue(c.saldoParcial * (Number(c.percentualSapiens || 0) / 100));
       if (!Number.isFinite(c.percentualSapiens) || c.percentualSapiens === null) c.percentualSapiens = c.saldoParcial ? (c.somatorioSapiens / c.saldoParcial) * 100 : 0;
-      const modoCorrecao = c.modoCorrecaoMonetaria === 'valor' ? 'valor' : 'percentual';
+      const modoCorrecao = c.modoCorrecaoMonetaria === 'valor'
+        ? 'valor'
+        : (c.modoCorrecaoMonetaria === 'preservar' ? 'preservar' : 'percentual');
       c.amortizacaoCorrecaoMonetariaSapiensDivida = Number(c.amortizacaoCorrecaoMonetariaSapiensDivida || 0);
       if (modoCorrecao === 'percentual') {
         c.correcaoMonetaria = roundMoneyValue(c.saldoParcial * (Number(c.percentualCorrecaoMonetaria || 0) / 100));
-      } else {
+      } else if (modoCorrecao === 'valor') {
         c.percentualCorrecaoMonetaria = c.saldoParcial !== 0 ? (Number(c.correcaoMonetaria || 0) / c.saldoParcial) * 100 : 0;
-        // Depois da edição direta do valor, o percentual passa a comandar alterações futuras do Saldo Parcial.
-        c.modoCorrecaoMonetaria = 'percentual';
+      } else if (modoCorrecao === 'preservar') {
+        // A edição da amortização preserva o valor bruto e o percentual da Correção Monetária.
       }
+      // Depois da edição pontual, o percentual passa a comandar futuras alterações do Saldo Parcial.
+      c.modoCorrecaoMonetaria = 'percentual';
       c.saldoAmortizacaoCorrecaoMonetaria = roundMoneyValue(Number(c.correcaoMonetaria || 0) - c.amortizacaoCorrecaoMonetariaSapiensDivida);
       // Apenas o Saldo da amortização da Correção Monetária é somado ao saldo.
       c.saldoAtualizado = roundMoneyValue(c.saldoParcial - c.somatorioSapiens + c.saldoAmortizacaoCorrecaoMonetaria);
@@ -5220,7 +5230,7 @@
         }
         if (campo === 'amortizacaoCorrecaoMonetariaSapiensDivida') {
           campos.amortizacaoCorrecaoMonetariaSapiensDivida = valorNumerico;
-          campos.modoCorrecaoMonetaria = 'percentual';
+          campos.modoCorrecaoMonetaria = 'preservar';
         }
         if (campo === 'percentualJuros') campos.percentualJuros = valorNumerico;
         if (campo === 'percentualEncargos') campos.percentualEncargos = valorNumerico;
