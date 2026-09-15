@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_63 -->
+  <!-- Versão: simulador_consolidacao_debito_v_64 -->
 
   <style>
     :root {
@@ -361,7 +361,7 @@
       box-sizing: border-box;
     }
 
-    /* Percentual e valor bruto compartilham o subcampo Valor da Correção Monetária; a amortização ocupa o segundo subcampo. */
+    /* Percentual e valor bruto compartilham o subcampo (+)Valor da Correção Monetária; a amortização ocupa o segundo subcampo. */
     .grupo-correcao-linha.subcampo {
       min-height: 22px;
       width: calc(100% - 16px);
@@ -1438,7 +1438,7 @@
               <td class="rotulo celula-correcao-agrupada">
                 <div class="grupo-correcao">
                   <div class="grupo-correcao-linha">(+)Correção Monetária</div>
-                  <div class="grupo-correcao-linha subcampo rotulo-subcampo">Valor da Correção Monetária</div>
+                  <div class="grupo-correcao-linha subcampo rotulo-subcampo">(+)Valor da Correção Monetária</div>
                   <div class="grupo-correcao-linha subcampo rotulo-subcampo">(-)Amortização da Correção Monetária Sapiens Dívida</div>
                   <div class="grupo-correcao-linha saldo-amortizacao"></div>
                 </div>
@@ -4796,7 +4796,7 @@
           const htmlSaldo = `<input class="campo-simulado-nao-editavel" value="${escapeHtml(saldo?.valor || numeroParaMoeda(roundMoneyValue(moedaParaNumero(l.valor) - moedaParaNumero(sub?.valor || '0,00'))))}" readonly>`;
           return `
             <tr class="${l.destaque ? 'linha-destaque' : 'linha-comum'}">
-              <td class="rotulo celula-correcao-agrupada"><div class="grupo-correcao"><div class="grupo-correcao-linha">${escapeHtml(l.descricao)}</div><div class="grupo-correcao-linha subcampo rotulo-subcampo">Valor da Correção Monetária</div><div class="grupo-correcao-linha subcampo rotulo-subcampo">${escapeHtml(sub?.descricao || '(-)Amortização da Correção Monetária Sapiens Dívida')}</div><div class="grupo-correcao-linha saldo-amortizacao"></div></div></td>
+              <td class="rotulo celula-correcao-agrupada"><div class="grupo-correcao"><div class="grupo-correcao-linha">${escapeHtml(l.descricao)}</div><div class="grupo-correcao-linha subcampo rotulo-subcampo">(+)Valor da Correção Monetária</div><div class="grupo-correcao-linha subcampo rotulo-subcampo">${escapeHtml(sub?.descricao || '(-)Amortização da Correção Monetária Sapiens Dívida')}</div><div class="grupo-correcao-linha saldo-amortizacao"></div></div></td>
               <td class="percentual celula-correcao-agrupada"><div class="grupo-correcao"><div class="grupo-correcao-linha"></div><div class="grupo-correcao-linha subcampo">${htmlPct}</div><div class="grupo-correcao-linha subcampo percentual-vazio">-</div><div class="grupo-correcao-linha saldo-amortizacao percentual-vazio">-</div></div></td>
               <td class="valor celula-correcao-agrupada"><div class="grupo-correcao"><div class="grupo-correcao-linha"></div><div class="grupo-correcao-linha subcampo">${htmlValor}</div><div class="grupo-correcao-linha subcampo">${htmlAmort}</div><div class="grupo-correcao-linha saldo-amortizacao">${htmlSaldo}</div></div></td>
             </tr>`;
@@ -5963,8 +5963,8 @@
 
           addText('(+)Correção Monetária', xDescricao + 5, yTitulo, 8, 'left', colunas[0] - 10, true);
 
-          // Subcampo: Valor da Correção Monetária, sem espaçamento extra após o rótulo principal.
-          addText('Valor da Correção Monetária', xDescricao + margemSubcampo + 4, ySubcampo1, 7, 'left', colunas[0] - ((margemSubcampo * 2) + 8), false);
+          // Subcampo: (+)Valor da Correção Monetária, sem espaçamento extra após o rótulo principal.
+          addText('(+)Valor da Correção Monetária', xDescricao + margemSubcampo + 4, ySubcampo1, 7, 'left', colunas[0] - ((margemSubcampo * 2) + 8), false);
           addText(linhaCorrecao?.percentual || '-', xPercentual + margemSubcampo + 4, ySubcampo1, 7.4, 'center', colunas[1] - ((margemSubcampo * 2) + 8), false);
           addText(linhaCorrecao?.valor || '0,00', xValor + 5, ySubcampo1, 7.4, 'right', colunas[2] - 10, false);
 
