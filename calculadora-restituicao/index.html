@@ -7,7 +7,7 @@
     <title>Calculadora de restituição</title>
     <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_restituicao_portal_v_32_valida_mes_atualizacao_pdfjs_6_1_200 -->
+    <!-- Versão: calculadora_restituicao_portal_v_33_relacao_pagamentos_por_debito_e_cnpj_pdfjs_6_1_200 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -2082,25 +2082,57 @@
             return linhas;
         }
 
-        function interpretarLinhaPagamento(texto) {
-            const linha = normalizarLinhaTextoPDF(texto);
-            if (!linha || /^Débito\s+/i.test(linha) || /^Filtros:/i.test(linha) || /^NOME:/i.test(linha) || /^Pág\s+/i.test(linha)) return null;
+        function extrairDebitoFiltroRelacaoPagamentos(linhas) {
+            for (const texto of linhas || []) {
+                const linha = normalizarLinhaTextoPDF(texto);
+                const m = linha.match(/D[ÉE]BITO\s*:\s*(\d+)/i);
+                if (m) return m[1] || '';
+            }
+            return '';
+        }
 
-            const regex = /^(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d{2}\/\d{2}\/\d{4})\s+([\d.]+,\d{2})(?:\s+(\d{5,}))?\s+(.+?)\s+(Espontâneo|Obrigatório)(?:\s+(.*))?$/i;
-            const m = linha.match(regex);
-            if (!m) return null;
+        function interpretarLinhaPagamento(texto, contexto = {}) {
+            const linha = normalizarLinhaTextoPDF(texto);
+            if (!linha || /^Débito\s+/i.test(linha) || /^Nosso Número Bto\s+/i.test(linha) || /^Filtros:/i.test(linha) || /^NOME:/i.test(linha) || /^Pág\s+/i.test(linha)) return null;
+
+            // Modelo de pesquisa por CPF/CNPJ: a coluna Débito faz parte de cada linha.
+            const regexComDebito = /^(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d{2}\/\d{2}\/\d{4})\s+([\d.]+,\d{2})(?:\s+(\d{5,}))?\s+(.+?)\s+(Espontâneo|Obrigatório)(?:\s+(.*))?$/i;
+            const comDebito = linha.match(regexComDebito);
+            if (comDebito) {
+                return {
+                    debito: comDebito[1] || '',
+                    nossoNumeroBto: comDebito[2] || '',
+                    nossoNumeroPgto: comDebito[3] || '',
+                    numeroPagamento: comDebito[4] || '',
+                    dataPagamento: comDebito[5] || '',
+                    valorPago: comDebito[6] || '',
+                    processo: comDebito[7] || '',
+                    receita: comDebito[8] || '',
+                    tipoPagamento: comDebito[9] || '',
+                    baixado: comDebito[10] || ''
+                };
+            }
+
+            // Modelo de pesquisa por débito: a tabela não repete a coluna Débito.
+            // Nesse formato, o número é obtido do filtro "DEBITO:" exibido no próprio relatório.
+            const debitoFiltro = String(contexto.debitoFiltro || '').trim();
+            if (!debitoFiltro) return null;
+
+            const regexSemDebito = /^(\d+)\s+(\d+)\s+(\d+)\s+(\d{2}\/\d{2}\/\d{4})\s+([\d.]+,\d{2})\s+(.+?)\s+(Espontâneo|Obrigatório)(?:\s+(.*))?$/i;
+            const semDebito = linha.match(regexSemDebito);
+            if (!semDebito) return null;
 
             return {
-                debito: m[1] || '',
-                nossoNumeroBto: m[2] || '',
-                nossoNumeroPgto: m[3] || '',
-                numeroPagamento: m[4] || '',
-                dataPagamento: m[5] || '',
-                valorPago: m[6] || '',
-                processo: m[7] || '',
-                receita: m[8] || '',
-                tipoPagamento: m[9] || '',
-                baixado: m[10] || ''
+                debito: debitoFiltro,
+                nossoNumeroBto: semDebito[1] || '',
+                nossoNumeroPgto: semDebito[2] || '',
+                numeroPagamento: semDebito[3] || '',
+                dataPagamento: semDebito[4] || '',
+                valorPago: semDebito[5] || '',
+                processo: '',
+                receita: semDebito[6] || '',
+                tipoPagamento: semDebito[7] || '',
+                baixado: semDebito[8] || ''
             };
         }
 
@@ -2108,9 +2140,10 @@
             const progresso = typeof onProgress === 'function' ? onProgress : () => {};
             const linhas = await extrairLinhasTextoPDF(file, progresso);
             progresso(86, 'Interpretando dados da relação de pagamentos...');
+            const debitoFiltro = extrairDebitoFiltroRelacaoPagamentos(linhas);
             const pagamentos = [];
             linhas.forEach(linha => {
-                const item = interpretarLinhaPagamento(linha);
+                const item = interpretarLinhaPagamento(linha, { debitoFiltro });
                 if (item) pagamentos.push(item);
             });
             return pagamentos;
