@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_64 -->
+  <!-- Versão: simulador_consolidacao_debito_v_65 -->
 
   <style>
     :root {
@@ -416,6 +416,15 @@
       padding-top: 1px;
       padding-bottom: 1px;
       font-size: 10px;
+    }
+
+
+    /* Mantém o percentual da Correção Monetária centralizado exatamente como os demais percentuais da tabela. */
+    .grupo-correcao-linha.subcampo .campo-percentual,
+    .grupo-correcao-linha.subcampo .campo-percentual-atualizacao {
+      width: 100%;
+      margin-left: 0;
+      text-align: center;
     }
 
     .controle-data-consolidacao {
@@ -1448,7 +1457,7 @@
                   <div class="grupo-correcao-linha"></div>
                   <div class="grupo-correcao-linha subcampo"><input id="percentualCorrecaoMonetaria" class="campo-tabela campo-percentual" type="text" inputmode="decimal" value="0,00%" autocomplete="off" /></div>
                   <div class="grupo-correcao-linha subcampo percentual-vazio">-</div>
-                  <div class="grupo-correcao-linha saldo-amortizacao percentual-vazio">-</div>
+                  <div class="grupo-correcao-linha saldo-amortizacao percentual-vazio"></div>
                 </div>
               </td>
               <td class="valor celula-correcao-agrupada">
@@ -4797,7 +4806,7 @@
           return `
             <tr class="${l.destaque ? 'linha-destaque' : 'linha-comum'}">
               <td class="rotulo celula-correcao-agrupada"><div class="grupo-correcao"><div class="grupo-correcao-linha">${escapeHtml(l.descricao)}</div><div class="grupo-correcao-linha subcampo rotulo-subcampo">(+)Valor da Correção Monetária</div><div class="grupo-correcao-linha subcampo rotulo-subcampo">${escapeHtml(sub?.descricao || '(-)Amortização da Correção Monetária Sapiens Dívida')}</div><div class="grupo-correcao-linha saldo-amortizacao"></div></div></td>
-              <td class="percentual celula-correcao-agrupada"><div class="grupo-correcao"><div class="grupo-correcao-linha"></div><div class="grupo-correcao-linha subcampo">${htmlPct}</div><div class="grupo-correcao-linha subcampo percentual-vazio">-</div><div class="grupo-correcao-linha saldo-amortizacao percentual-vazio">-</div></div></td>
+              <td class="percentual celula-correcao-agrupada"><div class="grupo-correcao"><div class="grupo-correcao-linha"></div><div class="grupo-correcao-linha subcampo">${htmlPct}</div><div class="grupo-correcao-linha subcampo percentual-vazio">-</div><div class="grupo-correcao-linha saldo-amortizacao percentual-vazio"></div></div></td>
               <td class="valor celula-correcao-agrupada"><div class="grupo-correcao"><div class="grupo-correcao-linha"></div><div class="grupo-correcao-linha subcampo">${htmlValor}</div><div class="grupo-correcao-linha subcampo">${htmlAmort}</div><div class="grupo-correcao-linha saldo-amortizacao">${htmlSaldo}</div></div></td>
             </tr>`;
         }
@@ -5974,7 +5983,7 @@
           addText(linhaAmortizacao?.valor || '0,00', xValor + 5, ySubcampo2, 7.4, 'right', colunas[2] - 10, false);
 
           // O saldo líquido fica fora dos subcampos, como valor efetivamente contabilizado pelo campo.
-          addText('-', xPercentual + 5, ySaldoBase, 8, 'center', colunas[1] - 10, false);
+          // A coluna de percentual permanece vazia nesta linha de resultado.
           addText(linhaSaldo?.valor || '0,00', xValor + 5, ySaldoBase, 8, 'right', colunas[2] - 10, true);
 
           y -= alturaGrupo;
