@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_62 -->
+  <!-- Versão: simulador_consolidacao_debito_v_63 -->
 
   <style>
     :root {
@@ -5943,16 +5943,16 @@
         y -= alturaLinha;
 
         function desenharCorrecaoMonetariaAgrupadaPDF(linhaCorrecao, linhaAmortizacao, linhaSaldo) {
-          const alturaGrupo = 68;
+          const alturaGrupo = 56;
           const cinzaGrupo = '0.97';
           const xDescricao = x0;
           const xPercentual = x0 + colunas[0];
           const xValor = xPercentual + colunas[1];
           const margemSubcampo = 6;
-          const alturaSubcampo = 15;
-          const ySubcampo1 = y - 21;
-          const ySubcampo2 = ySubcampo1 - alturaSubcampo - 4;
-          const ySaldoBase = y - alturaGrupo + 8;
+          const yTitulo = y - 11;
+          const ySubcampo1 = y - 22;
+          const ySubcampo2 = y - 33;
+          const ySaldoBase = y - 47;
 
           garantirEspaco(alturaGrupo);
 
@@ -5961,17 +5961,17 @@
           celula(xPercentual, y, colunas[1], alturaGrupo, cinzaGrupo, '', {});
           celula(xValor, y, colunas[2], alturaGrupo, cinzaGrupo, '', {});
 
-          addText('(+)Correção Monetária', xDescricao + 5, y - 12, 8, 'left', colunas[0] - 10, true);
+          addText('(+)Correção Monetária', xDescricao + 5, yTitulo, 8, 'left', colunas[0] - 10, true);
 
-          // Subcampo: Valor da Correção Monetária (percentual + valor monetário na mesma linha).
-          addText('Valor da Correção Monetária', xDescricao + margemSubcampo + 4, ySubcampo1 - 10, 7, 'left', colunas[0] - ((margemSubcampo * 2) + 8), false);
-          addText(linhaCorrecao?.percentual || '-', xPercentual + margemSubcampo + 4, ySubcampo1 - 10, 7.4, 'center', colunas[1] - ((margemSubcampo * 2) + 8), false);
-          addText(linhaCorrecao?.valor || '0,00', xValor + margemSubcampo + 4, ySubcampo1 - 10, 7.4, 'right', colunas[2] - ((margemSubcampo * 2) + 8), false);
+          // Subcampo: Valor da Correção Monetária, sem espaçamento extra após o rótulo principal.
+          addText('Valor da Correção Monetária', xDescricao + margemSubcampo + 4, ySubcampo1, 7, 'left', colunas[0] - ((margemSubcampo * 2) + 8), false);
+          addText(linhaCorrecao?.percentual || '-', xPercentual + margemSubcampo + 4, ySubcampo1, 7.4, 'center', colunas[1] - ((margemSubcampo * 2) + 8), false);
+          addText(linhaCorrecao?.valor || '0,00', xValor + 5, ySubcampo1, 7.4, 'right', colunas[2] - 10, false);
 
-          // Subcampo: amortização da correção monetária.
-          addText(linhaAmortizacao?.descricao || '(-)Amortização da Correção Monetária Sapiens Dívida', xDescricao + margemSubcampo + 4, ySubcampo2 - 10, 6.6, 'left', colunas[0] - ((margemSubcampo * 2) + 8), false);
-          addText('-', xPercentual + margemSubcampo + 4, ySubcampo2 - 10, 7.4, 'center', colunas[1] - ((margemSubcampo * 2) + 8), false);
-          addText(linhaAmortizacao?.valor || '0,00', xValor + margemSubcampo + 4, ySubcampo2 - 10, 7.4, 'right', colunas[2] - ((margemSubcampo * 2) + 8), false);
+          // Subcampo: amortização da correção monetária, imediatamente abaixo do anterior.
+          addText(linhaAmortizacao?.descricao || '(-)Amortização da Correção Monetária Sapiens Dívida', xDescricao + margemSubcampo + 4, ySubcampo2, 6.6, 'left', colunas[0] - ((margemSubcampo * 2) + 8), false);
+          addText('-', xPercentual + margemSubcampo + 4, ySubcampo2, 7.4, 'center', colunas[1] - ((margemSubcampo * 2) + 8), false);
+          addText(linhaAmortizacao?.valor || '0,00', xValor + 5, ySubcampo2, 7.4, 'right', colunas[2] - 10, false);
 
           // O saldo líquido fica fora dos subcampos, como valor efetivamente contabilizado pelo campo.
           addText('-', xPercentual + 5, ySaldoBase, 8, 'center', colunas[1] - 10, false);
