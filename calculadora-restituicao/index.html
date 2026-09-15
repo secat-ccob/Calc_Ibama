@@ -7,7 +7,7 @@
     <title>Calculadora de restituição</title>
     <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_restituicao_portal_v_33_relacao_pagamentos_por_debito_e_cnpj_pdfjs_6_1_200 -->
+    <!-- Versão: calculadora_restituicao_portal_v_34_relacao_pagamentos_receita_quebrada_pdfjs_6_1_200 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -2095,10 +2095,14 @@
             const linha = normalizarLinhaTextoPDF(texto);
             if (!linha || /^Débito\s+/i.test(linha) || /^Nosso Número Bto\s+/i.test(linha) || /^Filtros:/i.test(linha) || /^NOME:/i.test(linha) || /^Pág\s+/i.test(linha)) return null;
 
-            // Modelo de pesquisa por CPF/CNPJ: a coluna Débito faz parte de cada linha.
-            const regexComDebito = /^(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d{2}\/\d{2}\/\d{4})\s+([\d.]+,\d{2})(?:\s+(\d{5,}))?\s+(.+?)\s+(Espontâneo|Obrigatório)(?:\s+(.*))?$/i;
+            // A leitura considera como obrigatórios apenas os campos usados pela calculadora.
+            // Receita, tipo de pagamento e baixado podem vir na mesma linha ou quebrados em linhas
+            // separadas no PDF, dependendo do tamanho do texto da receita.
+            const regexComDebito = /^(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d{2}\/\d{2}\/\d{4})\s+([\d.]+,\d{2})(?:\s+(.*))?$/i;
             const comDebito = linha.match(regexComDebito);
             if (comDebito) {
+                const complemento = comDebito[7] || '';
+                const tipo = complemento.match(/\b(Espontâneo|Obrigatório)\b/i)?.[1] || '';
                 return {
                     debito: comDebito[1] || '',
                     nossoNumeroBto: comDebito[2] || '',
@@ -2106,10 +2110,10 @@
                     numeroPagamento: comDebito[4] || '',
                     dataPagamento: comDebito[5] || '',
                     valorPago: comDebito[6] || '',
-                    processo: comDebito[7] || '',
-                    receita: comDebito[8] || '',
-                    tipoPagamento: comDebito[9] || '',
-                    baixado: comDebito[10] || ''
+                    processo: '',
+                    receita: complemento,
+                    tipoPagamento: tipo,
+                    baixado: ''
                 };
             }
 
@@ -2118,10 +2122,12 @@
             const debitoFiltro = String(contexto.debitoFiltro || '').trim();
             if (!debitoFiltro) return null;
 
-            const regexSemDebito = /^(\d+)\s+(\d+)\s+(\d+)\s+(\d{2}\/\d{2}\/\d{4})\s+([\d.]+,\d{2})\s+(.+?)\s+(Espontâneo|Obrigatório)(?:\s+(.*))?$/i;
+            const regexSemDebito = /^(\d+)\s+(\d+)\s+(\d+)\s+(\d{2}\/\d{2}\/\d{4})\s+([\d.]+,\d{2})(?:\s+(.*))?$/i;
             const semDebito = linha.match(regexSemDebito);
             if (!semDebito) return null;
 
+            const complemento = semDebito[6] || '';
+            const tipo = complemento.match(/\b(Espontâneo|Obrigatório)\b/i)?.[1] || '';
             return {
                 debito: debitoFiltro,
                 nossoNumeroBto: semDebito[1] || '',
@@ -2130,9 +2136,9 @@
                 dataPagamento: semDebito[4] || '',
                 valorPago: semDebito[5] || '',
                 processo: '',
-                receita: semDebito[6] || '',
-                tipoPagamento: semDebito[7] || '',
-                baixado: semDebito[8] || ''
+                receita: complemento,
+                tipoPagamento: tipo,
+                baixado: ''
             };
         }
 
