@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_60 -->
+  <!-- Versão: simulador_consolidacao_debito_v_61 -->
 
   <style>
     :root {
@@ -5954,14 +5954,14 @@
           addText('(+)Correção Monetária', xDescricao + 5, y - 12, 8, 'left', colunas[0] - 10, true);
 
           // Subcampo: Valor da Correção Monetária (percentual + valor monetário na mesma linha).
-          celula(xDescricao + margemSubcampo, ySubcampo1, colunas[0] - (margemSubcampo * 2), alturaSubcampo, '0.96', 'Valor da Correção Monetária', { tamanho: 7, padding: 4 });
-          celula(xPercentual + margemSubcampo, ySubcampo1, colunas[1] - (margemSubcampo * 2), alturaSubcampo, '0.96', linhaCorrecao?.percentual || '-', { alinhamento: 'center', tamanho: 7.4, padding: 4 });
-          celula(xValor + margemSubcampo, ySubcampo1, colunas[2] - (margemSubcampo * 2), alturaSubcampo, '0.96', linhaCorrecao?.valor || '0,00', { alinhamento: 'right', tamanho: 7.4, padding: 4 });
+          addText('Valor da Correção Monetária', xDescricao + margemSubcampo + 4, ySubcampo1 - 10, 7, 'left', colunas[0] - ((margemSubcampo * 2) + 8), false);
+          addText(linhaCorrecao?.percentual || '-', xPercentual + margemSubcampo + 4, ySubcampo1 - 10, 7.4, 'center', colunas[1] - ((margemSubcampo * 2) + 8), false);
+          addText(linhaCorrecao?.valor || '0,00', xValor + margemSubcampo + 4, ySubcampo1 - 10, 7.4, 'right', colunas[2] - ((margemSubcampo * 2) + 8), false);
 
           // Subcampo: amortização da correção monetária.
-          celula(xDescricao + margemSubcampo, ySubcampo2, colunas[0] - (margemSubcampo * 2), alturaSubcampo, '0.96', linhaAmortizacao?.descricao || '(-)Amortização da Correção Monetária Sapiens Dívida', { tamanho: 6.6, padding: 4 });
-          celula(xPercentual + margemSubcampo, ySubcampo2, colunas[1] - (margemSubcampo * 2), alturaSubcampo, '0.96', '-', { alinhamento: 'center', tamanho: 7.4, padding: 4 });
-          celula(xValor + margemSubcampo, ySubcampo2, colunas[2] - (margemSubcampo * 2), alturaSubcampo, '0.96', linhaAmortizacao?.valor || '0,00', { alinhamento: 'right', tamanho: 7.4, padding: 4 });
+          addText(linhaAmortizacao?.descricao || '(-)Amortização da Correção Monetária Sapiens Dívida', xDescricao + margemSubcampo + 4, ySubcampo2 - 10, 6.6, 'left', colunas[0] - ((margemSubcampo * 2) + 8), false);
+          addText('-', xPercentual + margemSubcampo + 4, ySubcampo2 - 10, 7.4, 'center', colunas[1] - ((margemSubcampo * 2) + 8), false);
+          addText(linhaAmortizacao?.valor || '0,00', xValor + margemSubcampo + 4, ySubcampo2 - 10, 7.4, 'right', colunas[2] - ((margemSubcampo * 2) + 8), false);
 
           // O saldo líquido fica fora dos subcampos, como valor efetivamente contabilizado pelo campo.
           addText('-', xPercentual + 5, ySaldoBase, 8, 'center', colunas[1] - 10, false);
