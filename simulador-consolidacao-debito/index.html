@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_54 -->
+  <!-- Versão: simulador_consolidacao_debito_v_55 -->
 
   <style>
     :root {
@@ -339,6 +339,44 @@
 
     .campo-percentual {
       text-align: center;
+    }
+
+    .celula-correcao-agrupada {
+      padding: 0 !important;
+    }
+
+    .grupo-correcao {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      min-width: 0;
+    }
+
+    .grupo-correcao-linha {
+      min-height: 28px;
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding: 5px 6px;
+      box-sizing: border-box;
+    }
+
+    .grupo-correcao-linha + .grupo-correcao-linha {
+      border-top: 1px solid #b8b8b8;
+    }
+
+    .grupo-correcao-linha.subcampo {
+      font-size: 11px;
+    }
+
+    .grupo-correcao-linha.subcampo.rotulo-subcampo {
+      padding-left: 14px;
+    }
+
+    .grupo-correcao-linha .campo-tabela,
+    .grupo-correcao-linha .campo-atualizacao-editavel,
+    .grupo-correcao-linha .campo-simulado-nao-editavel {
+      width: 100%;
     }
 
     .controle-data-consolidacao {
@@ -1358,9 +1396,24 @@
               <td class="valor"><input id="somatorioAmortizacaoSapiensDivida" class="campo-tabela campo-moeda" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
             </tr>
             <tr class="linha-comum">
-              <td class="rotulo">(+)Correção Monetária</td>
-              <td class="percentual percentual-vazio">-</td>
-              <td class="valor"><input id="correcaoMonetaria" class="campo-tabela campo-moeda" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></td>
+              <td class="rotulo celula-correcao-agrupada">
+                <div class="grupo-correcao">
+                  <div class="grupo-correcao-linha">(+)Correção Monetária</div>
+                  <div class="grupo-correcao-linha subcampo rotulo-subcampo">(-)Amortização de Correção Monetária Sapiens Dívida</div>
+                </div>
+              </td>
+              <td class="percentual celula-correcao-agrupada">
+                <div class="grupo-correcao">
+                  <div class="grupo-correcao-linha"><input id="percentualCorrecaoMonetaria" class="campo-tabela campo-percentual" type="text" inputmode="decimal" value="0,00%" autocomplete="off" /></div>
+                  <div class="grupo-correcao-linha subcampo percentual-vazio">-</div>
+                </div>
+              </td>
+              <td class="valor celula-correcao-agrupada">
+                <div class="grupo-correcao">
+                  <div class="grupo-correcao-linha"><input id="correcaoMonetaria" class="campo-tabela campo-moeda" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></div>
+                  <div class="grupo-correcao-linha subcampo"><input id="amortizacaoCorrecaoMonetariaSapiensDivida" class="campo-tabela campo-moeda" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></div>
+                </div>
+              </td>
             </tr>
             <tr class="linha-destaque">
               <td class="rotulo">(=)Saldo Atualizado</td>
@@ -1612,6 +1665,7 @@
     }
 
     let modoSomatorioSapiensDivida = 'valor';
+    let modoCorrecaoMonetaria = 'valor';
 
     function ehCampoBaseManual(input) {
       return false;
@@ -1628,6 +1682,14 @@
 
       if (input.id === 'somatorioAmortizacaoSapiensDivida') {
         modoSomatorioSapiensDivida = 'valor';
+      }
+
+      if (input.id === 'percentualCorrecaoMonetaria') {
+        modoCorrecaoMonetaria = 'percentual';
+      }
+
+      if (input.id === 'correcaoMonetaria') {
+        modoCorrecaoMonetaria = 'valor';
       }
 
       if (input.id === 'percentualMulta' && modoEncargoSelecionado('multa') === 'sicafi') {
@@ -1838,7 +1900,9 @@
       setValor('saldoParcial', 0);
       setPercentual('percentualSomatorioAmortizacaoSapiensDivida', 0);
       setValor('somatorioAmortizacaoSapiensDivida', 0);
+      setPercentual('percentualCorrecaoMonetaria', 0);
       setValor('correcaoMonetaria', 0);
+      setValor('amortizacaoCorrecaoMonetariaSapiensDivida', 0);
       setValor('saldoAtualizado', 0);
       setPercentual('percentualMulta', 0);
       setValor('valorMulta', 0);
@@ -1855,6 +1919,7 @@
       datasMultaSicafiArmazenadas = { inicio: '', fim: '' };
       datasSelicSicafiArmazenadas = { inicio: '', fim: '' };
       modoSomatorioSapiensDivida = 'valor';
+      modoCorrecaoMonetaria = 'valor';
       atualizarCalculos();
     }
 
@@ -2149,7 +2214,9 @@
         saldoParcial: extrairValorPorLinha(linhas, /\(=\)\s*Saldo Parcial/i),
         somatorioSapiens: 0,
         percentualSapiens: 0,
+        percentualCorrecaoMonetaria: extrairPercentualPorLinha(linhas, /\(\+\)\s*Correção Monetária/i),
         correcaoMonetaria: extrairValorPorLinha(linhas, /\(\+\)\s*Correção Monetária/i),
+        amortizacaoCorrecaoMonetariaSapiensDivida: extrairValorPorLinha(linhas, /\(-\)\s*Amortização de Correção Monetária Sapiens Dívida/i),
         saldoAtualizado: extrairValorPorLinha(linhas, /\(=\)\s*Saldo Atual(?:izado)?\b/i),
         percentualMulta: extrairPercentualPorLinha(linhas, /\(\+\)\s*Multa/i),
         valorMulta: extrairValorPorLinha(linhas, /\(\+\)\s*Multa/i),
@@ -2182,7 +2249,11 @@
       setPercentual('percentualSomatorioAmortizacaoSapiensDivida', dados.percentualSapiens || 0);
       setValor('somatorioAmortizacaoSapiensDivida', dados.somatorioSapiens || 0);
       modoSomatorioSapiensDivida = 'valor';
+      const pctCorrecaoMemoria = Number(dados.percentualCorrecaoMonetaria || 0) || ((Number(dados.saldoParcial || 0) !== 0) ? (Number(dados.correcaoMonetaria || 0) / Number(dados.saldoParcial || 0)) * 100 : 0);
+      setPercentual('percentualCorrecaoMonetaria', pctCorrecaoMemoria);
       setValor('correcaoMonetaria', dados.correcaoMonetaria || 0);
+      setValor('amortizacaoCorrecaoMonetariaSapiensDivida', dados.amortizacaoCorrecaoMonetariaSapiensDivida || 0);
+      modoCorrecaoMonetaria = 'valor';
       setValor('saldoAtualizado', dados.saldoAtualizado || 0);
       setPercentual('percentualMulta', dados.percentualMulta || 0);
       setValor('valorMulta', dados.valorMulta || 0);
@@ -2802,7 +2873,7 @@
           'dataInicioSelic', 'dataFimSelic', 'valorPrincipal', 'somatorioAmortizacao',
           'percentualDesconto', 'valorDesconto', 'compensacaoEstadual', 'saldoParcial',
           'percentualSomatorioAmortizacaoSapiensDivida', 'somatorioAmortizacaoSapiensDivida',
-          'correcaoMonetaria', 'saldoAtualizado', 'percentualMulta', 'valorMulta',
+          'percentualCorrecaoMonetaria', 'correcaoMonetaria', 'amortizacaoCorrecaoMonetariaSapiensDivida', 'saldoAtualizado', 'percentualMulta', 'valorMulta',
           'percentualJuros', 'valorJuros', 'percentualSelic', 'valorSelic', 'totalParcial',
           'percentualEncargos', 'valorEncargos', 'valorConsolidado'
         ];
@@ -3503,7 +3574,9 @@
       const compensacaoEstadual = moedaParaNumero(document.getElementById('compensacaoEstadual').value);
       let somatorioAmortizacaoSapiensDivida = moedaParaNumero(document.getElementById('somatorioAmortizacaoSapiensDivida').value);
       const pctSomatorioAmortizacaoSapiensDivida = percentualParaFracao(document.getElementById('percentualSomatorioAmortizacaoSapiensDivida').value);
-      const correcaoMonetaria = moedaParaNumero(document.getElementById('correcaoMonetaria').value);
+      let correcaoMonetaria = moedaParaNumero(document.getElementById('correcaoMonetaria').value);
+      const pctCorrecaoMonetaria = percentualParaFracao(document.getElementById('percentualCorrecaoMonetaria').value);
+      const amortizacaoCorrecaoMonetariaSapiensDivida = moedaParaNumero(document.getElementById('amortizacaoCorrecaoMonetariaSapiensDivida').value);
       const pctMulta = percentualParaFracao(document.getElementById('percentualMulta').value);
       const pctJuros = percentualParaFracao(document.getElementById('percentualJuros').value);
       const pctSelic = percentualParaFracao(document.getElementById('percentualSelic').value);
@@ -3516,7 +3589,16 @@
         somatorioAmortizacaoSapiensDivida = roundMoneyValue(saldoParcial * pctSomatorioAmortizacaoSapiensDivida);
       }
 
-      let saldoAtualizado = roundMoneyValue(saldoParcial - somatorioAmortizacaoSapiensDivida + correcaoMonetaria);
+      if (modoCorrecaoMonetaria === 'percentual') {
+        correcaoMonetaria = roundMoneyValue(saldoParcial * pctCorrecaoMonetaria);
+        setValor('correcaoMonetaria', correcaoMonetaria);
+      } else {
+        const percentualCorrecaoCalculado = saldoParcial !== 0 ? (correcaoMonetaria / saldoParcial) * 100 : 0;
+        setPercentual('percentualCorrecaoMonetaria', percentualCorrecaoCalculado);
+      }
+
+      const correcaoMonetariaLiquida = roundMoneyValue(correcaoMonetaria - amortizacaoCorrecaoMonetariaSapiensDivida);
+      let saldoAtualizado = roundMoneyValue(saldoParcial - somatorioAmortizacaoSapiensDivida + correcaoMonetariaLiquida);
 
 
       const valorMulta = roundMoneyValue(saldoAtualizado * pctMulta);
@@ -3734,6 +3816,7 @@
         tipoDebito: tipo || 'AI',
         numeroDebito: valorCampo('numeroDebito'),
         dataConsolidacao: valorCampo('dataConsolidacao'),
+        modoCorrecaoMonetariaAtualizacao: modoCorrecaoMonetaria,
         linhas: [
           { descricao: 'Valor Principal', percentual: '-', valor: valorCampo('valorPrincipal'), destaque: true, valorNegrito: false },
           { descricao: '(-)Somatório da amortização', percentual: '-', valor: valorCampo('somatorioAmortizacao'), destaque: false, valorNegrito: false },
@@ -3741,7 +3824,8 @@
           { descricao: '(-)Compensação Estadual', percentual: '-', valor: valorCampo('compensacaoEstadual'), destaque: false, valorNegrito: false },
           { descricao: '(=)Saldo Parcial', percentual: '-', valor: valorCampo('saldoParcial'), destaque: true, valorNegrito: false },
           { descricao: '(-)Somatório da amortização Sapiens Dívida', percentual: valorCampo('percentualSomatorioAmortizacaoSapiensDivida'), valor: valorCampo('somatorioAmortizacaoSapiensDivida'), destaque: false, valorNegrito: false },
-          { descricao: '(+)Correção Monetária', percentual: '-', valor: valorCampo('correcaoMonetaria'), destaque: false, valorNegrito: false },
+          { descricao: '(+)Correção Monetária', percentual: valorCampo('percentualCorrecaoMonetaria'), valor: valorCampo('correcaoMonetaria'), destaque: false, valorNegrito: false },
+          { descricao: '(-)Amortização de Correção Monetária Sapiens Dívida', percentual: '-', valor: valorCampo('amortizacaoCorrecaoMonetariaSapiensDivida'), destaque: false, valorNegrito: false },
           { descricao: '(=)Saldo Atualizado', percentual: '-', valor: valorCampo('saldoAtualizado'), destaque: true, valorNegrito: false },
           { descricao: '(+)Multa', percentual: percentualEncargoParaPdf('multa'), valor: valorCampo('valorMulta'), destaque: false, valorNegrito: true },
           { descricao: '(+)Juros', percentual: valorCampo('percentualJuros'), valor: valorCampo('valorJuros'), destaque: false, valorNegrito: true },
@@ -3919,6 +4003,7 @@
       if (typeof dados.dataInicioSelicSicafi !== 'string') dados.dataInicioSelicSicafi = periodoSelic.inicio || '';
       if (typeof dados.dataFimSelicSicafi !== 'string') dados.dataFimSelicSicafi = periodoSelic.fim || dados.dataConsolidacao || '';
       if (!dados.modoMulta) dados.modoMulta = origem === 'automatica' ? 'automatica' : 'sicafi';
+      if (!dados.modoCorrecaoMonetariaAtualizacao) dados.modoCorrecaoMonetariaAtualizacao = 'valor';
       if (!dados.modoSelic) dados.modoSelic = origem === 'automatica' ? 'sicalc' : 'sicafi';
       return dados;
     }
@@ -3946,6 +4031,7 @@
       destino.modoMultaAcumulado = origem.modoMultaAcumulado || destino.modoMultaAcumulado;
       destino.modoSelicAcumulado = origem.modoSelicAcumulado || destino.modoSelicAcumulado;
       destino.modoSapiensAtualizacao = origem.modoSapiensAtualizacao || destino.modoSapiensAtualizacao;
+      destino.modoCorrecaoMonetariaAtualizacao = origem.modoCorrecaoMonetariaAtualizacao || destino.modoCorrecaoMonetariaAtualizacao;
       return destino;
     }
 
@@ -4184,7 +4270,10 @@
         compensacaoEstadual: valorNumeroLinha(dados, 'Compensação Estadual'),
         percentualSapiens: percentualNumeroLinha(dados, 'Sapiens Dívida'),
         somatorioSapiens: valorNumeroLinha(dados, 'Sapiens Dívida'),
+        percentualCorrecaoMonetaria: percentualNumeroLinha(dados, 'Correção Monetária'),
         correcaoMonetaria: valorNumeroLinha(dados, 'Correção Monetária'),
+        amortizacaoCorrecaoMonetariaSapiensDivida: valorNumeroLinha(dados, 'Amortização de Correção Monetária Sapiens Dívida'),
+        modoCorrecaoMonetaria: dados.modoCorrecaoMonetariaAtualizacao || 'valor',
         dataInicioMulta: pMulta.inicio,
         dataFimMulta: pMulta.fim || dados.dataConsolidacao || '',
         percentualMulta: parseNumeroFlexivel(pMulta.percentual),
@@ -4202,7 +4291,15 @@
       c.saldoParcial = roundMoneyValue(c.valorPrincipal - c.somatorioAmortizacao - c.valorDesconto - c.compensacaoEstadual);
       if (typeof c.somatorioSapiens !== 'number') c.somatorioSapiens = roundMoneyValue(c.saldoParcial * (Number(c.percentualSapiens || 0) / 100));
       if (!Number.isFinite(c.percentualSapiens) || c.percentualSapiens === null) c.percentualSapiens = c.saldoParcial ? (c.somatorioSapiens / c.saldoParcial) * 100 : 0;
-      c.saldoAtualizado = roundMoneyValue(c.saldoParcial - c.somatorioSapiens + c.correcaoMonetaria);
+      const modoCorrecao = c.modoCorrecaoMonetaria === 'percentual' ? 'percentual' : 'valor';
+      if (modoCorrecao === 'percentual') {
+        c.correcaoMonetaria = roundMoneyValue(c.saldoParcial * (Number(c.percentualCorrecaoMonetaria || 0) / 100));
+      } else {
+        c.percentualCorrecaoMonetaria = c.saldoParcial !== 0 ? (Number(c.correcaoMonetaria || 0) / c.saldoParcial) * 100 : 0;
+      }
+      c.amortizacaoCorrecaoMonetariaSapiensDivida = Number(c.amortizacaoCorrecaoMonetariaSapiensDivida || 0);
+      c.correcaoMonetariaLiquida = roundMoneyValue(Number(c.correcaoMonetaria || 0) - c.amortizacaoCorrecaoMonetariaSapiensDivida);
+      c.saldoAtualizado = roundMoneyValue(c.saldoParcial - c.somatorioSapiens + c.correcaoMonetariaLiquida);
       c.valorMulta = roundMoneyValue(c.saldoAtualizado * (Number(c.percentualMulta || 0) / 100));
       c.valorJuros = roundMoneyValue(c.saldoAtualizado * (Number(c.percentualJuros || 0) / 100));
       c.valorSelic = roundMoneyValue(c.saldoAtualizado * (Number(c.percentualSelic || 0) / 100));
@@ -4218,6 +4315,7 @@
         tipoDebito: c.tipoDebito || getTipoDebitoSelecionado() || 'AI',
         numeroDebito: c.numeroDebito || '',
         dataConsolidacao: c.dataConsolidacao || '',
+        modoCorrecaoMonetariaAtualizacao: c.modoCorrecaoMonetaria === 'percentual' ? 'percentual' : 'valor',
         linhas: [
           { descricao: 'Valor Principal', percentual: '-', valor: numeroParaMoeda(c.valorPrincipal), destaque: true, valorNegrito: false },
           { descricao: '(-)Somatório da amortização', percentual: '-', valor: numeroParaMoeda(c.somatorioAmortizacao), destaque: false, valorNegrito: false },
@@ -4225,7 +4323,8 @@
           { descricao: '(-)Compensação Estadual', percentual: '-', valor: numeroParaMoeda(c.compensacaoEstadual), destaque: false, valorNegrito: false },
           { descricao: '(=)Saldo Parcial', percentual: '-', valor: numeroParaMoeda(c.saldoParcial), destaque: true, valorNegrito: false },
           { descricao: '(-)Somatório da amortização Sapiens Dívida', percentual: numeroParaPercentual(c.percentualSapiens), valor: numeroParaMoeda(c.somatorioSapiens), destaque: false, valorNegrito: false },
-          { descricao: '(+)Correção Monetária', percentual: '-', valor: numeroParaMoeda(c.correcaoMonetaria), destaque: false, valorNegrito: false },
+          { descricao: '(+)Correção Monetária', percentual: numeroParaPercentual(c.percentualCorrecaoMonetaria || 0), valor: numeroParaMoeda(c.correcaoMonetaria), destaque: false, valorNegrito: false },
+          { descricao: '(-)Amortização de Correção Monetária Sapiens Dívida', percentual: '-', valor: numeroParaMoeda(c.amortizacaoCorrecaoMonetariaSapiensDivida || 0), destaque: false, valorNegrito: false },
           { descricao: '(=)Saldo Atualizado', percentual: '-', valor: numeroParaMoeda(c.saldoAtualizado), destaque: true, valorNegrito: false },
           { descricao: '(+)Multa', percentual: c.dataInicioMulta && c.dataFimMulta ? `De: ${c.dataInicioMulta} até ${c.dataFimMulta}: ${numeroParaPercentual(c.percentualMulta)}` : numeroParaPercentual(c.percentualMulta), valor: numeroParaMoeda(c.valorMulta), destaque: false, valorNegrito: true },
           { descricao: '(+)Juros', percentual: numeroParaPercentual(c.percentualJuros), valor: numeroParaMoeda(c.valorJuros), destaque: false, valorNegrito: true },
@@ -4242,6 +4341,7 @@
         tipoDebito: tipo || getTipoDebitoSelecionado() || 'AI',
         numeroDebito: onlyDigits(dados.numeroDebito || ''),
         dataConsolidacao: dados.dataConsolidacao || '',
+        modoCorrecaoMonetariaAtualizacao: 'valor',
         linhas: [
           { descricao: 'Valor Principal', percentual: '-', valor: numeroParaMoeda(dados.valorPrincipal || 0), destaque: true, valorNegrito: false },
           { descricao: '(-)Somatório da amortização', percentual: '-', valor: numeroParaMoeda(dados.somatorioAmortizacao || 0), destaque: false, valorNegrito: false },
@@ -4249,7 +4349,8 @@
           { descricao: '(-)Compensação Estadual', percentual: '-', valor: numeroParaMoeda(dados.compensacaoEstadual || 0), destaque: false, valorNegrito: false },
           { descricao: '(=)Saldo Parcial', percentual: '-', valor: numeroParaMoeda(dados.saldoParcial || 0), destaque: true, valorNegrito: false },
           { descricao: '(-)Somatório da amortização Sapiens Dívida', percentual: numeroParaPercentual(dados.percentualSapiens || 0), valor: numeroParaMoeda(dados.somatorioSapiens || 0), destaque: false, valorNegrito: false },
-          { descricao: '(+)Correção Monetária', percentual: '-', valor: numeroParaMoeda(dados.correcaoMonetaria || 0), destaque: false, valorNegrito: false },
+          { descricao: '(+)Correção Monetária', percentual: numeroParaPercentual(dados.percentualCorrecaoMonetaria || ((Number(dados.saldoParcial || 0) !== 0) ? (Number(dados.correcaoMonetaria || 0) / Number(dados.saldoParcial || 0)) * 100 : 0)), valor: numeroParaMoeda(dados.correcaoMonetaria || 0), destaque: false, valorNegrito: false },
+          { descricao: '(-)Amortização de Correção Monetária Sapiens Dívida', percentual: '-', valor: numeroParaMoeda(dados.amortizacaoCorrecaoMonetariaSapiensDivida || 0), destaque: false, valorNegrito: false },
           { descricao: '(=)Saldo Atualizado', percentual: '-', valor: numeroParaMoeda(dados.saldoAtualizado || 0), destaque: true, valorNegrito: false },
           { descricao: '(+)Multa', percentual: dados.dataInicioMulta && dados.dataFimMulta ? `De: ${dados.dataInicioMulta} até ${dados.dataFimMulta}: ${numeroParaPercentual(dados.percentualMulta || 0)}` : numeroParaPercentual(dados.percentualMulta || 0), valor: numeroParaMoeda(dados.valorMulta || 0), destaque: false, valorNegrito: true },
           { descricao: '(+)Juros', percentual: numeroParaPercentual(dados.percentualJuros || 0), valor: numeroParaMoeda(dados.valorJuros || 0), destaque: false, valorNegrito: true },
@@ -4568,7 +4669,11 @@
       if (desc.includes('COMPENSACAO ESTADUAL')) {
         if (coluna === 'valor') return { campo: 'compensacaoEstadual', tipo: 'moeda' };
       }
+      if (desc.includes('AMORTIZACAO DE CORRECAO MONETARIA SAPIENS DIVIDA')) {
+        if (!acumulado && coluna === 'valor') return { campo: 'amortizacaoCorrecaoMonetariaSapiensDivida', tipo: 'moeda' };
+      }
       if (desc.includes('CORRECAO MONETARIA')) {
+        if (!acumulado && coluna === 'percentual') return { campo: 'percentualCorrecaoMonetaria', tipo: 'percentual' };
         if (coluna === 'valor') return { campo: 'correcaoMonetaria', tipo: 'moeda' };
       }
       if (desc.includes('JUROS')) {
@@ -4595,8 +4700,25 @@
             ${dados.numeroDebito ? `<tr class="linha-topo"><th>Nº do débito:</th><td class="valor" colspan="2"><input class="campo-simulado-nao-editavel campo-numero" value="${escapeHtml(dados.numeroDebito)}" readonly></td></tr>` : ''}
             <tr class="linha-topo"><th>Consolidação do débito em (data):</th><td class="valor" colspan="2"><input class="campo-simulado-nao-editavel campo-data" value="${escapeHtml(dados.dataConsolidacao || '')}" readonly></td></tr>
             <tr><th class="rotulo">Descrição</th><th class="percentual">Percentual</th><th class="valor">Valores</th></tr>`;
-      const corpo = (dados.linhas || []).map(l => {
+      const linhasDados = dados.linhas || [];
+      const corpo = linhasDados.map((l, idx) => {
         const descricaoNormalizada = normalizarTextoBusca(l.descricao || '');
+        if (dados.tipoDebito !== 'TCFA_ACUMULADO' && descricaoNormalizada.includes('AMORTIZACAO DE CORRECAO MONETARIA SAPIENS DIVIDA')) return '';
+        if (dados.tipoDebito !== 'TCFA_ACUMULADO' && descricaoNormalizada === normalizarTextoBusca('(+)Correção Monetária')) {
+          const sub = linhasDados.find(item => normalizarTextoBusca(item.descricao || '').includes('AMORTIZACAO DE CORRECAO MONETARIA SAPIENS DIVIDA'));
+          const edicaoPct = indiceAtualizacao !== null ? campoEdicaoConsolidacaoAtualizacao(dados, l.descricao, 'percentual') : null;
+          const edicaoValor = indiceAtualizacao !== null ? campoEdicaoConsolidacaoAtualizacao(dados, l.descricao, 'valor') : null;
+          const edicaoAmort = indiceAtualizacao !== null && sub ? campoEdicaoConsolidacaoAtualizacao(dados, sub.descricao, 'valor') : null;
+          const htmlPct = edicaoPct ? inputEdicaoConsolidacaoAtualizacao(indiceAtualizacao, edicaoPct, l.percentual) : escapeHtml(l.percentual || '-');
+          const htmlValor = edicaoValor ? inputEdicaoConsolidacaoAtualizacao(indiceAtualizacao, edicaoValor, l.valor) : `<input class="campo-simulado-nao-editavel" value="${escapeHtml(l.valor)}" readonly>`;
+          const htmlAmort = edicaoAmort ? inputEdicaoConsolidacaoAtualizacao(indiceAtualizacao, edicaoAmort, sub?.valor || '0,00') : `<input class="campo-simulado-nao-editavel" value="${escapeHtml(sub?.valor || '0,00')}" readonly>`;
+          return `
+            <tr class="${l.destaque ? 'linha-destaque' : 'linha-comum'}">
+              <td class="rotulo celula-correcao-agrupada"><div class="grupo-correcao"><div class="grupo-correcao-linha">${escapeHtml(l.descricao)}</div><div class="grupo-correcao-linha subcampo rotulo-subcampo">${escapeHtml(sub?.descricao || '(-)Amortização de Correção Monetária Sapiens Dívida')}</div></div></td>
+              <td class="percentual celula-correcao-agrupada"><div class="grupo-correcao"><div class="grupo-correcao-linha">${htmlPct}</div><div class="grupo-correcao-linha subcampo percentual-vazio">-</div></div></td>
+              <td class="valor celula-correcao-agrupada"><div class="grupo-correcao"><div class="grupo-correcao-linha">${htmlValor}</div><div class="grupo-correcao-linha subcampo">${htmlAmort}</div></div></td>
+            </tr>`;
+        }
         const tipoEncargo = descricaoNormalizada.includes('MULTA') ? 'multa' : (descricaoNormalizada.includes('SELIC') ? 'selic' : '');
         if (indiceAtualizacao !== null && dados.tipoDebito !== 'TCFA_ACUMULADO' && tipoEncargo) {
           return `
@@ -4738,6 +4860,7 @@
       delete copia.modoMultaAcumulado;
       delete copia.modoSelicAcumulado;
       delete copia.modoSapiensAtualizacao;
+      delete copia.modoCorrecaoMonetariaAtualizacao;
       if (Array.isArray(copia.composicao)) {
         copia.composicao = copia.composicao.map(row => {
           const r = { ...row };
@@ -5015,11 +5138,20 @@
           campos.somatorioSapiens = undefined;
         }
         if (campo === 'somatorioSapiens') campos.somatorioSapiens = valorNumerico;
-        if (campo === 'correcaoMonetaria') campos.correcaoMonetaria = valorNumerico;
+        if (campo === 'percentualCorrecaoMonetaria') {
+          campos.percentualCorrecaoMonetaria = valorNumerico;
+          campos.modoCorrecaoMonetaria = 'percentual';
+        }
+        if (campo === 'correcaoMonetaria') {
+          campos.correcaoMonetaria = valorNumerico;
+          campos.modoCorrecaoMonetaria = 'valor';
+        }
+        if (campo === 'amortizacaoCorrecaoMonetariaSapiensDivida') campos.amortizacaoCorrecaoMonetariaSapiensDivida = valorNumerico;
         if (campo === 'percentualJuros') campos.percentualJuros = valorNumerico;
         if (campo === 'percentualEncargos') campos.percentualEncargos = valorNumerico;
         const novo = dadosPdfDeCamposSimples(campos);
         copiarMetadadosAtualizacao(dadosOriginais, novo);
+        novo.modoCorrecaoMonetariaAtualizacao = campos.modoCorrecaoMonetaria === 'percentual' ? 'percentual' : 'valor';
         inicializarMetadadosEncargoAtualizacaoSimples(novo, novo.modoMulta === 'automatica' || novo.modoSelic === 'sicalc' ? 'automatica' : 'manual');
         return novo;
       }
@@ -5143,7 +5275,10 @@
         compensacaoEstadual: camposAtuais.compensacaoEstadual,
         percentualSapiens: camposAtuais.percentualSapiens,
         somatorioSapiens: camposAtuais.somatorioSapiens,
+        percentualCorrecaoMonetaria: camposAtuais.percentualCorrecaoMonetaria,
         correcaoMonetaria: camposAtuais.correcaoMonetaria,
+        amortizacaoCorrecaoMonetariaSapiensDivida: camposAtuais.amortizacaoCorrecaoMonetariaSapiensDivida,
+        modoCorrecaoMonetaria: dadosAtuais.modoCorrecaoMonetariaAtualizacao || camposAtuais.modoCorrecaoMonetaria || 'valor',
         percentualJuros: camposAtuais.percentualJuros,
         percentualEncargos: camposAtuais.percentualEncargos,
         dataInicioMulta: camposAtuais.dataInicioMulta || camposBase.dataInicioMulta,
