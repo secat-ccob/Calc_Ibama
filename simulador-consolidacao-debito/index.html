@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_58 -->
+  <!-- Versão: simulador_consolidacao_debito_v_59 -->
 
   <style>
     :root {
@@ -361,7 +361,7 @@
       box-sizing: border-box;
     }
 
-    /* Percentual, valor bruto e amortização da correção aparecem como subcampos. */
+    /* Percentual e valor bruto compartilham o subcampo Valor da Correção Monetária; a amortização ocupa o segundo subcampo. */
     .grupo-correcao-linha.subcampo {
       min-height: 22px;
       width: calc(100% - 16px);
@@ -1438,10 +1438,9 @@
               <td class="rotulo celula-correcao-agrupada">
                 <div class="grupo-correcao">
                   <div class="grupo-correcao-linha">(+)Correção Monetária</div>
-                  <div class="grupo-correcao-linha subcampo rotulo-subcampo">Percentual da Correção Monetária</div>
                   <div class="grupo-correcao-linha subcampo rotulo-subcampo">Valor da Correção Monetária</div>
                   <div class="grupo-correcao-linha subcampo rotulo-subcampo">(-)Amortização da Correção Monetária Sapiens Dívida</div>
-                  <div class="grupo-correcao-linha saldo-amortizacao">(=)Saldo da amortização</div>
+                  <div class="grupo-correcao-linha saldo-amortizacao"></div>
                 </div>
               </td>
               <td class="percentual celula-correcao-agrupada">
@@ -1449,14 +1448,12 @@
                   <div class="grupo-correcao-linha"></div>
                   <div class="grupo-correcao-linha subcampo"><input id="percentualCorrecaoMonetaria" class="campo-tabela campo-percentual" type="text" inputmode="decimal" value="0,00%" autocomplete="off" /></div>
                   <div class="grupo-correcao-linha subcampo percentual-vazio">-</div>
-                  <div class="grupo-correcao-linha subcampo percentual-vazio">-</div>
                   <div class="grupo-correcao-linha saldo-amortizacao percentual-vazio">-</div>
                 </div>
               </td>
               <td class="valor celula-correcao-agrupada">
                 <div class="grupo-correcao">
                   <div class="grupo-correcao-linha"></div>
-                  <div class="grupo-correcao-linha subcampo"></div>
                   <div class="grupo-correcao-linha subcampo"><input id="correcaoMonetaria" class="campo-tabela campo-moeda" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></div>
                   <div class="grupo-correcao-linha subcampo"><input id="amortizacaoCorrecaoMonetariaSapiensDivida" class="campo-tabela campo-moeda" type="text" inputmode="numeric" value="0,00" autocomplete="off" /></div>
                   <div class="grupo-correcao-linha saldo-amortizacao"><input id="saldoAmortizacaoCorrecaoMonetaria" class="campo-tabela" type="text" value="0,00" readonly tabindex="-1" /></div>
@@ -4789,9 +4786,9 @@
           const htmlSaldo = `<input class="campo-simulado-nao-editavel" value="${escapeHtml(saldo?.valor || numeroParaMoeda(roundMoneyValue(moedaParaNumero(l.valor) - moedaParaNumero(sub?.valor || '0,00'))))}" readonly>`;
           return `
             <tr class="${l.destaque ? 'linha-destaque' : 'linha-comum'}">
-              <td class="rotulo celula-correcao-agrupada"><div class="grupo-correcao"><div class="grupo-correcao-linha">${escapeHtml(l.descricao)}</div><div class="grupo-correcao-linha subcampo rotulo-subcampo">Percentual da Correção Monetária</div><div class="grupo-correcao-linha subcampo rotulo-subcampo">Valor da Correção Monetária</div><div class="grupo-correcao-linha subcampo rotulo-subcampo">${escapeHtml(sub?.descricao || '(-)Amortização da Correção Monetária Sapiens Dívida')}</div><div class="grupo-correcao-linha saldo-amortizacao">(=)Saldo da amortização</div></div></td>
-              <td class="percentual celula-correcao-agrupada"><div class="grupo-correcao"><div class="grupo-correcao-linha"></div><div class="grupo-correcao-linha subcampo">${htmlPct}</div><div class="grupo-correcao-linha subcampo percentual-vazio">-</div><div class="grupo-correcao-linha subcampo percentual-vazio">-</div><div class="grupo-correcao-linha saldo-amortizacao percentual-vazio">-</div></div></td>
-              <td class="valor celula-correcao-agrupada"><div class="grupo-correcao"><div class="grupo-correcao-linha"></div><div class="grupo-correcao-linha subcampo"></div><div class="grupo-correcao-linha subcampo">${htmlValor}</div><div class="grupo-correcao-linha subcampo">${htmlAmort}</div><div class="grupo-correcao-linha saldo-amortizacao">${htmlSaldo}</div></div></td>
+              <td class="rotulo celula-correcao-agrupada"><div class="grupo-correcao"><div class="grupo-correcao-linha">${escapeHtml(l.descricao)}</div><div class="grupo-correcao-linha subcampo rotulo-subcampo">Valor da Correção Monetária</div><div class="grupo-correcao-linha subcampo rotulo-subcampo">${escapeHtml(sub?.descricao || '(-)Amortização da Correção Monetária Sapiens Dívida')}</div><div class="grupo-correcao-linha saldo-amortizacao"></div></div></td>
+              <td class="percentual celula-correcao-agrupada"><div class="grupo-correcao"><div class="grupo-correcao-linha"></div><div class="grupo-correcao-linha subcampo">${htmlPct}</div><div class="grupo-correcao-linha subcampo percentual-vazio">-</div><div class="grupo-correcao-linha saldo-amortizacao percentual-vazio">-</div></div></td>
+              <td class="valor celula-correcao-agrupada"><div class="grupo-correcao"><div class="grupo-correcao-linha"></div><div class="grupo-correcao-linha subcampo">${htmlValor}</div><div class="grupo-correcao-linha subcampo">${htmlAmort}</div><div class="grupo-correcao-linha saldo-amortizacao">${htmlSaldo}</div></div></td>
             </tr>`;
         }
         const tipoEncargo = descricaoNormalizada.includes('MULTA') ? 'multa' : (descricaoNormalizada.includes('SELIC') ? 'selic' : '');
@@ -5939,7 +5936,8 @@
           garantirEspaco(alturaLinha);
           const cinza = linha.destaque ? '0.88' : '0.97';
           const percentualComDatas = /^De:\s*\d{2}\/\d{2}\/\d{4}\s+até\s+\d{2}\/\d{2}\/\d{4}:/.test(String(linha.percentual || ''));
-          celula(x0, y, colunas[0], alturaLinha, cinza, linha.descricao, { negrito: linha.destaque });
+          const descricaoPdf = normalizarTextoBusca(linha.descricao || '') === normalizarTextoBusca('(=)Saldo da amortização') ? '' : linha.descricao;
+          celula(x0, y, colunas[0], alturaLinha, cinza, descricaoPdf, { negrito: linha.destaque });
           if (percentualComDatas) {
             celulaPercentualEncargoPDF(x0 + colunas[0], y, colunas[1], alturaLinha, cinza, linha.percentual);
           } else {
