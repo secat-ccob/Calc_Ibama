@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_23 -->
+    <!-- Versão: calculadora_selic_portal_v_24 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -519,7 +519,7 @@
         </table>
         
         <div class="buttons">
-            <button class="btn" onclick="adicionarLinha()">+ Adicionar Linha</button>
+            <button class="btn" id="btnAdicionarLinha" onclick="adicionarLinha()">+ Adicionar Linha</button>
             <button class="btn" onclick="removerLinha()">- Remover Linha</button>
             <button class="btn" onclick="gerarPDFDireto()">Gerar PDF</button>
             <button class="btn" onclick="buscarDadosOnline()">🔄 Atualizar Base</button>
@@ -1390,6 +1390,9 @@
             contadorLinhas++;
             console.log(`✅ Linha ${contadorLinhas - 1} adicionada com sucesso!`);
             mostrarAlerta(`✅ Nova linha adicionada!`, 'success');
+
+            const campoNovoValor = tr.querySelector('.valor-pagamento');
+            if (campoNovoValor) campoNovoValor.focus();
         }
         
         function removerLinha() {
@@ -1531,6 +1534,20 @@ function mostrarModalUltimaTaxa() {
                 }
             }
         }
+
+        // Na última linha, Tab após "Valor atualizado" vai diretamente a "+ Adicionar Linha".
+        // O tratamento da tecla Enter permanece inalterado.
+        document.getElementById('tabelaSelic').addEventListener('keydown', function(event) {
+            if (event.key !== 'Tab' || event.shiftKey || !event.target.classList.contains('valor-atualizado')) return;
+            const linhas = document.querySelectorAll('#tabelaSelic .data-row[data-linha]');
+            const ultima = linhas[linhas.length - 1];
+            if (!ultima || !ultima.contains(event.target)) return;
+            const botaoAdicionar = document.getElementById('btnAdicionarLinha');
+            if (botaoAdicionar) {
+                event.preventDefault();
+                botaoAdicionar.focus();
+            }
+        });
 
         document.addEventListener('keydown', moverFocoComoTab);
 
