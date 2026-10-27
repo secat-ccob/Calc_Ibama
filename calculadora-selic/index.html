@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_25 -->
+    <!-- Versão: calculadora_selic_portal_v_26 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -225,6 +225,10 @@
             white-space: normal;
         }
         
+        .header-row .padrao-checkbox { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 7px; font-size: 11px; font-weight: normal; cursor: pointer; }
+        .header-row .padrao-checkbox input { width: auto; flex: 0 0 auto; }
+        .header-row .campo-padrao-data { display: none; box-sizing: border-box; margin: 6px auto 0; padding: 5px 3px; width: 106px; max-width: 100%; background: white; border: 1px solid #ccc; border-radius: 3px; color: black; text-align: center; font-size: 12px; }
+        .header-row .campo-padrao-data:enabled { display: block; }
         .data-row td {
             padding: 8px;
             border: 1px solid #ccc;
@@ -458,10 +462,6 @@
             Calculadora de Taxa Selic Acumulada
         </div>
         
-        <div class="update-section">
-            Mês de atualização (mm/aaaa):
-            <input type="text" id="mesReferencia" value="" maxlength="7" inputmode="numeric" onblur="formatarData(this); atualizarTodasLinhas()">
-        </div>
         
         <div id="alertas" class="alert"></div>
         <div id="statusInfo" class="status-info">🔄 Carregando base automática da Selic...</div>
@@ -470,7 +470,8 @@
             <tbody>
                 <tr class="header-row">
                     <td>Valor original (R$)</td>
-                    <td>Vencimento (mm/aaaa)</td>
+                    <td><div class="titulo-coluna-data">Mês de consolidação (mm/aaaa)</div><label class="padrao-checkbox"><input type="checkbox" id="padraoConsolidacaoCheck" onchange="alternarDataPadrao('consolidacao')"> Data padrão (mm/aaaa)</label><input type="text" id="padraoConsolidacaoData" class="campo-padrao-data" placeholder="MM/AAAA" maxlength="10" inputmode="numeric" disabled onblur="aplicarDataPadrao('consolidacao')"></td>
+                    <td><div class="titulo-coluna-data">Mês de atualização (mm/aaaa)</div><label class="padrao-checkbox"><input type="checkbox" id="padraoAtualizacaoCheck" onchange="alternarDataPadrao('atualizacao')"> Data padrão (mm/aaaa)</label><input type="text" id="padraoAtualizacaoData" class="campo-padrao-data" placeholder="MM/AAAA" maxlength="7" inputmode="numeric" disabled onblur="aplicarDataPadrao('atualizacao')"></td>
                     <td>Taxa Selic acumulada (%)</td>
                     <td>Valor Selic acumulada (R$)</td>
                     <td>Valor atualizado (R$)</td>
@@ -483,6 +484,9 @@
                     <td class="white-cell">
                         <input type="text" class="data-pagamento" placeholder="MM/AAAA" maxlength="10" onblur="formatarData(this); calcularLinha(0)">
                     </td>
+                    <td class="white-cell">
+                        <input type="text" class="data-atualizacao" placeholder="MM/AAAA" maxlength="7" inputmode="numeric" onblur="formatarData(this); calcularLinha(0)">
+                    </td>
                     <td class="gray-cell">
                         <input type="text" class="taxa-selic" readonly>
                     </td>
@@ -494,24 +498,24 @@
                     </td>
                 </tr>
                 
-                <tr class="empty-row"><td colspan="4"></td></tr>
+                <tr class="empty-row"><td colspan="6"></td></tr>
                 
                 <tr class="data-row total-row total-original-row">
-                    <td colspan="3" style="border: none;"></td>
+                    <td colspan="4" style="border: none;"></td>
                     <td class="green-footer">Total original:</td>
                     <td class="green-footer">
                         <input type="text" id="valorTotalOriginal" readonly>
                     </td>
                 </tr>
                 <tr class="data-row total-row total-selic-row">
-                    <td colspan="3" style="border: none;"></td>
+                    <td colspan="4" style="border: none;"></td>
                     <td class="green-footer">Total Selic:</td>
                     <td class="green-footer">
                         <input type="text" id="valorTotalSelic" readonly>
                     </td>
                 </tr>
                 <tr class="data-row total-row total-atualizado-row">
-                    <td colspan="3" style="border: none;"></td>
+                    <td colspan="4" style="border: none;"></td>
                     <td class="green-footer">Total atualizado:</td>
                     <td class="green-footer">
                         <input type="text" id="valorTotal" readonly>
@@ -789,14 +793,14 @@
                 return {
                     valorOriginal: linha.querySelector('.valor-pagamento')?.value || '',
                     vencimento: linha.querySelector('.data-pagamento')?.value || '',
+                    atualizacao: linha.querySelector('.data-atualizacao')?.value || '',
                     taxaSelic: linha.querySelector('.taxa-selic')?.value || '',
                     valorSelic: linha.querySelector('.valor-selic')?.value || '',
                     valorAtualizado: linha.querySelector('.valor-atualizado')?.value || ''
                 };
-            }).filter(linha => linha.valorOriginal || linha.vencimento || linha.taxaSelic || linha.valorSelic || linha.valorAtualizado);
+            }).filter(linha => linha.valorOriginal || linha.vencimento || linha.atualizacao || linha.taxaSelic || linha.valorSelic || linha.valorAtualizado);
 
             return {
-                mesReferencia: document.getElementById('mesReferencia')?.value || '',
                 linhas,
                 totalOriginal: document.getElementById('valorTotalOriginal')?.value || '',
                 totalSelic: document.getElementById('valorTotalSelic')?.value || '',
@@ -804,22 +808,20 @@
             };
         }
 
-        function criarPaginaPDF(larguraPagina, alturaPagina, margem, imagensCabecalho, mesReferencia) {
+        function criarPaginaPDF(larguraPagina, alturaPagina, margem, imagensCabecalho) {
             const comandos = [];
             comandos.push('1 1 1 rg');
             comandos.push(`0 0 ${larguraPagina} ${alturaPagina} re f`);
 
             let y = desenharCabecalhoInstitucional(comandos, larguraPagina, alturaPagina, margem, imagensCabecalho, 'TAXA SELIC ACUMULADA');
-            comandos.push('0 0 0 rg');
-            adicionarTextoPDF(comandos, `Mês de atualização (mm/aaaa): ${mesReferencia}`, margem, y, 11, 'left', 0, true);
-
-            return { comandos, yTabela: y - 40 };
+            return { comandos, yTabela: y - 18 };
         }
 
         function desenharCabecalhoTabelaPDF(comandos, y, margem, larguras, alturaCabecalho) {
             const cabecalhos = [
                 'Valor original (R$)',
-                'Vencimento\n(mm/aaaa)',
+                'Mês consolidação\n(mm/aaaa)',
+                'Mês atualização\n(mm/aaaa)',
                 'Taxa Selic\nacumulada (%)',
                 'Valor Selic acumulada\n(R$)',
                 'Valor atualizado\n(R$)'
@@ -830,7 +832,7 @@
                 desenharCelulaPDF(comandos, x, y, larguras[indice], alturaCabecalho, cabecalho, {
                     preenchimento: [0.12, 0.31, 0.47],
                     corTexto: [1, 1, 1],
-                    tamanho: 9,
+                    tamanho: 7.5,
                     alinhamento: 'center',
                     negrito: true
                 });
@@ -846,11 +848,11 @@
             const alturaCabecalho = 34;
             const alturaLinha = 28;
             const limiteInferior = 58;
-            const larguras = [105, 90, 110, 115, 103];
+            const larguras = [85, 77, 77, 85, 102, 97];
             const paginas = [];
 
             function novaPagina() {
-                const pagina = criarPaginaPDF(larguraPagina, alturaPagina, margem, imagensCabecalho, dados.mesReferencia);
+                const pagina = criarPaginaPDF(larguraPagina, alturaPagina, margem, imagensCabecalho);
                 desenharCabecalhoTabelaPDF(pagina.comandos, pagina.yTabela, margem, larguras, alturaCabecalho);
                 pagina.y = pagina.yTabela - alturaLinha;
                 paginas.push(pagina);
@@ -865,9 +867,9 @@
                 }
 
                 let x = margem;
-                const valores = [linha.valorOriginal, linha.vencimento, linha.taxaSelic, linha.valorSelic, linha.valorAtualizado];
+                const valores = [linha.valorOriginal, linha.vencimento, linha.atualizacao, linha.taxaSelic, linha.valorSelic, linha.valorAtualizado];
                 valores.forEach((valor, indice) => {
-                    const preenchimento = indice >= 2 ? [0.88, 0.88, 0.88] : null;
+                    const preenchimento = indice >= 3 ? [0.88, 0.88, 0.88] : null;
                     desenharCelulaPDF(paginaAtual.comandos, x, paginaAtual.y, larguras[indice], alturaLinha, valor, {
                         preenchimento,
                         tamanho: 9,
@@ -885,9 +887,9 @@
                 }
 
                 paginaAtual.y -= 24;
-                const xLabel = margem + larguras[0] + larguras[1] + larguras[2];
-                const larguraLabel = larguras[3];
-                const larguraValor = larguras[4];
+                const xLabel = margem + larguras[0] + larguras[1] + larguras[2] + larguras[3];
+                const larguraLabel = larguras[4];
+                const larguraValor = larguras[5];
                 const totais = [
                     ['Total original:', dados.totalOriginal],
                     ['Total Selic:', dados.totalSelic],
@@ -1193,63 +1195,74 @@
             return { valido: true, mensagem: '' };
         }
 
-        function validarMesReferencia(input) {
+        function validarCampoCompetencia(input, tipo = 'atualizacao') {
             if (!input) return false;
-            const ultimoValorValido = input.dataset.ultimoValorValido || obterMesVigente();
-            const competencia = normalizarCompetencia(input.value, false);
-
-            if (!competencia) {
-                input.value = ultimoValorValido;
-                mostrarAlerta('Mês de atualização inválido. Use o formato MMAAAA ou MM/AAAA.', 'error');
-                return false;
-            }
-
-            const validacao = validarCompetenciaPermitida(competencia);
-            if (!validacao.valido) {
-                input.value = ultimoValorValido;
-                mostrarAlerta(validacao.mensagem, 'error');
-                return false;
-            }
-
-            input.value = competencia;
-            input.dataset.ultimoValorValido = competencia;
-            return true;
-        }
-
-        function validarVencimento(input) {
-            if (!input) return false;
+            const anterior = input.dataset.ultimoValorValido || '';
             if (!String(input.value || '').trim()) {
+                input.value = '';
                 input.dataset.ultimoValorValido = '';
                 return true;
             }
-
-            const ultimoValorValido = input.dataset.ultimoValorValido || '';
-            const competencia = normalizarCompetencia(input.value, true);
-
+            const competencia = normalizarCompetencia(input.value, tipo === 'consolidacao');
             if (!competencia) {
-                input.value = ultimoValorValido;
-                mostrarAlerta('Vencimento inválido. Use o formato MM/AAAA, MMAAAA ou DD/MM/AAAA.', 'error');
+                input.value = anterior;
+                mostrarAlerta(tipo === 'consolidacao'
+                    ? 'Mês de consolidação inválido. Use MM/AAAA, MMAAAA ou DD/MM/AAAA.'
+                    : 'Mês de atualização inválido. Use MMAAAA ou MM/AAAA.', 'error');
                 return false;
             }
-
             const validacao = validarCompetenciaPermitida(competencia);
             if (!validacao.valido) {
-                input.value = ultimoValorValido;
+                input.value = anterior;
                 mostrarAlerta(validacao.mensagem, 'error');
                 return false;
             }
-
             input.value = competencia;
             input.dataset.ultimoValorValido = competencia;
             return true;
         }
 
+        function validarMesReferencia(input) { return validarCampoCompetencia(input, 'atualizacao'); }
+        function validarVencimento(input) { return validarCampoCompetencia(input, 'consolidacao'); }
         function formatarData(input) {
-            const ehCampoVencimento = input && input.classList && input.classList.contains('data-pagamento');
-            if (ehCampoVencimento) return validarVencimento(input);
+            if (input?.classList?.contains('data-pagamento') || input?.id === 'padraoConsolidacaoData') return validarVencimento(input);
             return validarMesReferencia(input);
         }
-        
+
+        function configuracaoDataPadrao(tipo) {
+            return tipo === 'consolidacao'
+                ? { checkbox: 'padraoConsolidacaoCheck', campo: 'padraoConsolidacaoData', classe: '.data-pagamento' }
+                : { checkbox: 'padraoAtualizacaoCheck', campo: 'padraoAtualizacaoData', classe: '.data-atualizacao' };
+        }
+
+        async function aplicarDataPadrao(tipo) {
+            const cfg = configuracaoDataPadrao(tipo);
+            const check = document.getElementById(cfg.checkbox);
+            const campo = document.getElementById(cfg.campo);
+            if (!check?.checked || !campo) return;
+            if (!formatarData(campo)) return;
+            document.querySelectorAll('#tabelaSelic .data-row[data-linha] ' + cfg.classe).forEach(input => {
+                input.value = campo.value;
+                input.dataset.ultimoValorValido = campo.value;
+                input.readOnly = true;
+            });
+            await atualizarTodasLinhas();
+        }
+
+        function alternarDataPadrao(tipo) {
+            const cfg = configuracaoDataPadrao(tipo);
+            const check = document.getElementById(cfg.checkbox);
+            const campo = document.getElementById(cfg.campo);
+            campo.disabled = !check.checked;
+            document.querySelectorAll('#tabelaSelic .data-row[data-linha] ' + cfg.classe).forEach(input => {
+                input.readOnly = check.checked;
+            });
+            if (check.checked) {
+                if (campo.value) aplicarDataPadrao(tipo);
+                else campo.focus();
+            }
+        }
+
         function moedaParaNumero(valorMoeda) {
             if (!valorMoeda) return 0;
             return parseFloat(valorMoeda.replace(/\./g, '').replace(',', '.'));
@@ -1270,7 +1283,7 @@
             const valorSelicInput = linha.querySelector('.valor-selic');
             const valorAtualizadoInput = linha.querySelector('.valor-atualizado');
             
-            const mesReferencia = document.getElementById('mesReferencia').value;
+            const mesReferencia = linha.querySelector('.data-atualizacao').value;
             
             if (!valorPagamento || !dataPagamento || !mesReferencia) {
                 taxaSelicInput.value = '';
@@ -1377,6 +1390,9 @@
                 <td class="white-cell">
                     <input type="text" class="data-pagamento" placeholder="MM/AAAA" maxlength="10" onblur="formatarData(this); calcularLinha(${contadorLinhas})">
                 </td>
+                <td class="white-cell">
+                    <input type="text" class="data-atualizacao" placeholder="MM/AAAA" maxlength="7" inputmode="numeric" onblur="formatarData(this); calcularLinha(${contadorLinhas})">
+                </td>
                 <td class="gray-cell">
                     <input type="text" class="taxa-selic" readonly>
                 </td>
@@ -1389,6 +1405,17 @@
             `;
             
             tbody.insertBefore(tr, linhaVazia);
+            for (const tipo of ['consolidacao', 'atualizacao']) {
+                const cfg = configuracaoDataPadrao(tipo);
+                if (document.getElementById(cfg.checkbox)?.checked) {
+                    const campoNovo = tr.querySelector(cfg.classe);
+                    const padrao = document.getElementById(cfg.campo).value;
+                    campoNovo.value = padrao;
+                    campoNovo.dataset.ultimoValorValido = padrao;
+                    campoNovo.readOnly = true;
+                }
+            }
+            calcularLinha(contadorLinhas);
             contadorLinhas++;
             console.log(`✅ Linha ${contadorLinhas - 1} adicionada com sucesso!`);
             mostrarAlerta(`✅ Nova linha adicionada!`, 'success');
@@ -1557,16 +1584,10 @@ function mostrarModalUltimaTaxa() {
         window.onload = function() {
             console.log('🚀 CALCULADORA Selic inicializando...');
             
-            // Definir mês vigente antes de carregar dados
-            definirMesVigente();
-            
-            const mesDefinido = document.getElementById('mesReferencia').value;
-            console.log(`📅 Sistema iniciado com mês de referência: ${mesDefinido}`);
-            
             buscarDadosOnline().then(() => {
-                mostrarAlerta(`✅ Sistema pronto! Mês de referência: ${mesDefinido}`, 'success');
+                mostrarAlerta('✅ Sistema pronto!', 'success');
             }).catch(() => {
-                mostrarAlerta(`⚠️ Sistema carregado com dados locais. Mês: ${mesDefinido}`, 'success');
+                mostrarAlerta('⚠️ Sistema carregado com dados locais.', 'success');
             });
         };
     </script>
