@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_26 -->
+    <!-- Versão: calculadora_selic_portal_v_27 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -225,10 +225,56 @@
             white-space: normal;
         }
         
-        .header-row .padrao-checkbox { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 7px; font-size: 11px; font-weight: normal; cursor: pointer; }
-        .header-row .padrao-checkbox input { width: auto; flex: 0 0 auto; }
-        .header-row .campo-padrao-data { display: none; box-sizing: border-box; margin: 6px auto 0; padding: 5px 3px; width: 106px; max-width: 100%; background: white; border: 1px solid #ccc; border-radius: 3px; color: black; text-align: center; font-size: 12px; }
-        .header-row .campo-padrao-data:enabled { display: block; }
+        /* Controles de data padrão em uma faixa independente, acima dos títulos. */
+        .padroes-row td {
+            background: #ffffff;
+            color: #1f2933;
+            border: 1px solid #ccc;
+            padding: 5px 3px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        .padroes-row .padrao-controle {
+            display: flex;
+            flex-wrap: nowrap;
+            justify-content: center;
+            align-items: center;
+            gap: 3px;
+            white-space: nowrap;
+        }
+        .padroes-row .padrao-checkbox {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            font-size: 10px;
+            font-weight: normal;
+            white-space: nowrap;
+            cursor: pointer;
+        }
+        .padroes-row .padrao-checkbox input {
+            flex: 0 0 auto;
+            width: 13px;
+            height: 13px;
+            margin: 0;
+        }
+        .padroes-row .campo-padrao-data {
+            display: inline-block;
+            width: 66px;
+            min-width: 0;
+            max-width: 66px;
+            box-sizing: border-box;
+            padding: 3px 1px;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            color: black;
+            text-align: center;
+            font-size: 10px;
+        }
+        .padroes-row .campo-padrao-data:disabled {
+            background: #f0f0f0;
+            color: #666;
+        }
         .data-row td {
             padding: 8px;
             border: 1px solid #ccc;
@@ -468,10 +514,16 @@
         
         <table id="tabelaSelic">
             <tbody>
+                <tr class="padroes-row">
+                    <td></td>
+                    <td><div class="padrao-controle"><label class="padrao-checkbox"><input type="checkbox" id="padraoConsolidacaoCheck" onchange="alternarDataPadrao('consolidacao')">Data padrão</label><input type="text" id="padraoConsolidacaoData" class="campo-padrao-data" placeholder="MM/AAAA" maxlength="10" inputmode="numeric" disabled onblur="aplicarDataPadrao('consolidacao')"></div></td>
+                    <td><div class="padrao-controle"><label class="padrao-checkbox"><input type="checkbox" id="padraoAtualizacaoCheck" onchange="alternarDataPadrao('atualizacao')">Data padrão</label><input type="text" id="padraoAtualizacaoData" class="campo-padrao-data" placeholder="MM/AAAA" maxlength="7" inputmode="numeric" disabled onblur="aplicarDataPadrao('atualizacao')"></div></td>
+                    <td></td><td></td><td></td>
+                </tr>
                 <tr class="header-row">
                     <td>Valor original (R$)</td>
-                    <td><div class="titulo-coluna-data">Mês de consolidação (mm/aaaa)</div><label class="padrao-checkbox"><input type="checkbox" id="padraoConsolidacaoCheck" onchange="alternarDataPadrao('consolidacao')"> Data padrão (mm/aaaa)</label><input type="text" id="padraoConsolidacaoData" class="campo-padrao-data" placeholder="MM/AAAA" maxlength="10" inputmode="numeric" disabled onblur="aplicarDataPadrao('consolidacao')"></td>
-                    <td><div class="titulo-coluna-data">Mês de atualização (mm/aaaa)</div><label class="padrao-checkbox"><input type="checkbox" id="padraoAtualizacaoCheck" onchange="alternarDataPadrao('atualizacao')"> Data padrão (mm/aaaa)</label><input type="text" id="padraoAtualizacaoData" class="campo-padrao-data" placeholder="MM/AAAA" maxlength="7" inputmode="numeric" disabled onblur="aplicarDataPadrao('atualizacao')"></td>
+                    <td>Mês de consolidação (mm/aaaa)</td>
+                    <td>Mês de atualização (mm/aaaa)</td>
                     <td>Taxa Selic acumulada (%)</td>
                     <td>Valor Selic acumulada (R$)</td>
                     <td>Valor atualizado (R$)</td>
@@ -1027,6 +1079,7 @@
                 atualizarStatus(`✅ ${totalTaxas} competências carregadas da base automática`, true);
                 statusConexao = 'online';
                 await atualizarTodasLinhas();
+                mostrarModalUltimaTaxa();
             } catch (error) {
                 console.error('Erro ao carregar base local:', error);
                 statusConexao = 'offline';
@@ -1450,7 +1503,6 @@ async function atualizarTodasLinhas() {
         await new Promise(resolve => setTimeout(resolve, 100));
     }
 
-    mostrarModalUltimaTaxa();
 }
 
 function criarModalUltimaTaxa() {
