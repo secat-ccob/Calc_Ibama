@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_29 -->
+    <!-- Versão: calculadora_selic_portal_v_30 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -294,6 +294,13 @@
         
         .white-cell {
             background-color: white;
+        }
+
+        /* Células padronizadas ficam cinzas enquanto o respectivo campo estiver bloqueado. */
+        #tabelaSelic .data-row[data-linha] td.white-cell:has(> input.valor-pagamento[readonly]),
+        #tabelaSelic .data-row[data-linha] td.white-cell:has(> input.data-pagamento[readonly]),
+        #tabelaSelic .data-row[data-linha] td.white-cell:has(> input.data-atualizacao[readonly]) {
+            background-color: #e0e0e0;
         }
         
         .green-footer {
