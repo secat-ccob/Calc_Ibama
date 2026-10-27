@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_28 -->
+    <!-- Versão: calculadora_selic_portal_v_29 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -363,9 +363,17 @@
             border-radius: 3px;
             background: #fff;
             color: #111;
-            margin-left: -92px;
-            margin-right: 49px;
-            position: relative;
+            position: absolute;
+            z-index: 1;
+            margin: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .acao-linhas .espaco-quantidade {
+            display: inline-block;
+            width: 51px;
+            height: 1px;
+            vertical-align: middle;
         }
         .acao-linhas .quantidade-linhas::-webkit-outer-spin-button,
         .acao-linhas .quantidade-linhas::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -609,11 +617,11 @@
         
         <div class="buttons">
             <span class="acao-linhas">
-                <button class="btn" id="btnAdicionarLinha" onclick="adicionarLinhasSelecionadas()">+ Adicionar　　Linha(s)</button>
+                <button class="btn" id="btnAdicionarLinha" onclick="adicionarLinhasSelecionadas()">+ Adicionar <span class="espaco-quantidade" aria-hidden="true"></span> Linha(s)</button>
                 <input type="number" id="quantidadeAdicionar" class="quantidade-linhas" min="1" max="240" step="1" value="1" aria-label="Quantidade de linhas a adicionar" onblur="normalizarQuantidadeLinhas(this)" onkeydown="teclaQuantidadeLinhas(event, 'adicionar')">
             </span>
             <span class="acao-linhas">
-                <button class="btn" id="btnRemoverLinha" onclick="removerLinhasSelecionadas()">- Remover　　Linha(s)</button>
+                <button class="btn" id="btnRemoverLinha" onclick="removerLinhasSelecionadas()">- Remover <span class="espaco-quantidade" aria-hidden="true"></span> Linha(s)</button>
                 <input type="number" id="quantidadeRemover" class="quantidade-linhas" min="1" max="240" step="1" value="1" aria-label="Quantidade de linhas a remover" onblur="normalizarQuantidadeLinhas(this)" onkeydown="teclaQuantidadeLinhas(event, 'remover')">
             </span>
             <button class="btn" onclick="gerarPDFDireto()">Gerar PDF</button>
@@ -1382,6 +1390,21 @@
             }
         }
 
+        // Posicionar os campos de quantidade sobre o espaço reservado nos botões,
+        // sem sobrepor as palavras, inclusive quando houver mudança de escala da tela.
+        function posicionarCamposQuantidade() {
+            document.querySelectorAll('.acao-linhas').forEach(grupo => {
+                const espaco = grupo.querySelector('.espaco-quantidade');
+                const campo = grupo.querySelector('.quantidade-linhas');
+                if (!espaco || !campo) return;
+                const retanguloEspaco = espaco.getBoundingClientRect();
+                const retanguloGrupo = grupo.getBoundingClientRect();
+                campo.style.left = `${retanguloEspaco.left - retanguloGrupo.left + (retanguloEspaco.width - campo.offsetWidth) / 2}px`;
+            });
+        }
+
+        window.addEventListener('resize', posicionarCamposQuantidade);
+
         function normalizarQuantidadeLinhas(input) {
             const numero = Number(input.value);
             if (!Number.isInteger(numero) || numero < 1 || numero > 240) {
@@ -1758,6 +1781,7 @@ function mostrarModalUltimaTaxa() {
 
         // **INICIALIZAÇÃO COM MÊS VIGENTE**
         window.onload = function() {
+            posicionarCamposQuantidade();
             console.log('🚀 CALCULADORA Selic inicializando...');
             
             buscarDadosOnline().then(() => {
