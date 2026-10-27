@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_27 -->
+    <!-- Versão: calculadora_selic_portal_v_28 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -271,6 +271,7 @@
             text-align: center;
             font-size: 10px;
         }
+        .padroes-row .campo-padrao-valor { width: 75px; max-width: 75px; }
         .padroes-row .campo-padrao-data:disabled {
             background: #f0f0f0;
             color: #666;
@@ -339,6 +340,36 @@
             font-weight: bold;
         }
         
+        /* Botão e campo editável visualmente integrados, mas com focos independentes. */
+        .acao-linhas {
+            display: inline-flex;
+            align-items: center;
+            position: relative;
+            margin: 0 5px;
+            vertical-align: middle;
+        }
+        .acao-linhas .btn {
+            margin: 0;
+            padding: 8px 13px;
+            white-space: nowrap;
+        }
+        .acao-linhas .quantidade-linhas {
+            width: 43px;
+            height: 25px;
+            padding: 2px;
+            font-size: 13px;
+            text-align: center;
+            border: 1px solid #aaa;
+            border-radius: 3px;
+            background: #fff;
+            color: #111;
+            margin-left: -92px;
+            margin-right: 49px;
+            position: relative;
+        }
+        .acao-linhas .quantidade-linhas::-webkit-outer-spin-button,
+        .acao-linhas .quantidade-linhas::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .acao-linhas .quantidade-linhas { appearance: textfield; -moz-appearance: textfield; }
         .btn:hover {
             background-color: #d0d0d0;
         }
@@ -515,7 +546,7 @@
         <table id="tabelaSelic">
             <tbody>
                 <tr class="padroes-row">
-                    <td></td>
+                    <td><div class="padrao-controle"><label class="padrao-checkbox"><input type="checkbox" id="padraoValorCheck" onchange="alternarValorPadrao()">Valor padrão</label><input type="text" id="padraoValorCampo" class="campo-padrao-data campo-padrao-valor" placeholder="0,00" inputmode="numeric" disabled oninput="aplicarMascaraMoedaTempoReal(this)" onblur="aplicarValorPadrao()"></div></td>
                     <td><div class="padrao-controle"><label class="padrao-checkbox"><input type="checkbox" id="padraoConsolidacaoCheck" onchange="alternarDataPadrao('consolidacao')">Data padrão</label><input type="text" id="padraoConsolidacaoData" class="campo-padrao-data" placeholder="MM/AAAA" maxlength="10" inputmode="numeric" disabled onblur="aplicarDataPadrao('consolidacao')"></div></td>
                     <td><div class="padrao-controle"><label class="padrao-checkbox"><input type="checkbox" id="padraoAtualizacaoCheck" onchange="alternarDataPadrao('atualizacao')">Data padrão</label><input type="text" id="padraoAtualizacaoData" class="campo-padrao-data" placeholder="MM/AAAA" maxlength="7" inputmode="numeric" disabled onblur="aplicarDataPadrao('atualizacao')"></div></td>
                     <td></td><td></td><td></td>
@@ -577,8 +608,14 @@
         </table>
         
         <div class="buttons">
-            <button class="btn" id="btnAdicionarLinha" onclick="adicionarLinha()">+ Adicionar Linha</button>
-            <button class="btn" onclick="removerLinha()">- Remover Linha</button>
+            <span class="acao-linhas">
+                <button class="btn" id="btnAdicionarLinha" onclick="adicionarLinhasSelecionadas()">+ Adicionar　　Linha(s)</button>
+                <input type="number" id="quantidadeAdicionar" class="quantidade-linhas" min="1" max="240" step="1" value="1" aria-label="Quantidade de linhas a adicionar" onblur="normalizarQuantidadeLinhas(this)" onkeydown="teclaQuantidadeLinhas(event, 'adicionar')">
+            </span>
+            <span class="acao-linhas">
+                <button class="btn" id="btnRemoverLinha" onclick="removerLinhasSelecionadas()">- Remover　　Linha(s)</button>
+                <input type="number" id="quantidadeRemover" class="quantidade-linhas" min="1" max="240" step="1" value="1" aria-label="Quantidade de linhas a remover" onblur="normalizarQuantidadeLinhas(this)" onkeydown="teclaQuantidadeLinhas(event, 'remover')">
+            </span>
             <button class="btn" onclick="gerarPDFDireto()">Gerar PDF</button>
             <button class="btn" onclick="buscarDadosOnline()">🔄 Atualizar Base</button>
         </div>
@@ -1316,6 +1353,84 @@
             }
         }
 
+        async function aplicarValorPadrao() {
+            const check = document.getElementById('padraoValorCheck');
+            const campo = document.getElementById('padraoValorCampo');
+            if (!check?.checked || !campo) return;
+            if (!campo.value.trim()) return;
+            formatarMoeda(campo);
+            const valor = campo.value;
+            const linhas = document.querySelectorAll('#tabelaSelic .data-row[data-linha]');
+            linhas.forEach(linha => {
+                const input = linha.querySelector('.valor-pagamento');
+                input.value = valor;
+                input.readOnly = true;
+            });
+            await atualizarTodasLinhas();
+        }
+
+        function alternarValorPadrao() {
+            const marcado = document.getElementById('padraoValorCheck').checked;
+            const campo = document.getElementById('padraoValorCampo');
+            campo.disabled = !marcado;
+            document.querySelectorAll('#tabelaSelic .data-row[data-linha] .valor-pagamento').forEach(input => {
+                input.readOnly = marcado;
+            });
+            if (marcado) {
+                if (campo.value.trim()) aplicarValorPadrao();
+                else campo.focus();
+            }
+        }
+
+        function normalizarQuantidadeLinhas(input) {
+            const numero = Number(input.value);
+            if (!Number.isInteger(numero) || numero < 1 || numero > 240) {
+                input.value = '1';
+                mostrarAlerta('Informe uma quantidade inteira entre 1 e 240.', 'error');
+                return 1;
+            }
+            return numero;
+        }
+
+        function teclaQuantidadeLinhas(event, tipo) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                event.stopPropagation();
+                if (tipo === 'adicionar') adicionarLinhasSelecionadas();
+                else removerLinhasSelecionadas();
+            }
+        }
+
+        function adicionarLinhasSelecionadas() {
+            const quantidade = normalizarQuantidadeLinhas(document.getElementById('quantidadeAdicionar'));
+            let ultima = null;
+            for (let i = 0; i < quantidade; i++) ultima = adicionarLinha(true);
+            if (ultima) {
+                mostrarAlerta(`✅ ${quantidade} linha(s) adicionada(s)!`, 'success');
+                const campo = ultima.querySelector('.valor-pagamento');
+                if (campo && !campo.readOnly) campo.focus();
+                else {
+                    const consolidacao = ultima.querySelector('.data-pagamento');
+                    const atualizacao = ultima.querySelector('.data-atualizacao');
+                    const destino = [consolidacao, atualizacao].find(el => !el.readOnly);
+                    if (destino) destino.focus();
+                }
+            }
+        }
+
+        function removerLinhasSelecionadas() {
+            const quantidade = normalizarQuantidadeLinhas(document.getElementById('quantidadeRemover'));
+            const linhas = Array.from(document.querySelectorAll('#tabelaSelic .data-row[data-linha]'));
+            const remover = Math.min(quantidade, linhas.length - 1);
+            if (!remover) {
+                mostrarAlerta('⚠️ Mantenha pelo menos uma linha.', 'error');
+                return;
+            }
+            for (let i = 0; i < remover; i++) linhas[linhas.length - 1 - i].remove();
+            calcularTotal();
+            mostrarAlerta(`✅ ${remover} linha(s) removida(s).`, 'success');
+        }
+
         function moedaParaNumero(valorMoeda) {
             if (!valorMoeda) return 0;
             return parseFloat(valorMoeda.replace(/\./g, '').replace(',', '.'));
@@ -1420,7 +1535,7 @@
             document.getElementById('valorTotal').value = numeroParaMoeda(total);
         }
         
-        function adicionarLinha() {
+        function adicionarLinha(silencioso = false) {
             console.log(`🔄 Adicionando linha ${contadorLinhas}...`);
             
             const tbody = document.querySelector('#tabelaSelic tbody');
@@ -1468,13 +1583,22 @@
                     campoNovo.readOnly = true;
                 }
             }
-            calcularLinha(contadorLinhas);
+            const campoNovoValor = tr.querySelector('.valor-pagamento');
+            if (document.getElementById('padraoValorCheck')?.checked) {
+                const padrao = document.getElementById('padraoValorCampo').value;
+                campoNovoValor.value = padrao;
+                campoNovoValor.readOnly = true;
+            }
+            if (campoNovoValor.value && tr.querySelector('.data-pagamento').value && tr.querySelector('.data-atualizacao').value) {
+                calcularLinha(contadorLinhas);
+            }
             contadorLinhas++;
             console.log(`✅ Linha ${contadorLinhas - 1} adicionada com sucesso!`);
-            mostrarAlerta(`✅ Nova linha adicionada!`, 'success');
-
-            const campoNovoValor = tr.querySelector('.valor-pagamento');
-            if (campoNovoValor) campoNovoValor.focus();
+            if (!silencioso) {
+                mostrarAlerta('✅ Nova linha adicionada!', 'success');
+                if (campoNovoValor && !campoNovoValor.readOnly) campoNovoValor.focus();
+            }
+            return tr;
         }
         
         function removerLinha() {
