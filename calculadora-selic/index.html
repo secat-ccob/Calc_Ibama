@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_33 -->
+    <!-- Versão: calculadora_selic_portal_v_34 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -276,6 +276,31 @@
             background: #f0f0f0;
             color: #666;
         }
+        /* Exibir as cinco colunas complementares apenas com a função adicional ativada. */
+        .tabela-rolagem { width: 100%; overflow-x: auto; }
+        #tabelaSelic.modo-residual { min-width: 1620px; }
+        #tabelaSelic .coluna-adicional { display: none; }
+        #tabelaSelic.modo-residual .coluna-adicional { display: table-cell; }
+        #tabelaSelic .header-row .coluna-adicional { background-color: #1f6f54; color: #fff; }
+        #tabelaSelic .padroes-row .coluna-adicional { background: #fff; color: #1f2933; }
+        #tabelaSelic .data-row[data-linha] .coluna-adicional { background-color: #e0e0e0; }
+        #tabelaSelic .data-row[data-linha] .coluna-adicional.coluna-valor-pago { background-color: #fff; }
+        #tabelaSelic .data-row[data-linha] .coluna-valor-pago:has(> input[readonly]) { background-color: #e0e0e0; }
+        .valor-pago-menor { color: #b42318 !important; font-weight: bold; }
+        .valor-pago-suficiente { color: #147d40 !important; font-weight: bold; }
+        .funcoes-adicionais-celula { border: none !important; text-align: left !important; vertical-align: top; padding: 12px 14px !important; background: #fff; }
+        .funcoes-adicionais { display: inline-flex; flex-direction: column; gap: 9px; align-items: flex-start; color: #1f2933; font-size: 13px; }
+        .funcoes-adicionais strong { font-size: 14px; }
+        .funcoes-adicionais label { display: inline-flex; gap: 7px; align-items: center; text-align: left; cursor: pointer; }
+        .funcoes-adicionais input[type="checkbox"] { width: 15px; height: 15px; flex: 0 0 auto; }
+        .total-adicional-row { display: none; }
+        #tabelaSelic.modo-residual .total-adicional-row { display: table-row; }
+        #tabelaSelic .total-adicional-row .total-adicional-celula { background: #1f6f54; border: 1px solid #b5ccbd; color: #fff; font-weight: bold; }
+        #tabelaSelic .total-adicional-row input { color: #fff; font-weight: bold; }
+        #tabelaSelic .total-row .rotulo-total { white-space: normal; }
+        #tabelaSelic .total-adicional-row .rotulo-total { font-size: 12px; }
+        #tabelaSelic .padroes-row .campo-padrao-valor-pago { width: 77px; max-width: 77px; }
+
         .data-row td {
             padding: 8px;
             border: 1px solid #ccc;
@@ -561,6 +586,7 @@
         <div id="alertas" class="alert"></div>
         <div id="statusInfo" class="status-info">🔄 Carregando base automática da Selic...</div>
         
+        <div class="tabela-rolagem">
         <table id="tabelaSelic">
             <tbody>
                 <tr class="padroes-row">
@@ -569,15 +595,22 @@
                     <td><div class="padrao-controle"><label class="padrao-checkbox"><input type="checkbox" id="padraoConsolidacaoCheck" onchange="alternarDataPadrao('consolidacao')">Data padrão</label><input type="text" id="padraoConsolidacaoData" class="campo-padrao-data" placeholder="MM/AAAA" maxlength="10" inputmode="numeric" disabled onblur="aplicarDataPadrao('consolidacao')"></div></td>
                     <td><div class="padrao-controle"><label class="padrao-checkbox"><input type="checkbox" id="padraoAtualizacaoCheck" onchange="alternarDataPadrao('atualizacao')">Data padrão</label><input type="text" id="padraoAtualizacaoData" class="campo-padrao-data" placeholder="MM/AAAA" maxlength="7" inputmode="numeric" disabled onblur="aplicarDataPadrao('atualizacao')"></div></td>
                     <td></td><td></td><td></td>
+                    <td class="coluna-adicional"><div class="padrao-controle"><label class="padrao-checkbox"><input type="checkbox" id="padraoValorPagoCheck" onchange="alternarValorPagoPadrao()">Valor padrão</label><input type="text" id="padraoValorPagoCampo" class="campo-padrao-data campo-padrao-valor-pago" placeholder="0,00" inputmode="numeric" disabled oninput="aplicarMascaraMoedaTempoReal(this)" onblur="aplicarValorPagoPadrao()"></div></td>
+                    <td class="coluna-adicional"></td><td class="coluna-adicional"></td><td class="coluna-adicional"></td><td class="coluna-adicional"></td>
                 </tr>
                 <tr class="header-row">
                     <td class="coluna-numero">Nº</td>
                     <td>Valor original (R$)</td>
                     <td>Mês de consolidação (mm/aaaa)</td>
                     <td>Mês de atualização (mm/aaaa)</td>
-                    <td>Taxa Selic acumulada (%)</td>
-                    <td>Valor Selic acumulada (R$)</td>
+                    <td>Taxa Selic (%)</td>
+                    <td>Valor Selic (R$)</td>
                     <td>Valor atualizado (R$)</td>
+                    <td class="coluna-adicional">Valor pago (R$)</td>
+                    <td class="coluna-adicional">Saldo residual (R$)</td>
+                    <td class="coluna-adicional rotulo-selic-residual">Taxa Selic para atualização (%) em <span class="mes-vigente-residual">MM/AAAA</span></td>
+                    <td class="coluna-adicional">Valor Selic para atualização (R$)</td>
+                    <td class="coluna-adicional">Saldo residual atualizado (R$)</td>
                 </tr>
                 
                 <tr class="data-row" data-linha="0">
@@ -600,33 +633,52 @@
                     <td class="gray-cell">
                         <input type="text" class="valor-atualizado" readonly>
                     </td>
+                    <td class="coluna-adicional coluna-valor-pago"><input type="text" class="valor-pago-residual" placeholder="0,00" inputmode="numeric" oninput="aplicarMascaraValorPagoResidual(this)" onblur="formatarMoeda(this); atualizarComplementoLinha(this.closest('[data-linha]')); calcularTotal()"></td>
+                    <td class="coluna-adicional"><input type="text" class="saldo-residual" readonly tabindex="-1"></td>
+                    <td class="coluna-adicional"><input type="text" class="taxa-selic-residual" readonly tabindex="-1"></td>
+                    <td class="coluna-adicional"><input type="text" class="valor-selic-residual" readonly tabindex="-1"></td>
+                    <td class="coluna-adicional"><input type="text" class="saldo-residual-atualizado" readonly tabindex="-1"></td>
                 </tr>
                 
-                <tr class="empty-row"><td colspan="7"></td></tr>
+                <tr class="empty-row"><td colspan="7" id="espacoTotais"></td></tr>
                 
                 <tr class="data-row total-row total-original-row">
-                    <td colspan="5" style="border: none;"></td>
-                    <td class="green-footer">Total original:</td>
-                    <td class="green-footer">
-                        <input type="text" id="valorTotalOriginal" readonly>
+                    <td class="funcoes-adicionais-celula" id="celulaFuncoesAdicionais" colspan="5" rowspan="3">
+                        <div class="funcoes-adicionais">
+                            <strong>Funções adicionais</strong>
+                            <label><input type="checkbox" id="incluirValorPagoMenor" onchange="alternarAtualizacaoValorPagoMenor()">Incluir Atualização de valor pago a menor</label>
+                        </div>
                     </td>
+                    <td class="green-footer rotulo-total">Total original:</td>
+                    <td class="green-footer"><input type="text" id="valorTotalOriginal" readonly></td>
                 </tr>
                 <tr class="data-row total-row total-selic-row">
-                    <td colspan="5" style="border: none;"></td>
-                    <td class="green-footer">Total Selic:</td>
-                    <td class="green-footer">
-                        <input type="text" id="valorTotalSelic" readonly>
-                    </td>
+                    <td class="green-footer rotulo-total">Total Selic:</td>
+                    <td class="green-footer"><input type="text" id="valorTotalSelic" readonly></td>
                 </tr>
                 <tr class="data-row total-row total-atualizado-row">
-                    <td colspan="5" style="border: none;"></td>
-                    <td class="green-footer">Total atualizado:</td>
-                    <td class="green-footer">
-                        <input type="text" id="valorTotal" readonly>
-                    </td>
+                    <td class="green-footer rotulo-total">Total atualizado:</td>
+                    <td class="green-footer"><input type="text" id="valorTotal" readonly></td>
+                </tr>
+                <tr class="data-row total-row total-adicional-row">
+                    <td class="total-adicional-celula rotulo-total">Total pago:</td>
+                    <td class="total-adicional-celula"><input type="text" id="totalPagoResidual" readonly></td>
+                </tr>
+                <tr class="data-row total-row total-adicional-row">
+                    <td class="total-adicional-celula rotulo-total">Saldo residual:</td>
+                    <td class="total-adicional-celula"><input type="text" id="totalSaldoResidual" readonly></td>
+                </tr>
+                <tr class="data-row total-row total-adicional-row">
+                    <td class="total-adicional-celula rotulo-total">Total Selic sobre o saldo residual:</td>
+                    <td class="total-adicional-celula"><input type="text" id="totalSelicResidual" readonly></td>
+                </tr>
+                <tr class="data-row total-row total-adicional-row">
+                    <td class="total-adicional-celula rotulo-total" id="rotuloTotalDevido">Valor devido consolidado em MM/AAAA:</td>
+                    <td class="total-adicional-celula"><input type="text" id="totalDevidoResidual" readonly></td>
                 </tr>
             </tbody>
         </table>
+        </div>
         
         <div class="buttons">
             <span class="acao-linhas">
@@ -907,7 +959,12 @@
                     atualizacao: linha.querySelector('.data-atualizacao')?.value || '',
                     taxaSelic: linha.querySelector('.taxa-selic')?.value || '',
                     valorSelic: linha.querySelector('.valor-selic')?.value || '',
-                    valorAtualizado: linha.querySelector('.valor-atualizado')?.value || ''
+                    valorAtualizado: linha.querySelector('.valor-atualizado')?.value || '',
+                    valorPago: linha.querySelector('.valor-pago-residual')?.value || '',
+                    saldoResidual: linha.querySelector('.saldo-residual')?.value || '',
+                    taxaResidual: linha.querySelector('.taxa-selic-residual')?.value || '',
+                    selicResidual: linha.querySelector('.valor-selic-residual')?.value || '',
+                    saldoAtualizadoResidual: linha.querySelector('.saldo-residual-atualizado')?.value || ''
                 };
             }).filter(linha => linha.valorOriginal || linha.vencimento || linha.atualizacao || linha.taxaSelic || linha.valorSelic || linha.valorAtualizado);
 
@@ -915,7 +972,13 @@
                 linhas,
                 totalOriginal: document.getElementById('valorTotalOriginal')?.value || '',
                 totalSelic: document.getElementById('valorTotalSelic')?.value || '',
-                totalAtualizado: document.getElementById('valorTotal')?.value || ''
+                totalAtualizado: document.getElementById('valorTotal')?.value || '',
+                incluirResidual: document.getElementById('incluirValorPagoMenor')?.checked || false,
+                mesVigente: obterMesVigente(),
+                totalPagoResidual: document.getElementById('totalPagoResidual')?.value || '',
+                totalSaldoResidual: document.getElementById('totalSaldoResidual')?.value || '',
+                totalSelicResidual: document.getElementById('totalSelicResidual')?.value || '',
+                totalDevidoResidual: document.getElementById('totalDevidoResidual')?.value || ''
             };
         }
 
@@ -928,25 +991,25 @@
             return { comandos, yTabela: y - 18 };
         }
 
-        function desenharCabecalhoTabelaPDF(comandos, y, margem, larguras, alturaCabecalho) {
+        function desenharCabecalhoTabelaPDF(comandos, y, margem, larguras, alturaCabecalho, incluirResidual = false, mesVigente = '') {
             const cabecalhos = [
-                'Nº',
-                'Valor original\n(R$)',
-                'Mês consolidação\n(mm/aaaa)',
-                'Mês atualização\n(mm/aaaa)',
-                'Taxa Selic\nacumulada (%)',
-                'Valor Selic acumulada\n(R$)',
-                'Valor atualizado\n(R$)'
+                'Nº', 'Valor original\n(R$)', 'Mês consolidação\n(mm/aaaa)',
+                'Mês atualização\n(mm/aaaa)', 'Taxa Selic\n(%)',
+                'Valor Selic\n(R$)', 'Valor atualizado\n(R$)'
             ];
-
+            if (incluirResidual) cabecalhos.push(
+                'Valor pago\n(R$)', 'Saldo residual\n(R$)',
+                `Taxa Selic para\natualização (%)\n${mesVigente}`,
+                'Valor Selic para\natualização (R$)', 'Saldo residual\natualizado (R$)'
+            );
             let x = margem;
             cabecalhos.forEach((cabecalho, indice) => {
+                const adicional = indice >= 7;
                 desenharCelulaPDF(comandos, x, y, larguras[indice], alturaCabecalho, cabecalho, {
-                    preenchimento: [0.12, 0.31, 0.47],
+                    preenchimento: adicional ? [0.12, 0.435, 0.329] : [0.12, 0.31, 0.47],
                     corTexto: [1, 1, 1],
-                    tamanho: 7.5,
-                    alinhamento: 'center',
-                    negrito: true
+                    tamanho: incluirResidual ? 6.6 : 7.5,
+                    alinhamento: 'center', negrito: true
                 });
                 x += larguras[indice];
             });
@@ -954,18 +1017,20 @@
 
         async function montarPDFSimples(dados) {
             const imagensCabecalho = await carregarImagensCabecalhoPDF();
-            const larguraPagina = 595;
-            const alturaPagina = 842;
-            const margem = 36;
-            const alturaCabecalho = 34;
-            const alturaLinha = 28;
+            const larguraPagina = dados.incluirResidual ? 842 : 595;
+            const alturaPagina = dados.incluirResidual ? 595 : 842;
+            const margem = dados.incluirResidual ? 45 : 36;
+            const alturaCabecalho = dados.incluirResidual ? 48 : 34;
+            const alturaLinha = dados.incluirResidual ? 25 : 28;
             const limiteInferior = 58;
-            const larguras = [29, 79, 72, 72, 82, 96, 93];
+            const larguras = dados.incluirResidual
+                ? [26, 64, 63, 63, 55, 60, 62, 60, 65, 81, 82, 71]
+                : [29, 79, 72, 72, 82, 96, 93];
             const paginas = [];
 
             function novaPagina() {
                 const pagina = criarPaginaPDF(larguraPagina, alturaPagina, margem, imagensCabecalho);
-                desenharCabecalhoTabelaPDF(pagina.comandos, pagina.yTabela, margem, larguras, alturaCabecalho);
+                desenharCabecalhoTabelaPDF(pagina.comandos, pagina.yTabela, margem, larguras, alturaCabecalho, dados.incluirResidual, dados.mesVigente);
                 pagina.y = pagina.yTabela - alturaLinha;
                 paginas.push(pagina);
                 return pagina;
@@ -980,11 +1045,16 @@
 
                 let x = margem;
                 const valores = [linha.numero, linha.valorOriginal, linha.vencimento, linha.atualizacao, linha.taxaSelic, linha.valorSelic, linha.valorAtualizado];
+                if (dados.incluirResidual) valores.push(linha.valorPago, linha.saldoResidual, linha.taxaResidual, linha.selicResidual, linha.saldoAtualizadoResidual);
                 valores.forEach((valor, indice) => {
                     const preenchimento = indice === 0 || indice >= 4 ? [0.88, 0.88, 0.88] : null;
+                    const corTexto = indice === 7 && linha.valorPago !== '' && linha.valorAtualizado !== ''
+                        ? moedaParaNumero(linha.valorPago) < moedaParaNumero(linha.valorAtualizado) ? [0.7, 0.12, 0.10] : [0.06, 0.48, 0.24]
+                        : [0, 0, 0];
                     desenharCelulaPDF(paginaAtual.comandos, x, paginaAtual.y, larguras[indice], alturaLinha, valor, {
-                        preenchimento,
-                        tamanho: 9,
+                        preenchimento: indice === 7 ? null : preenchimento,
+                        corTexto,
+                        tamanho: dados.incluirResidual ? 7.1 : 9,
                         alinhamento: 'center'
                     });
                     x += larguras[indice];
@@ -992,34 +1062,38 @@
                 paginaAtual.y -= alturaLinha;
             });
 
-            if (dados.linhas.length >= 2) {
-                const alturaTotais = 24 + (3 * alturaLinha);
-                if (paginaAtual.y - alturaTotais < limiteInferior) {
-                    paginaAtual = novaPagina();
-                }
-
+            if (dados.linhas.length >= 2 || dados.incluirResidual) {
+                const totais = [];
+                if (dados.linhas.length >= 2) totais.push(
+                    ['Total original:', dados.totalOriginal, false],
+                    ['Total Selic:', dados.totalSelic, false],
+                    ['Total atualizado:', dados.totalAtualizado, false]
+                );
+                if (dados.incluirResidual) totais.push(
+                    ['Total pago:', dados.totalPagoResidual, true],
+                    ['Saldo residual:', dados.totalSaldoResidual, true],
+                    ['Total Selic sobre o saldo residual:', dados.totalSelicResidual, true],
+                    [`Valor devido consolidado em ${dados.mesVigente}:`, dados.totalDevidoResidual, true]
+                );
+                const alturaTotais = 24 + totais.length * alturaLinha;
+                if (paginaAtual.y - alturaTotais < limiteInferior) paginaAtual = novaPagina();
                 paginaAtual.y -= 24;
-                const xLabel = margem + larguras[0] + larguras[1] + larguras[2] + larguras[3] + larguras[4];
-                const larguraLabel = larguras[5];
-                const larguraValor = larguras[6];
-                const totais = [
-                    ['Total original:', dados.totalOriginal],
-                    ['Total Selic:', dados.totalSelic],
-                    ['Total atualizado:', dados.totalAtualizado]
-                ];
-
-                totais.forEach(([rotulo, valor]) => {
+                const larguraValor = larguras[larguras.length - 1];
+                const larguraLabel = dados.incluirResidual
+                    ? larguras.slice(-4, -1).reduce((soma, valor) => soma + valor, 0)
+                    : larguras[larguras.length - 2];
+                const xLabel = margem + larguras.reduce((soma, valor) => soma + valor, 0) - larguraLabel - larguraValor;
+                totais.forEach(([rotulo, valor, adicional]) => {
+                    if (paginaAtual.y < limiteInferior) paginaAtual = novaPagina();
+                    const corFundo = adicional ? [0.12, 0.435, 0.329] : [0.88, 0.88, 0.88];
+                    const corTexto = adicional ? [1, 1, 1] : [0, 0, 0];
                     desenharCelulaPDF(paginaAtual.comandos, xLabel, paginaAtual.y, larguraLabel, alturaLinha, rotulo, {
-                        preenchimento: [0.88, 0.88, 0.88],
-                        tamanho: 10,
-                        alinhamento: 'center',
-                        negrito: true
+                        preenchimento: corFundo, corTexto, tamanho: dados.incluirResidual ? 7.5 : 10,
+                        alinhamento: 'center', negrito: true
                     });
                     desenharCelulaPDF(paginaAtual.comandos, xLabel + larguraLabel, paginaAtual.y, larguraValor, alturaLinha, valor, {
-                        preenchimento: [0.88, 0.88, 0.88],
-                        tamanho: 10,
-                        alinhamento: 'center',
-                        negrito: true
+                        preenchimento: corFundo, corTexto, tamanho: dados.incluirResidual ? 8.2 : 10,
+                        alinhamento: 'center', negrito: true
                     });
                     paginaAtual.y -= alturaLinha;
                 });
@@ -1091,7 +1165,7 @@
                 mostrarAlerta('Preencha ao menos uma linha antes de gerar o PDF.', 'error');
                 return;
             }
-            if (dados.linhas.some(linha => linha.taxaSelic === 'Calculando...')) {
+            if (dados.linhas.some(linha => linha.taxaSelic === 'Calculando...' || (dados.incluirResidual && linha.taxaResidual === 'Calculando...'))) {
                 mostrarAlerta('Aguarde a conclusão dos cálculos antes de gerar o PDF.', 'error');
                 return;
             }
@@ -1409,6 +1483,115 @@
             }
         }
 
+        // Complemento opcional para atualização do saldo após pagamento.
+        function alternarAtualizacaoValorPagoMenor() {
+            const ativado = document.getElementById('incluirValorPagoMenor').checked;
+            const tabela = document.getElementById('tabelaSelic');
+            tabela.classList.toggle('modo-residual', ativado);
+            document.getElementById('espacoTotais').colSpan = ativado ? 12 : 7;
+            const funcoes = document.getElementById('celulaFuncoesAdicionais');
+            funcoes.colSpan = ativado ? 10 : 5;
+            funcoes.rowSpan = ativado ? 7 : 3;
+            atualizarRotulosMesVigente();
+            if (ativado) {
+                document.querySelectorAll('#tabelaSelic .data-row[data-linha]').forEach(atualizarComplementoLinha);
+            }
+            calcularTotal();
+        }
+
+        function atualizarRotulosMesVigente() {
+            const mesAtual = obterMesVigente();
+            document.querySelectorAll('.mes-vigente-residual').forEach(el => { el.textContent = mesAtual; });
+            const rotuloTotal = document.getElementById('rotuloTotalDevido');
+            if (rotuloTotal) rotuloTotal.textContent = `Valor devido consolidado em ${mesAtual}:`;
+            return mesAtual;
+        }
+
+        function limparCamposComplementares(linha) {
+            ['.saldo-residual', '.taxa-selic-residual', '.valor-selic-residual', '.saldo-residual-atualizado'].forEach(classe => {
+                const campo = linha.querySelector(classe);
+                if (campo) campo.value = '';
+            });
+        }
+
+        function atualizarComplementoLinha(linha) {
+            if (!linha) return;
+            const campoPago = linha.querySelector('.valor-pago-residual');
+            const campoAtualizado = linha.querySelector('.valor-atualizado');
+            if (!campoPago || !campoAtualizado) return;
+            const pagoPreenchido = campoPago.value.trim() !== '';
+            const atualizadoPreenchido = campoAtualizado.value.trim() !== '';
+            campoPago.classList.remove('valor-pago-menor', 'valor-pago-suficiente');
+            if (!pagoPreenchido || !atualizadoPreenchido) {
+                limparCamposComplementares(linha);
+                return;
+            }
+
+            const pago = moedaParaNumero(campoPago.value);
+            const atualizado = moedaParaNumero(campoAtualizado.value);
+            if (!Number.isFinite(pago) || !Number.isFinite(atualizado)) {
+                limparCamposComplementares(linha);
+                return;
+            }
+            campoPago.classList.add(pago < atualizado ? 'valor-pago-menor' : 'valor-pago-suficiente');
+            const saldo = Math.round((atualizado - pago) * 100) / 100;
+            linha.querySelector('.saldo-residual').value = numeroParaMoeda(saldo);
+            const mesConsolidado = linha.querySelector('.data-atualizacao')?.value || '';
+            const mesAtual = obterMesVigente();
+            const campoTaxa = linha.querySelector('.taxa-selic-residual');
+            try {
+                if (!/^(0[1-9]|1[0-2])\/\d{4}$/.test(mesConsolidado)) {
+                    campoTaxa.value = 'Data inválida';
+                    linha.querySelector('.valor-selic-residual').value = '';
+                    linha.querySelector('.saldo-residual-atualizado').value = '';
+                    return;
+                }
+                const taxa = calcularTaxaSelicAcumulada(mesConsolidado, mesAtual);
+                const valorSelic = saldo * taxa / 100;
+                const saldoAtualizado = saldo + valorSelic;
+                campoTaxa.value = taxa.toFixed(2).replace('.', ',') + '%';
+                linha.querySelector('.valor-selic-residual').value = numeroParaMoeda(valorSelic);
+                linha.querySelector('.saldo-residual-atualizado').value = numeroParaMoeda(saldoAtualizado);
+            } catch (erro) {
+                campoTaxa.value = erro.message?.startsWith('Dados ausentes') ? 'Dados ausentes' : 'Erro';
+                linha.querySelector('.valor-selic-residual').value = '';
+                linha.querySelector('.saldo-residual-atualizado').value = '';
+            }
+        }
+
+        function aplicarMascaraValorPagoResidual(input) {
+            formatarMoeda(input);
+            atualizarComplementoLinha(input.closest('[data-linha]'));
+            calcularTotal();
+        }
+
+        async function aplicarValorPagoPadrao() {
+            const check = document.getElementById('padraoValorPagoCheck');
+            const campo = document.getElementById('padraoValorPagoCampo');
+            if (!check?.checked || !campo?.value.trim()) return;
+            formatarMoeda(campo);
+            document.querySelectorAll('#tabelaSelic .data-row[data-linha]').forEach(linha => {
+                const pago = linha.querySelector('.valor-pago-residual');
+                pago.value = campo.value;
+                pago.readOnly = true;
+                atualizarComplementoLinha(linha);
+            });
+            calcularTotal();
+        }
+
+        function alternarValorPagoPadrao() {
+            const marcado = document.getElementById('padraoValorPagoCheck').checked;
+            const campo = document.getElementById('padraoValorPagoCampo');
+            campo.disabled = !marcado;
+            document.querySelectorAll('#tabelaSelic .data-row[data-linha] .valor-pago-residual').forEach(input => {
+                input.readOnly = marcado;
+            });
+            if (marcado) {
+                if (campo.value.trim()) aplicarValorPagoPadrao();
+                else campo.focus();
+            }
+        }
+
         // Posicionar os campos de quantidade sobre o espaço reservado nos botões,
         // sem sobrepor as palavras, inclusive quando houver mudança de escala da tela.
         function posicionarCamposQuantidade() {
@@ -1507,6 +1690,7 @@
                 taxaSelicInput.value = '';
                 valorSelicInput.value = '';
                 valorAtualizadoInput.value = '';
+                atualizarComplementoLinha(linha);
                 calcularTotal();
                 return;
             }
@@ -1516,6 +1700,7 @@
                 taxaSelicInput.value = 'Data inválida';
                 valorSelicInput.value = '';
                 valorAtualizadoInput.value = '';
+                atualizarComplementoLinha(linha);
                 calcularTotal();
                 return;
             }
@@ -1549,6 +1734,7 @@
                 mostrarAlerta(error.message && error.message.startsWith('Dados ausentes') ? error.message : 'Erro no cálculo.', 'error');
             }
             
+            atualizarComplementoLinha(linha);
             calcularTotal();
         }
         
@@ -1583,6 +1769,23 @@
             }
 
             document.getElementById('valorTotal').value = numeroParaMoeda(total);
+            const totais = { pago: 0, saldo: 0, selic: 0, atualizado: 0 };
+            document.querySelectorAll('#tabelaSelic .data-row[data-linha]').forEach(linha => {
+                const campoPago = linha.querySelector('.valor-pago-residual');
+                if (campoPago?.value.trim()) totais.pago += moedaParaNumero(campoPago.value);
+                const campos = [
+                    ['.saldo-residual', 'saldo'], ['.valor-selic-residual', 'selic'],
+                    ['.saldo-residual-atualizado', 'atualizado']
+                ];
+                campos.forEach(([classe, chave]) => {
+                    const valor = linha.querySelector(classe)?.value || '';
+                    if (valor.trim()) totais[chave] += moedaParaNumero(valor);
+                });
+            });
+            document.getElementById('totalPagoResidual').value = numeroParaMoeda(totais.pago);
+            document.getElementById('totalSaldoResidual').value = numeroParaMoeda(totais.saldo);
+            document.getElementById('totalSelicResidual').value = numeroParaMoeda(totais.selic);
+            document.getElementById('totalDevidoResidual').value = numeroParaMoeda(totais.atualizado);
         }
         
         function adicionarLinha(silencioso = false) {
@@ -1621,6 +1824,11 @@
                 <td class="gray-cell">
                     <input type="text" class="valor-atualizado" readonly>
                 </td>
+                <td class="coluna-adicional coluna-valor-pago"><input type="text" class="valor-pago-residual" placeholder="0,00" inputmode="numeric" oninput="aplicarMascaraValorPagoResidual(this)" onblur="formatarMoeda(this); atualizarComplementoLinha(this.closest('[data-linha]')); calcularTotal()"></td>
+                <td class="coluna-adicional"><input type="text" class="saldo-residual" readonly tabindex="-1"></td>
+                <td class="coluna-adicional"><input type="text" class="taxa-selic-residual" readonly tabindex="-1"></td>
+                <td class="coluna-adicional"><input type="text" class="valor-selic-residual" readonly tabindex="-1"></td>
+                <td class="coluna-adicional"><input type="text" class="saldo-residual-atualizado" readonly tabindex="-1"></td>
             `;
             
             tbody.insertBefore(tr, linhaVazia);
@@ -1641,10 +1849,17 @@
                 campoNovoValor.value = padrao;
                 campoNovoValor.readOnly = true;
             }
+            const campoNovoPago = tr.querySelector('.valor-pago-residual');
+            if (document.getElementById('padraoValorPagoCheck')?.checked) {
+                campoNovoPago.value = document.getElementById('padraoValorPagoCampo').value;
+                campoNovoPago.readOnly = true;
+            }
+            atualizarComplementoLinha(tr);
             if (campoNovoValor.value && tr.querySelector('.data-pagamento').value && tr.querySelector('.data-atualizacao').value) {
                 calcularLinha(contadorLinhas);
             }
             contadorLinhas++;
+            calcularTotal();
             console.log(`✅ Linha ${contadorLinhas - 1} adicionada com sucesso!`);
             if (!silencioso) {
                 mostrarAlerta('✅ Nova linha adicionada!', 'success');
@@ -1800,6 +2015,15 @@ function mostrarModalUltimaTaxa() {
             const linhas = document.querySelectorAll('#tabelaSelic .data-row[data-linha]');
             const ultima = linhas[linhas.length - 1];
             if (!ultima || !ultima.contains(event.target)) return;
+            if (document.getElementById('incluirValorPagoMenor')?.checked) {
+                const campoPago = ultima.querySelector('.valor-pago-residual');
+                if (campoPago && !campoPago.readOnly) {
+                    event.preventDefault();
+                    campoPago.focus();
+                    if (typeof campoPago.select === 'function') campoPago.select();
+                    return;
+                }
+            }
             const botaoAdicionar = document.getElementById('btnAdicionarLinha');
             if (botaoAdicionar) {
                 event.preventDefault();
@@ -1812,6 +2036,7 @@ function mostrarModalUltimaTaxa() {
         // **INICIALIZAÇÃO COM MÊS VIGENTE**
         window.onload = function() {
             posicionarCamposQuantidade();
+            atualizarRotulosMesVigente();
             console.log('🚀 CALCULADORA Selic inicializando...');
             
             buscarDadosOnline().then(() => {
