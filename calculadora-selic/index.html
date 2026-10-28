@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_37 -->
+    <!-- Versão: calculadora_selic_portal_v_38 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -300,11 +300,11 @@
         .funcoes-adicionais label { display: inline-flex; gap: 7px; align-items: center; text-align: left; cursor: pointer; }
         .funcoes-adicionais input[type="checkbox"] { width: 15px; height: 15px; flex: 0 0 auto; }
         .total-adicional-row { display: none; }
-        #tabelaSelic.modo-residual .total-adicional-row { display: table-row; }
-        #tabelaSelic .total-adicional-row .total-adicional-celula { background: #1f6f54; border: 1px solid #b5ccbd; color: #fff; font-weight: bold; }
-        #tabelaSelic .total-adicional-row input { color: #fff; font-weight: bold; }
-        #tabelaSelic .total-row .rotulo-total { white-space: normal; }
-        #tabelaSelic .total-adicional-row .rotulo-total { font-size: 12px; }
+        #tabelaTotaisSelic.modo-residual .total-adicional-row { display: table-row; }
+        #tabelaTotaisSelic .total-adicional-row .total-adicional-celula { background: #1f6f54; border: 1px solid #b5ccbd; color: #fff; font-weight: bold; }
+        #tabelaTotaisSelic .total-adicional-row input { color: #fff; font-weight: bold; }
+        #tabelaTotaisSelic .total-row .rotulo-total { white-space: normal; }
+        #tabelaTotaisSelic .total-adicional-row .rotulo-total { font-size: 12px; }
         #tabelaSelic .padroes-row .campo-padrao-valor-pago { width: 77px; max-width: 77px; }
 
         .data-row td {
@@ -469,6 +469,69 @@
             font-size: 12px;
         }
         
+        /* V38: apenas a tabela de cálculo possui rolagem, com títulos e Nº congelados. */
+        .tabela-rolagem {
+            width: 100%;
+            max-height: min(56vh, 520px);
+            overflow: auto;
+            overscroll-behavior: contain;
+            position: relative;
+        }
+        #tabelaSelic { width: 100%; }
+        #tabelaSelic thead {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+        #tabelaSelic tr > td.coluna-numero {
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            box-shadow: 1px 0 0 #ccc;
+        }
+        #tabelaSelic thead tr > td.coluna-numero { z-index: 6; }
+        #tabelaSelic thead .padroes-row > td.coluna-numero { background: #fff; }
+        #tabelaSelic thead .header-row > td.coluna-numero { background: #1f4e79; }
+        #tabelaSelic tbody tr.data-row > td.coluna-numero { background: #e0e0e0; }
+
+        /* Funções e totais são independentes da área rolável. */
+        .resumo-inferior {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            width: 100%;
+            padding: 25px 0 0;
+        }
+        .resumo-inferior > .funcoes-adicionais {
+            flex: 1 1 0;
+            min-width: 0;
+            padding: 12px 14px;
+        }
+        #tabelaTotaisSelic {
+            width: 46%;
+            flex: 0 0 46%;
+            table-layout: fixed;
+            border-collapse: collapse;
+            margin: 0;
+        }
+        #tabelaTotaisSelic td {
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #ccc;
+            height: 40px;
+        }
+        #tabelaTotaisSelic td:first-child { width: 53%; }
+        #tabelaTotaisSelic td:last-child { width: 47%; }
+        #tabelaTotaisSelic .rotulo-total { white-space: normal; }
+        @media (max-width: 650px) {
+            .resumo-inferior { flex-direction: column; gap: 8px; }
+            #tabelaTotaisSelic { width: 100%; flex: 0 0 auto; }
+        }
+        @media print {
+            .tabela-rolagem { max-height: none; overflow: visible; }
+            #tabelaSelic thead, #tabelaSelic tr > td.coluna-numero { position: static; }
+        }
+
         /* ESTILOS DE IMPRESSÃO - BORDA INTELIGENTE */
         @media print {
             body { 
@@ -599,7 +662,7 @@
         
         <div class="tabela-rolagem">
         <table id="tabelaSelic">
-            <tbody>
+            <thead>
                 <tr class="padroes-row">
                     <td class="coluna-numero"></td>
                     <td><div class="padrao-controle"><label class="padrao-checkbox"><input type="checkbox" id="padraoValorCheck" onchange="alternarValorPadrao()">Valor padrão</label><input type="text" id="padraoValorCampo" class="campo-padrao-data campo-padrao-valor" placeholder="0,00" inputmode="numeric" disabled oninput="aplicarMascaraMoedaTempoReal(this)" onblur="aplicarValorPadrao()"></div></td>
@@ -623,7 +686,8 @@
                     <td class="coluna-adicional"><span class="rotulo-linha">Valor Selic para</span><span class="rotulo-linha">atualização (R$)</span></td>
                     <td class="coluna-adicional"><span class="rotulo-linha">Saldo residual</span><span class="rotulo-linha">atualizado (R$)</span></td>
                 </tr>
-                
+            </thead>
+            <tbody>
                 <tr class="data-row" data-linha="0">
                     <td class="gray-cell coluna-numero"><input type="text" class="numero-linha" value="01" readonly tabindex="-1"></td>
                     <td class="white-cell">
@@ -651,45 +715,49 @@
                     <td class="coluna-adicional"><input type="text" class="saldo-residual-atualizado" readonly tabindex="-1"></td>
                 </tr>
                 
-                <tr class="empty-row"><td colspan="7" id="espacoTotais"></td></tr>
-                
-                <tr class="data-row total-row total-original-row">
-                    <td class="funcoes-adicionais-celula" id="celulaFuncoesAdicionais" colspan="5" rowspan="3">
-                        <div class="funcoes-adicionais">
-                            <strong>Funções adicionais</strong>
-                            <label><input type="checkbox" id="incluirValorPagoMenor" onchange="alternarAtualizacaoValorPagoMenor()">Incluir atualização de valor pago a menor</label>
-                        </div>
-                    </td>
-                    <td class="green-footer rotulo-total">Total original:</td>
-                    <td class="green-footer"><input type="text" id="valorTotalOriginal" readonly></td>
-                </tr>
-                <tr class="data-row total-row total-selic-row">
-                    <td class="green-footer rotulo-total">Total Selic:</td>
-                    <td class="green-footer"><input type="text" id="valorTotalSelic" readonly></td>
-                </tr>
-                <tr class="data-row total-row total-atualizado-row">
-                    <td class="green-footer rotulo-total">Total atualizado:</td>
-                    <td class="green-footer"><input type="text" id="valorTotal" readonly></td>
-                </tr>
-                <tr class="data-row total-row total-adicional-row">
-                    <td class="total-adicional-celula rotulo-total">Total pago:</td>
-                    <td class="total-adicional-celula"><input type="text" id="totalPagoResidual" readonly></td>
-                </tr>
-                <tr class="data-row total-row total-adicional-row">
-                    <td class="total-adicional-celula rotulo-total">Saldo residual:</td>
-                    <td class="total-adicional-celula"><input type="text" id="totalSaldoResidual" readonly></td>
-                </tr>
-                <tr class="data-row total-row total-adicional-row">
-                    <td class="total-adicional-celula rotulo-total">Total Selic sobre o saldo residual:</td>
-                    <td class="total-adicional-celula"><input type="text" id="totalSelicResidual" readonly></td>
-                </tr>
-                <tr class="data-row total-row total-adicional-row">
-                    <td class="total-adicional-celula rotulo-total" id="rotuloTotalDevido">Valor devido consolidado em MM/AAAA:</td>
-                    <td class="total-adicional-celula"><input type="text" id="totalDevidoResidual" readonly></td>
-                </tr>
             </tbody>
         </table>
         </div>
+
+        <!-- Fora das duas barras de rolagem: funções adicionais e totais -->
+        <section class="resumo-inferior" aria-label="Funções adicionais e totais">
+            <div class="funcoes-adicionais" id="celulaFuncoesAdicionais">
+                <strong>Funções adicionais</strong>
+                <label><input type="checkbox" id="incluirValorPagoMenor" onchange="alternarAtualizacaoValorPagoMenor()">Incluir atualização de valor pago a menor</label>
+            </div>
+            <table id="tabelaTotaisSelic" aria-label="Totais dos cálculos">
+                <tbody>
+                    <tr class="data-row total-row total-original-row">
+                        <td class="green-footer rotulo-total">Total original:</td>
+                        <td class="green-footer"><input type="text" id="valorTotalOriginal" readonly></td>
+                    </tr>
+                    <tr class="data-row total-row total-selic-row">
+                        <td class="green-footer rotulo-total">Total Selic:</td>
+                        <td class="green-footer"><input type="text" id="valorTotalSelic" readonly></td>
+                    </tr>
+                    <tr class="data-row total-row total-atualizado-row">
+                        <td class="green-footer rotulo-total">Total atualizado:</td>
+                        <td class="green-footer"><input type="text" id="valorTotal" readonly></td>
+                    </tr>
+                    <tr class="data-row total-row total-adicional-row">
+                        <td class="total-adicional-celula rotulo-total">Total pago:</td>
+                        <td class="total-adicional-celula"><input type="text" id="totalPagoResidual" readonly></td>
+                    </tr>
+                    <tr class="data-row total-row total-adicional-row">
+                        <td class="total-adicional-celula rotulo-total">Saldo residual:</td>
+                        <td class="total-adicional-celula"><input type="text" id="totalSaldoResidual" readonly></td>
+                    </tr>
+                    <tr class="data-row total-row total-adicional-row">
+                        <td class="total-adicional-celula rotulo-total">Total Selic sobre o saldo residual:</td>
+                        <td class="total-adicional-celula"><input type="text" id="totalSelicResidual" readonly></td>
+                    </tr>
+                    <tr class="data-row total-row total-adicional-row">
+                        <td class="total-adicional-celula rotulo-total" id="rotuloTotalDevido">Valor devido consolidado em MM/AAAA:</td>
+                        <td class="total-adicional-celula"><input type="text" id="totalDevidoResidual" readonly></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
         
         <div class="buttons">
             <span class="acao-linhas">
@@ -1518,10 +1586,7 @@
             const ativado = document.getElementById('incluirValorPagoMenor').checked;
             const tabela = document.getElementById('tabelaSelic');
             tabela.classList.toggle('modo-residual', ativado);
-            document.getElementById('espacoTotais').colSpan = ativado ? 12 : 7;
-            const funcoes = document.getElementById('celulaFuncoesAdicionais');
-            funcoes.colSpan = ativado ? 10 : 5;
-            funcoes.rowSpan = ativado ? 7 : 3;
+            document.getElementById('tabelaTotaisSelic').classList.toggle('modo-residual', ativado);
             atualizarRotulosMesVigente();
             if (ativado) {
                 document.querySelectorAll('#tabelaSelic .data-row[data-linha]').forEach(atualizarComplementoLinha);
@@ -1822,10 +1887,8 @@
             console.log(`🔄 Adicionando linha ${contadorLinhas}...`);
             
             const tbody = document.querySelector('#tabelaSelic tbody');
-            const linhaVazia = tbody.querySelector('.empty-row');
-            
-            if (!linhaVazia) {
-                console.error('❌ Linha vazia não encontrada');
+            if (!tbody) {
+                console.error('❌ Corpo da tabela não encontrado');
                 mostrarAlerta('Erro: Estrutura da tabela incorreta.', 'error');
                 return;
             }
@@ -1861,7 +1924,7 @@
                 <td class="coluna-adicional"><input type="text" class="saldo-residual-atualizado" readonly tabindex="-1"></td>
             `;
             
-            tbody.insertBefore(tr, linhaVazia);
+            tbody.appendChild(tr);
             atualizarNumeracaoLinhas();
             for (const tipo of ['consolidacao', 'atualizacao']) {
                 const cfg = configuracaoDataPadrao(tipo);
