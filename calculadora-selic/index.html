@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_42 -->
+    <!-- Versão: calculadora_selic_portal_v_43 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -477,15 +477,26 @@
             overscroll-behavior: contain;
             position: relative;
         }
-        #tabelaSelic { width: 100%; }
+        /* V43: bordas independentes impedem que linhas roláveis atravessem
+           os limites das duas faixas congeladas, preservando a borda superior. */
+        #tabelaSelic {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        #tabelaSelic tr > td {
+            border: 0;
+            border-right: 1px solid #ccc;
+            border-bottom: 1px solid #ccc;
+        }
+        #tabelaSelic tr > td:first-child { border-left: 1px solid #ccc; }
+        #tabelaSelic thead .padroes-row > td { border-top: 1px solid #ccc; }
         #tabelaSelic thead {
             position: sticky;
             top: 0;
             z-index: 5;
-            /* Fundo opaco: impede que linhas em rolagem apareçam atrás das faixas fixas. */
             background-color: #ffffff;
             isolation: isolate;
-            box-shadow: 0 -2px 0 0 #ffffff;
         }
         #tabelaSelic tr > td.coluna-numero {
             position: sticky;
