@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_30 -->
+    <!-- Versão: calculadora_selic_portal_v_31 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -297,6 +297,9 @@
         }
 
         /* Células padronizadas ficam cinzas enquanto o respectivo campo estiver bloqueado. */
+        #tabelaSelic .coluna-numero { width: 40px; min-width: 40px; max-width: 40px; }
+        #tabelaSelic .coluna-numero input { background: transparent; }
+        #tabelaSelic .data-row[data-linha] td.coluna-numero { background-color: #e0e0e0; }
         #tabelaSelic .data-row[data-linha] td.white-cell:has(> input.valor-pagamento[readonly]),
         #tabelaSelic .data-row[data-linha] td.white-cell:has(> input.data-pagamento[readonly]),
         #tabelaSelic .data-row[data-linha] td.white-cell:has(> input.data-atualizacao[readonly]) {
@@ -561,12 +564,14 @@
         <table id="tabelaSelic">
             <tbody>
                 <tr class="padroes-row">
+                    <td class="coluna-numero"></td>
                     <td><div class="padrao-controle"><label class="padrao-checkbox"><input type="checkbox" id="padraoValorCheck" onchange="alternarValorPadrao()">Valor padrão</label><input type="text" id="padraoValorCampo" class="campo-padrao-data campo-padrao-valor" placeholder="0,00" inputmode="numeric" disabled oninput="aplicarMascaraMoedaTempoReal(this)" onblur="aplicarValorPadrao()"></div></td>
                     <td><div class="padrao-controle"><label class="padrao-checkbox"><input type="checkbox" id="padraoConsolidacaoCheck" onchange="alternarDataPadrao('consolidacao')">Data padrão</label><input type="text" id="padraoConsolidacaoData" class="campo-padrao-data" placeholder="MM/AAAA" maxlength="10" inputmode="numeric" disabled onblur="aplicarDataPadrao('consolidacao')"></div></td>
                     <td><div class="padrao-controle"><label class="padrao-checkbox"><input type="checkbox" id="padraoAtualizacaoCheck" onchange="alternarDataPadrao('atualizacao')">Data padrão</label><input type="text" id="padraoAtualizacaoData" class="campo-padrao-data" placeholder="MM/AAAA" maxlength="7" inputmode="numeric" disabled onblur="aplicarDataPadrao('atualizacao')"></div></td>
                     <td></td><td></td><td></td>
                 </tr>
                 <tr class="header-row">
+                    <td class="coluna-numero">Nº</td>
                     <td>Valor original (R$)</td>
                     <td>Mês de consolidação (mm/aaaa)</td>
                     <td>Mês de atualização (mm/aaaa)</td>
@@ -576,6 +581,7 @@
                 </tr>
                 
                 <tr class="data-row" data-linha="0">
+                    <td class="gray-cell coluna-numero"><input type="text" class="numero-linha" value="01" readonly tabindex="-1"></td>
                     <td class="white-cell">
                         <input type="text" class="valor-pagamento" placeholder="0,00" inputmode="numeric" oninput="aplicarMascaraMoedaTempoReal(this)" onblur="formatarMoeda(this); calcularLinha(0)">
                     </td>
@@ -596,24 +602,24 @@
                     </td>
                 </tr>
                 
-                <tr class="empty-row"><td colspan="6"></td></tr>
+                <tr class="empty-row"><td colspan="7"></td></tr>
                 
                 <tr class="data-row total-row total-original-row">
-                    <td colspan="4" style="border: none;"></td>
+                    <td colspan="5" style="border: none;"></td>
                     <td class="green-footer">Total original:</td>
                     <td class="green-footer">
                         <input type="text" id="valorTotalOriginal" readonly>
                     </td>
                 </tr>
                 <tr class="data-row total-row total-selic-row">
-                    <td colspan="4" style="border: none;"></td>
+                    <td colspan="5" style="border: none;"></td>
                     <td class="green-footer">Total Selic:</td>
                     <td class="green-footer">
                         <input type="text" id="valorTotalSelic" readonly>
                     </td>
                 </tr>
                 <tr class="data-row total-row total-atualizado-row">
-                    <td colspan="4" style="border: none;"></td>
+                    <td colspan="5" style="border: none;"></td>
                     <td class="green-footer">Total atualizado:</td>
                     <td class="green-footer">
                         <input type="text" id="valorTotal" readonly>
@@ -895,6 +901,7 @@
         function obterDadosParaPDF() {
             const linhas = Array.from(document.querySelectorAll('.data-row[data-linha]')).map(linha => {
                 return {
+                    numero: linha.querySelector('.numero-linha')?.value || '',
                     valorOriginal: linha.querySelector('.valor-pagamento')?.value || '',
                     vencimento: linha.querySelector('.data-pagamento')?.value || '',
                     atualizacao: linha.querySelector('.data-atualizacao')?.value || '',
@@ -952,7 +959,7 @@
             const alturaCabecalho = 34;
             const alturaLinha = 28;
             const limiteInferior = 58;
-            const larguras = [85, 77, 77, 85, 102, 97];
+            const larguras = [29, 79, 72, 72, 82, 96, 93];
             const paginas = [];
 
             function novaPagina() {
@@ -971,9 +978,9 @@
                 }
 
                 let x = margem;
-                const valores = [linha.valorOriginal, linha.vencimento, linha.atualizacao, linha.taxaSelic, linha.valorSelic, linha.valorAtualizado];
+                const valores = [linha.numero, linha.valorOriginal, linha.vencimento, linha.atualizacao, linha.taxaSelic, linha.valorSelic, linha.valorAtualizado];
                 valores.forEach((valor, indice) => {
-                    const preenchimento = indice >= 3 ? [0.88, 0.88, 0.88] : null;
+                    const preenchimento = indice === 0 || indice >= 4 ? [0.88, 0.88, 0.88] : null;
                     desenharCelulaPDF(paginaAtual.comandos, x, paginaAtual.y, larguras[indice], alturaLinha, valor, {
                         preenchimento,
                         tamanho: 9,
@@ -991,9 +998,9 @@
                 }
 
                 paginaAtual.y -= 24;
-                const xLabel = margem + larguras[0] + larguras[1] + larguras[2] + larguras[3];
-                const larguraLabel = larguras[4];
-                const larguraValor = larguras[5];
+                const xLabel = margem + larguras[0] + larguras[1] + larguras[2] + larguras[3] + larguras[4];
+                const larguraLabel = larguras[5];
+                const larguraValor = larguras[6];
                 const totais = [
                     ['Total original:', dados.totalOriginal],
                     ['Total Selic:', dados.totalSelic],
@@ -1431,6 +1438,13 @@
             }
         }
 
+        function atualizarNumeracaoLinhas() {
+            document.querySelectorAll('#tabelaSelic .data-row[data-linha]').forEach((linha, indice) => {
+                const campo = linha.querySelector('.numero-linha');
+                if (campo) campo.value = String(indice + 1).padStart(2, '0');
+            });
+        }
+
         function adicionarLinhasSelecionadas() {
             const quantidade = normalizarQuantidadeLinhas(document.getElementById('quantidadeAdicionar'));
             let ultima = null;
@@ -1457,6 +1471,7 @@
                 return;
             }
             for (let i = 0; i < remover; i++) linhas[linhas.length - 1 - i].remove();
+            atualizarNumeracaoLinhas();
             calcularTotal();
             mostrarAlerta(`✅ ${remover} linha(s) removida(s).`, 'success');
         }
@@ -1582,6 +1597,7 @@
             tr.setAttribute('data-linha', contadorLinhas);
             
             tr.innerHTML = `
+                <td class="gray-cell coluna-numero"><input type="text" class="numero-linha" readonly tabindex="-1"></td>
                 <td class="white-cell">
                     <input type="text" class="valor-pagamento" placeholder="0,00" inputmode="numeric" oninput="aplicarMascaraMoedaTempoReal(this)" onblur="formatarMoeda(this); calcularLinha(${contadorLinhas})">
                 </td>
@@ -1603,6 +1619,7 @@
             `;
             
             tbody.insertBefore(tr, linhaVazia);
+            atualizarNumeracaoLinhas();
             for (const tipo of ['consolidacao', 'atualizacao']) {
                 const cfg = configuracaoDataPadrao(tipo);
                 if (document.getElementById(cfg.checkbox)?.checked) {
@@ -1637,6 +1654,7 @@
                 const ultimaLinha = linhasData[linhasData.length - 1];
                 const idRemovido = ultimaLinha.getAttribute('data-linha');
                 ultimaLinha.remove();
+                atualizarNumeracaoLinhas();
                 calcularTotal();
                 console.log(`🗑️ Linha ${idRemovido} removida`);
                 mostrarAlerta('✅ Linha removida.', 'success');
