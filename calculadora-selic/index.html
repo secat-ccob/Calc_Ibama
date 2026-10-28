@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_34 -->
+    <!-- Versão: calculadora_selic_portal_v_35 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -223,6 +223,12 @@
             border: 1px solid #ccc;
             font-size: 12px;
             white-space: normal;
+        }
+        /* Os títulos possuem sempre duas linhas, com altura constante nos dois modos. */
+        #tabelaSelic .header-row .rotulo-linha {
+            display: block;
+            white-space: nowrap;
+            line-height: 1.2;
         }
         
         /* Controles de data padrão em uma faixa independente, acima dos títulos. */
@@ -599,18 +605,18 @@
                     <td class="coluna-adicional"></td><td class="coluna-adicional"></td><td class="coluna-adicional"></td><td class="coluna-adicional"></td>
                 </tr>
                 <tr class="header-row">
-                    <td class="coluna-numero">Nº</td>
-                    <td>Valor original (R$)</td>
-                    <td>Mês de consolidação (mm/aaaa)</td>
-                    <td>Mês de atualização (mm/aaaa)</td>
-                    <td>Taxa Selic (%)</td>
-                    <td>Valor Selic (R$)</td>
-                    <td>Valor atualizado (R$)</td>
-                    <td class="coluna-adicional">Valor pago (R$)</td>
-                    <td class="coluna-adicional">Saldo residual (R$)</td>
-                    <td class="coluna-adicional rotulo-selic-residual">Taxa Selic para atualização (%) em <span class="mes-vigente-residual">MM/AAAA</span></td>
-                    <td class="coluna-adicional">Valor Selic para atualização (R$)</td>
-                    <td class="coluna-adicional">Saldo residual atualizado (R$)</td>
+                    <td class="coluna-numero"><span class="rotulo-linha">Nº</span><span class="rotulo-linha">&nbsp;</span></td>
+                    <td><span class="rotulo-linha">Valor original</span><span class="rotulo-linha">(R$)</span></td>
+                    <td><span class="rotulo-linha">Mês de consolidação</span><span class="rotulo-linha">(mm/aaaa)</span></td>
+                    <td><span class="rotulo-linha">Mês de atualização</span><span class="rotulo-linha">(mm/aaaa)</span></td>
+                    <td><span class="rotulo-linha">Selic</span><span class="rotulo-linha">(%)</span></td>
+                    <td><span class="rotulo-linha">Valor Selic</span><span class="rotulo-linha">(R$)</span></td>
+                    <td><span class="rotulo-linha">Valor atualizado</span><span class="rotulo-linha">(R$)</span></td>
+                    <td class="coluna-adicional"><span class="rotulo-linha">Valor pago</span><span class="rotulo-linha">(R$)</span></td>
+                    <td class="coluna-adicional"><span class="rotulo-linha">Saldo residual</span><span class="rotulo-linha">(R$)</span></td>
+                    <td class="coluna-adicional rotulo-selic-residual"><span class="rotulo-linha">Selic para atualização</span><span class="rotulo-linha">(%) em <span class="mes-vigente-residual">MM/AAAA</span></span></td>
+                    <td class="coluna-adicional"><span class="rotulo-linha">Valor Selic para</span><span class="rotulo-linha">atualização (R$)</span></td>
+                    <td class="coluna-adicional"><span class="rotulo-linha">Saldo residual</span><span class="rotulo-linha">atualizado (R$)</span></td>
                 </tr>
                 
                 <tr class="data-row" data-linha="0">
@@ -646,7 +652,7 @@
                     <td class="funcoes-adicionais-celula" id="celulaFuncoesAdicionais" colspan="5" rowspan="3">
                         <div class="funcoes-adicionais">
                             <strong>Funções adicionais</strong>
-                            <label><input type="checkbox" id="incluirValorPagoMenor" onchange="alternarAtualizacaoValorPagoMenor()">Incluir Atualização de valor pago a menor</label>
+                            <label><input type="checkbox" id="incluirValorPagoMenor" onchange="alternarAtualizacaoValorPagoMenor()">Incluir atualização de valor pago a menor</label>
                         </div>
                     </td>
                     <td class="green-footer rotulo-total">Total original:</td>
@@ -993,13 +999,13 @@
 
         function desenharCabecalhoTabelaPDF(comandos, y, margem, larguras, alturaCabecalho, incluirResidual = false, mesVigente = '') {
             const cabecalhos = [
-                'Nº', 'Valor original\n(R$)', 'Mês consolidação\n(mm/aaaa)',
-                'Mês atualização\n(mm/aaaa)', 'Taxa Selic\n(%)',
+                'Nº\n', 'Valor original\n(R$)', 'Mês consolidação\n(mm/aaaa)',
+                'Mês atualização\n(mm/aaaa)', 'Selic\n(%)',
                 'Valor Selic\n(R$)', 'Valor atualizado\n(R$)'
             ];
             if (incluirResidual) cabecalhos.push(
                 'Valor pago\n(R$)', 'Saldo residual\n(R$)',
-                `Taxa Selic para\natualização (%)\n${mesVigente}`,
+                `Selic para atualização\n(%) em ${mesVigente}`,
                 'Valor Selic para\natualização (R$)', 'Saldo residual\natualizado (R$)'
             );
             let x = margem;
