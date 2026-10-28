@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_40 -->
+    <!-- Versão: calculadora_selic_portal_v_41 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -498,6 +498,14 @@
             width: 3px;
             background-color: #64788b;
             pointer-events: none;
+        }
+        /* Divisória da coluna Nº: branca no título azul e cinza na faixa superior.
+           As linhas de dados mantêm a cor cinza-azulada da versão anterior. */
+        #tabelaSelic thead .header-row > td.coluna-numero::after {
+            background-color: #ffffff;
+        }
+        #tabelaSelic thead .padroes-row > td.coluna-numero::after {
+            background-color: #b0b0b0;
         }
         #tabelaSelic thead tr > td.coluna-numero { z-index: 6; }
         #tabelaSelic thead .padroes-row > td.coluna-numero { background: #fff; }
