@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_31 -->
+    <!-- Versão: calculadora_selic_portal_v_33 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -924,13 +924,14 @@
             comandos.push('1 1 1 rg');
             comandos.push(`0 0 ${larguraPagina} ${alturaPagina} re f`);
 
-            let y = desenharCabecalhoInstitucional(comandos, larguraPagina, alturaPagina, margem, imagensCabecalho, 'TAXA SELIC ACUMULADA');
+            let y = desenharCabecalhoInstitucional(comandos, larguraPagina, alturaPagina, margem, imagensCabecalho, 'DEMONSTRATIVO DE ATUALIZAÇÃO PELA TAXA SELIC');
             return { comandos, yTabela: y - 18 };
         }
 
         function desenharCabecalhoTabelaPDF(comandos, y, margem, larguras, alturaCabecalho) {
             const cabecalhos = [
-                'Valor original (R$)',
+                'Nº',
+                'Valor original\n(R$)',
                 'Mês consolidação\n(mm/aaaa)',
                 'Mês atualização\n(mm/aaaa)',
                 'Taxa Selic\nacumulada (%)',
@@ -1088,6 +1089,10 @@
             const dados = obterDadosParaPDF();
             if (!dados.linhas.length) {
                 mostrarAlerta('Preencha ao menos uma linha antes de gerar o PDF.', 'error');
+                return;
+            }
+            if (dados.linhas.some(linha => linha.taxaSelic === 'Calculando...')) {
+                mostrarAlerta('Aguarde a conclusão dos cálculos antes de gerar o PDF.', 'error');
                 return;
             }
 
