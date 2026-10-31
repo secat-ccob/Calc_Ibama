@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_46 -->
+    <!-- Versão: calculadora_selic_portal_v_47 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -2471,28 +2471,69 @@ function mostrarModalUltimaTaxa() {
 
         function normalizarTipoPagamentoSelic(texto) {
             const tipo = normalizarTextoMemoriaSelic(texto);
-            if (/^(total|totais)\b/i.test(tipo)) return '';
-            // Nas memórias, "Extrajudicial" costuma ocupar uma segunda linha dentro da mesma célula.
-            const ordinal = tipo.match(/^(\d+[º°ªa]?)(?:\s|$)/i);
-            if (ordinal && /\bParcelamento\b/i.test(tipo)) return `${ordinal[1]} Parcelamento`;
-            const m = tipo.match(/^((?:\d+[º°ªa]?\s*)?Parcelamento)(?:\s+.*)?$/i);
-            if (m && /^\d/.test(tipo)) return m[1].replace(/\s+/g,' ');
+            if (/^(?:total|totais)(?:\s+R\$)?$/i.test(tipo)) return '';
+            // Preservar o nome integral: "1º Parcelamento Judicial" e
+            // "1º Parcelamento Extrajudicial" são tipos diferentes.
             return tipo;
         }
 
         function extrairSolicitacoesParcelamentoSelic(paginas) {
             const resultados = [];
+            let lendoQuadroSolicitacoes = false;
             for (const pagina of paginas) {
                 for (const linha of pagina.linhas) {
                     const texto = linha.texto;
-                    if (!/parcelamento/i.test(texto) || /resumo\s*-\s*pagamento/i.test(texto)) continue;
+                    if (/resumo\s*-\s*pagamento\s*\/\s*parcelamento/i.test(texto)) return resultados;
+                    if (/tipo\s+de\s+parcelamento/i.test(texto) && /solicita[cç][aã]o/i.test(texto)) {
+                        lendoQuadroSolicitacoes = true;
+                        continue;
+                    }
+                    if (!lendoQuadroSolicitacoes || !/parcelamento/i.test(texto)) continue;
                     const data = extrairDataMemoriaSelic(texto);
                     if (!data || !/(cancelad|ativa|vigent|conclu|quitad|parcelas|solicita)/i.test(texto)) continue;
-                    const m = texto.match(/((?:\d+[º°ªa]?\s*)?Parcelamento(?:\s+(?:Extrajudicial|Judicial|Especial|Administrativo))?)/i);
-                    if (m) resultados.push({ tipo: normalizarTipoPagamentoSelic(m[1]), data });
+
+                    // Na tabela "Tipo de parcelamento", o nome completo fica
+                    // antes da coluna da data de solicitação, sem lista fechada
+                    // de qualificadores (Judicial, Extrajudicial, Especial etc.).
+                    const itemData = linha.itens.find(item => extrairDataMemoriaSelic(item.str) === data);
+                    const nomeColuna = itemData
+                        ? linha.itens.filter(item => item.x < itemData.x - 3)
+                            .map(item => item.str).join(' ')
+                        : texto.split(data)[0];
+                    const tipo = normalizarTipoPagamentoSelic(nomeColuna);
+                    if (/\bparcelamento\b/i.test(tipo) && !/^tipo\s+de\s+parcelamento/i.test(tipo)) {
+                        resultados.push({ tipo, data });
+                    }
                 }
             }
             return resultados;
+        }
+
+        function analisarFragmentosTipoPagamentoSelic(linha, limiteTipo) {
+            const fragmentos = linha.itens
+                .filter(item => item.x < limiteTipo)
+                .map(item => normalizarTextoMemoriaSelic(item.str))
+                .filter(t => t && !/^(?:total|totais)(?:\s+R\$)?$/i.test(t));
+            const texto = normalizarTipoPagamentoSelic(fragmentos.join(' '));
+            const m = texto.match(/^((?:\d+[º°ªa]?\s*)?Parcelamento)\b(?:\s+(.+))?$/i);
+            if (!m) return { tipo: texto, complementoAnterior: '' };
+
+            const inicio = normalizarTextoMemoriaSelic(m[1]);
+            const complemento = normalizarTextoMemoriaSelic(m[2]);
+            // Se o complemento veio em outro item de texto, ele costuma ser
+            // a segunda linha da célula ANTERIOR. O SICAFI pode alinhá-lo
+            // horizontalmente à linha do pagamento seguinte.
+            const parteUnicaCompleta = fragmentos.some(parte =>
+                /^((?:\d+[º°ªa]?\s*)?Parcelamento)\b\s+\S/i.test(parte));
+            if (complemento && !parteUnicaCompleta) {
+                return { tipo: inicio, complementoAnterior: complemento };
+            }
+            return { tipo: texto, complementoAnterior: '' };
+        }
+
+        function mesmoTipoPagamentoSelic(a, b) {
+            return normalizarTipoPagamentoSelic(a).toLocaleLowerCase('pt-BR') ===
+                normalizarTipoPagamentoSelic(b).toLocaleLowerCase('pt-BR');
         }
 
         function interpretarMemoriaPagamentosSelic(paginas) {
@@ -2503,7 +2544,7 @@ function mostrarModalUltimaTaxa() {
             if (!reconhecida) throw new Error('O arquivo não foi reconhecido como memória de cálculo do SICAFI com a tabela "Resumo - Pagamento / Parcelamento".');
             const solicitacoes = extrairSolicitacoesParcelamentoSelic(paginas);
             const pagamentos = [];
-            let lendoResumo = false, cabecalho = null, ultimoTipo = '';
+            let lendoResumo = false, cabecalho = null;
             for (const pagina of paginas) {
                 for (const linha of pagina.linhas) {
                     const texto = linha.texto;
@@ -2516,29 +2557,66 @@ function mostrarModalUltimaTaxa() {
                     if (novaColuna) { cabecalho = novaColuna; continue; }
                     if (!cabecalho) continue;
                     const limites = cabecalho.limites;
-                    const tipoBruto = campoColunaMemoriaSelic(linha, -Infinity, limites[0]);
-                    const tipo = normalizarTipoPagamentoSelic(tipoBruto) || ultimoTipo;
+                    const { tipo: tipoExtraido, complementoAnterior } = analisarFragmentosTipoPagamentoSelic(linha, limites[0]);
+                    const anterior = pagamentos[pagamentos.length-1];
+                    const podeComplementarTipoAnterior = complemento => {
+                        if (!anterior || !/\bparcelamento\b/i.test(anterior.tipo) || !complemento) return false;
+                        const tipoProposto = normalizarTipoPagamentoSelic(`${anterior.tipo} ${complemento}`);
+                        if (solicitacoes.length && !solicitacoes.some(s =>
+                            s.tipo.toLocaleLowerCase('pt-BR').startsWith(tipoProposto.toLocaleLowerCase('pt-BR')))) return false;
+                        anterior.tipo = tipoProposto;
+                        return true;
+                    };
+                    let tipoAtual = tipoExtraido;
+                    // Quando duas linhas da mesma célula ocupam a mesma altura que
+                    // uma nova parcela, o complemento pertence à parcela anterior.
+                    if (complementoAnterior && !podeComplementarTipoAnterior(complementoAnterior)) {
+                        tipoAtual = normalizarTipoPagamentoSelic(`${tipoExtraido} ${complementoAnterior}`);
+                    }
+
                     const vencimento = campoColunaMemoriaSelic(linha, limites[1], limites[2]);
                     const dataPagamento = extrairDataMemoriaSelic(campoColunaMemoriaSelic(linha, limites[2], limites[3]));
                     const valor = numeroPagamentoMemoriaSelic(campoColunaMemoriaSelic(linha, limites[3], limites[4]));
-                    if (!tipo || !dataPagamento || !valor) continue;
-                    if (!/^[\p{L}\d]/u.test(tipo)) continue;
-                    // Verifica que a célula de vencimento também tem data: reduz falsos positivos fora do resumo.
-                    if (!extrairDataMemoriaSelic(vencimento)) continue;
+                    const contemPagamento = !!(dataPagamento && valor && extrairDataMemoriaSelic(vencimento));
+                    // Uma linha isolada com "Extrajudicial", "Especial" etc.
+                    // pode aparecer até mesmo na página seguinte ou junto de TOTAL.
+                    if (tipoAtual && !/\bparcelamento\b|\bn[aã]o\s+parcelado\b/i.test(tipoAtual) && anterior) {
+                        if (podeComplementarTipoAnterior(tipoAtual)) tipoAtual = anterior.tipo;
+                    }
+                    if (!contemPagamento) continue;
+                    const tipo = tipoAtual || anterior?.tipo || '';
+                    if (!tipo || !/^[\p{L}\d]/u.test(tipo)) continue;
                     pagamentos.push({ tipo, dataPagamento, valorPago: valor });
-                    ultimoTipo = tipo;
                 }
             }
             if (!pagamentos.length) throw new Error('Não foram encontrados pagamentos válidos na tabela "Resumo - Pagamento / Parcelamento".');
+
+            // Resolver somente correspondências inequívocas. Dois parcelamentos
+            // que compartilham o início do nome nunca devem ser agrupados.
+            for (const p of pagamentos) {
+                if (!/\bparcelamento\b/i.test(p.tipo)) continue;
+                let solicitacao = solicitacoes.find(s => mesmoTipoPagamentoSelic(s.tipo, p.tipo));
+                if (!solicitacao) {
+                    const candidatas = solicitacoes.filter(s =>
+                        s.tipo.toLocaleLowerCase('pt-BR').startsWith(p.tipo.toLocaleLowerCase('pt-BR') + ' '));
+                    if (candidatas.length === 1) {
+                        solicitacao = candidatas[0];
+                        p.tipo = solicitacao.tipo;
+                    } else if (candidatas.length > 1) {
+                        throw new Error(`Não foi possível distinguir os tipos de parcelamento que começam com "${p.tipo}". Confira o texto integral na memória de cálculo.`);
+                    }
+                }
+                if (!solicitacao) throw new Error(`A data de solicitação do tipo "${p.tipo}" não foi encontrada na memória.`);
+                p.mesConsolidacao = solicitacao.data.slice(3);
+            }
+
             const valorOriginalParcelamento = new Map();
             for (const p of pagamentos) {
-                if (/parcelamento/i.test(p.tipo) && !valorOriginalParcelamento.has(p.tipo)) valorOriginalParcelamento.set(p.tipo, p.valorPago);
+                if (/\bparcelamento\b/i.test(p.tipo) && !valorOriginalParcelamento.has(p.tipo))
+                    valorOriginalParcelamento.set(p.tipo, p.valorPago);
             }
             for (const p of pagamentos) {
-                if (/parcelamento/i.test(p.tipo)) {
-                    const solic = solicitacoes.find(s => s.tipo === p.tipo || s.tipo.startsWith(p.tipo) || p.tipo.startsWith(s.tipo));
-                    if (!solic) throw new Error(`A data de solicitação do tipo "${p.tipo}" não foi encontrada na memória.`);
-                    p.mesConsolidacao = solic.data.slice(3);
+                if (/\bparcelamento\b/i.test(p.tipo)) {
                     p.valorOriginal = valorOriginalParcelamento.get(p.tipo);
                 } else {
                     p.mesConsolidacao = p.dataPagamento.slice(3);
