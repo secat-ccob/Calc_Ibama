@@ -7,7 +7,7 @@
     <title>Calculadora Selic</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-    <!-- Versão: calculadora_selic_portal_v_43 -->
+    <!-- Versão: calculadora_selic_portal_v_46 -->
     <style>
         :root {
             --cor-primaria: #1f6f54;
@@ -327,6 +327,29 @@
             background-color: white;
         }
 
+        /* V46: exclusão individual, seguindo o botão X da Calculadora de restituição. */
+        #tabelaSelic .coluna-excluir { width: 32px; min-width: 32px; max-width: 32px; padding: 3px 2px; }
+        #tabelaSelic .coluna-excluir .btn-excluir-linha {
+            width: 22px;
+            height: 22px;
+            min-width: 22px;
+            border-radius: 4px;
+            border: 1px solid #9f1d1d;
+            padding: 0;
+            background: #c62828;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            font-size: 15px;
+            font-weight: bold;
+            line-height: 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        #tabelaSelic .coluna-excluir .btn-excluir-linha:hover { background: #a91f1f; }
+        #tabelaSelic .coluna-excluir .btn-excluir-linha:focus-visible { outline: 2px solid #4CAF50; outline-offset: 1px; }
+
         /* Células padronizadas ficam cinzas enquanto o respectivo campo estiver bloqueado. */
         #tabelaSelic .coluna-numero { width: 40px; min-width: 40px; max-width: 40px; }
         #tabelaSelic .coluna-numero input { background: transparent; }
@@ -498,9 +521,18 @@
             background-color: #ffffff;
             isolation: isolate;
         }
-        #tabelaSelic tr > td.coluna-numero {
+        #tabelaSelic tr > td.coluna-excluir {
             position: sticky;
             left: 0;
+            z-index: 3;
+        }
+        #tabelaSelic thead tr > td.coluna-excluir { z-index: 7; }
+        #tabelaSelic thead .padroes-row > td.coluna-excluir { background: #fff; }
+        #tabelaSelic thead .header-row > td.coluna-excluir { background: #1f4e79; }
+        #tabelaSelic tbody tr.data-row > td.coluna-excluir { background: #e0e0e0; }
+        #tabelaSelic tr > td.coluna-numero {
+            position: sticky;
+            left: 32px;
             z-index: 2;
         }
         /* Divisória interna sempre visível mesmo com células sticky e border-collapse. */
@@ -563,6 +595,7 @@
         @media print {
             .tabela-rolagem { max-height: none; overflow: visible; }
             #tabelaSelic thead, #tabelaSelic tr > td.coluna-numero { position: static; }
+            #tabelaSelic tr > td.coluna-excluir { display: none !important; }
             #tabelaSelic tr > td.coluna-numero::after { display: none; }
         }
 
@@ -662,6 +695,55 @@
                 border: 1px solid #000 !important;
             }
         }
+
+        /* Importação de pagamentos da memória SICAFI (somente função residual). */
+        .upload-pagamentos-selic {
+            display: none;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            max-width: 100%;
+            margin: 0 0 0 20px;
+        }
+        .upload-pagamentos-selic.ativo { display: flex; }
+        .upload-pagamentos-selic .btn { margin: 0; font-size: 12px; padding: 8px 10px; }
+        .upload-pagamentos-selic-status {
+            width: 100px; min-height: 34px; flex: 0 0 100px;
+            box-sizing: border-box; border: 1px solid #ccc; border-radius: 3px;
+            background: #e0e0e0; color: #666;
+            display: flex; align-items: center; justify-content: center;
+            font: bold 12px Arial, sans-serif; letter-spacing: .03em;
+        }
+        .upload-pagamentos-selic-status.ok {
+            background: #1f7a1f; border-color: #1f7a1f;
+            color: white; letter-spacing: 1px;
+        }
+        .modal-pagamentos-selic {
+            position: fixed; inset: 0; z-index: 99998;
+            display: none; align-items: center; justify-content: center;
+            background: rgba(0,0,0,.42); padding: 16px;
+        }
+        .modal-pagamentos-selic.aberto { display: flex; }
+        .modal-pagamentos-selic-caixa {
+            width: min(490px, 94vw); max-height: 85vh; overflow-y: auto;
+            border: 1px solid #c9d2cc; background: #fff; border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.25);
+            color: #1f2933; font-family: Arial, sans-serif;
+        }
+        .modal-pagamentos-selic-cabecalho {
+            background: #1f4e79; color: #fff;
+            font-size: 14px; font-weight: bold; padding: 11px 15px;
+        }
+        .modal-pagamentos-selic-corpo { padding: 16px; font-size: 13px; }
+        .modal-pagamentos-selic-pergunta { margin: 0 0 12px; font-weight: bold; }
+        .modal-pagamentos-selic-lista { display: flex; flex-direction: column; gap: 10px; max-height: 48vh; overflow-y: auto; }
+        .modal-pagamentos-selic-lista label { display: flex; gap: 9px; align-items: center; cursor: pointer; }
+        .modal-pagamentos-selic-lista input { flex: 0 0 auto; width: 15px; height: 15px; }
+        .modal-pagamentos-selic-acoes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 18px; }
+        .modal-pagamentos-selic-acoes .btn { margin: 0; }
+        .modal-pagamentos-selic-escolhas { display: grid; gap: 9px; }
+        .modal-pagamentos-selic-escolhas .btn { white-space: normal; width: 100%; margin: 0; }
+        @media (max-width: 690px) { .upload-pagamentos-selic { margin-left: 0; } }
     </style>
 </head>
 <body>
@@ -698,6 +780,7 @@
         <table id="tabelaSelic">
             <thead>
                 <tr class="padroes-row">
+                    <td class="coluna-excluir" aria-hidden="true"></td>
                     <td class="coluna-numero"></td>
                     <td><div class="padrao-controle"><label class="padrao-checkbox"><input type="checkbox" id="padraoValorCheck" onchange="alternarValorPadrao()">Valor padrão</label><input type="text" id="padraoValorCampo" class="campo-padrao-data campo-padrao-valor" placeholder="0,00" inputmode="numeric" disabled oninput="aplicarMascaraMoedaTempoReal(this)" onblur="aplicarValorPadrao()"></div></td>
                     <td><div class="padrao-controle"><label class="padrao-checkbox"><input type="checkbox" id="padraoConsolidacaoCheck" onchange="alternarDataPadrao('consolidacao')">Data padrão</label><input type="text" id="padraoConsolidacaoData" class="campo-padrao-data" placeholder="MM/AAAA" maxlength="10" inputmode="numeric" disabled onblur="aplicarDataPadrao('consolidacao')"></div></td>
@@ -707,6 +790,7 @@
                     <td class="coluna-adicional"></td><td class="coluna-adicional"></td><td class="coluna-adicional"></td><td class="coluna-adicional"></td>
                 </tr>
                 <tr class="header-row">
+                    <td class="coluna-excluir"><span class="rotulo-linha">x</span><span class="rotulo-linha">&nbsp;</span></td>
                     <td class="coluna-numero"><span class="rotulo-linha">Nº</span><span class="rotulo-linha">&nbsp;</span></td>
                     <td><span class="rotulo-linha">Valor original</span><span class="rotulo-linha">(R$)</span></td>
                     <td><span class="rotulo-linha">Mês de consolidação</span><span class="rotulo-linha">(mm/aaaa)</span></td>
@@ -723,6 +807,7 @@
             </thead>
             <tbody>
                 <tr class="data-row" data-linha="0">
+                    <td class="gray-cell coluna-excluir"><button type="button" class="btn-excluir-linha" tabindex="-1" title="Excluir linha" aria-label="Excluir linha" onclick="excluirLinhaSelic(this)">×</button></td>
                     <td class="gray-cell coluna-numero"><input type="text" class="numero-linha" value="01" readonly tabindex="-1"></td>
                     <td class="white-cell">
                         <input type="text" class="valor-pagamento" placeholder="0,00" inputmode="numeric" oninput="aplicarMascaraMoedaTempoReal(this)" onblur="formatarMoeda(this); calcularLinha(0)">
@@ -758,6 +843,11 @@
             <div class="funcoes-adicionais" id="celulaFuncoesAdicionais">
                 <strong>Funções adicionais</strong>
                 <label><input type="checkbox" id="incluirValorPagoMenor" onchange="alternarAtualizacaoValorPagoMenor()">Incluir atualização de valor pago a menor</label>
+                <div class="upload-pagamentos-selic" id="areaUploadPagamentosSelic">
+                    <button type="button" class="btn" id="btnCarregarPagamentosSelic" onclick="document.getElementById('arquivoPagamentosSelic').click()">Carregar pagamentos a partir de memória de cálculo (PDF)</button>
+                    <div class="upload-pagamentos-selic-status" id="statusPagamentosSelic" aria-live="polite"></div>
+                    <input type="file" id="arquivoPagamentosSelic" accept=".pdf,application/pdf" style="display:none" onchange="aoSelecionarMemoriaPagamentosSelic(this)">
+                </div>
             </div>
             <table id="tabelaTotaisSelic" aria-label="Totais dos cálculos">
                 <tbody>
@@ -810,6 +900,35 @@
     <footer class="rodape">
         CALC-IBAMA · SECAT/CCOB
     </footer>
+
+
+    <!-- Escolha de tipos e política de inserção, sem alterar a tabela antes da confirmação. -->
+    <div class="modal-pagamentos-selic" id="modalTiposPagamentosSelic" aria-hidden="true">
+        <div class="modal-pagamentos-selic-caixa" role="dialog" aria-modal="true" aria-labelledby="tituloTiposPagamentosSelic">
+            <div class="modal-pagamentos-selic-cabecalho" id="tituloTiposPagamentosSelic">Pagamentos da memória de cálculo</div>
+            <div class="modal-pagamentos-selic-corpo">
+                <p class="modal-pagamentos-selic-pergunta">Quais pagamentos deseja adicionar?</p>
+                <div class="modal-pagamentos-selic-lista" id="tiposPagamentosSelic"></div>
+                <div class="modal-pagamentos-selic-acoes">
+                    <button class="btn" type="button" id="btnAdicionarPagamentosSelic" onclick="confirmarTiposPagamentosSelic()">Adicionar</button>
+                    <button class="btn" type="button" onclick="fecharModalPagamentosSelic()">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-pagamentos-selic" id="modalModoPagamentosSelic" aria-hidden="true">
+        <div class="modal-pagamentos-selic-caixa" role="dialog" aria-modal="true" aria-labelledby="tituloModoPagamentosSelic">
+            <div class="modal-pagamentos-selic-cabecalho" id="tituloModoPagamentosSelic">Adicionar pagamentos</div>
+            <div class="modal-pagamentos-selic-corpo">
+                <p class="modal-pagamentos-selic-pergunta">Como deseja adicionar o(s) pagamento(s)?</p>
+                <div class="modal-pagamentos-selic-escolhas">
+                    <button class="btn" type="button" onclick="aplicarPagamentosSelecionadosSelic('manter')">Manter dados preenchidos e adicionar pagamentos</button>
+                    <button class="btn" type="button" onclick="aplicarPagamentosSelecionadosSelic('limpar')">Limpar tabela e adicionar pagamentos</button>
+                    <button class="btn" type="button" onclick="fecharModalPagamentosSelic()">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         let contadorLinhas = 1;
@@ -1619,6 +1738,7 @@
         function alternarAtualizacaoValorPagoMenor() {
             const ativado = document.getElementById('incluirValorPagoMenor').checked;
             const tabela = document.getElementById('tabelaSelic');
+            document.getElementById('areaUploadPagamentosSelic')?.classList.toggle('ativo', ativado);
             tabela.classList.toggle('modo-residual', ativado);
             document.getElementById('tabelaTotaisSelic').classList.toggle('modo-residual', ativado);
             atualizarRotulosMesVigente();
@@ -1762,6 +1882,41 @@
             });
         }
 
+        // Exclui a linha indicada sem afetar as demais. Como na restituição, se for
+        // a única linha, apenas a limpa para preservar a linha mínima da tabela.
+        function excluirLinhaSelic(botao) {
+            const linha = botao?.closest('#tabelaSelic tr.data-row[data-linha]');
+            if (!linha) return;
+            const linhas = document.querySelectorAll('#tabelaSelic tr.data-row[data-linha]');
+            if (linhas.length > 1) {
+                linha.remove();
+                atualizarNumeracaoLinhas();
+                calcularTotal();
+                mostrarAlerta('✅ Linha excluída.', 'success');
+                return;
+            }
+
+            limparLinhaParaImportacaoSelic(linha);
+            // Conservar os padrões ativos ao deixar a tabela com uma única linha.
+            const padroes = [
+                ['padraoValorCheck', 'padraoValorCampo', '.valor-pagamento'],
+                ['padraoConsolidacaoCheck', 'padraoConsolidacaoData', '.data-pagamento'],
+                ['padraoAtualizacaoCheck', 'padraoAtualizacaoData', '.data-atualizacao'],
+                ['padraoValorPagoCheck', 'padraoValorPagoCampo', '.valor-pago-residual']
+            ];
+            padroes.forEach(([idCheck, idCampo, seletor]) => {
+                if (!document.getElementById(idCheck)?.checked) return;
+                const input = linha.querySelector(seletor);
+                const valor = document.getElementById(idCampo)?.value || '';
+                if (input) {
+                    input.value = valor;
+                    if (seletor.includes('data-')) input.dataset.ultimoValorValido = valor;
+                }
+            });
+            calcularLinha(Number(linha.dataset.linha), true);
+            mostrarAlerta('✅ Linha limpa.', 'success');
+        }
+
         function adicionarLinhasSelecionadas() {
             const quantidade = normalizarQuantidadeLinhas(document.getElementById('quantidadeAdicionar'));
             let ultima = null;
@@ -1803,7 +1958,7 @@
             return numero.toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
         }
         
-        async function calcularLinha(indice) {
+        async function calcularLinha(indice, importacaoRapida = false) {
             const linha = document.querySelector(`[data-linha="${indice}"]`);
             if (!linha) return;
             
@@ -1838,7 +1993,7 @@
             taxaSelicInput.classList.add('loading');
             
             try {
-                await new Promise(resolve => setTimeout(resolve, 400));
+                if (!importacaoRapida) await new Promise(resolve => setTimeout(resolve, 400));
                 
                 const taxaSelic = calcularTaxaSelicAcumulada(dataPagamento, mesReferencia);
                 
@@ -1853,7 +2008,7 @@
                 valorAtualizadoInput.value = numeroParaMoeda(valorAtualizado);
                 
                 const fonte = statusConexao === 'online' ? '🌐' : '💾';
-                mostrarAlerta(`${fonte} ${dataPagamento}→${mesReferencia} = ${taxaSelic.toFixed(2)}%`, 'success');
+                if (!importacaoRapida) mostrarAlerta(`${fonte} ${dataPagamento}→${mesReferencia} = ${taxaSelic.toFixed(2)}%`, 'success');
                 
             } catch (error) {
                 taxaSelicInput.value = error.message && error.message.startsWith('Dados ausentes') ? 'Dados ausentes' : 'Erro';
@@ -1932,6 +2087,7 @@
             tr.setAttribute('data-linha', contadorLinhas);
             
             tr.innerHTML = `
+                <td class="gray-cell coluna-excluir"><button type="button" class="btn-excluir-linha" tabindex="-1" title="Excluir linha" aria-label="Excluir linha" onclick="excluirLinhaSelic(this)">×</button></td>
                 <td class="gray-cell coluna-numero"><input type="text" class="numero-linha" readonly tabindex="-1"></td>
                 <td class="white-cell">
                     <input type="text" class="valor-pagamento" placeholder="0,00" inputmode="numeric" oninput="aplicarMascaraMoedaTempoReal(this)" onblur="formatarMoeda(this); calcularLinha(${contadorLinhas})">
@@ -2198,6 +2354,329 @@ function mostrarModalUltimaTaxa() {
                 mostrarAlerta('⚠️ Sistema carregado com dados locais.', 'success');
             });
         };
+
+        // ================== IMPORTAÇÃO DE PAGAMENTOS SICAFI (PDF) ==================
+        const URL_PDFJS_SICAFI_SELIC = '../libs/pdfjs-6.1.200-legacy/build/pdf.mjs';
+        const URL_WORKER_PDFJS_SICAFI_SELIC = '../libs/pdfjs-6.1.200-legacy/build/pdf.worker.mjs';
+        let promessaPdfjsSicafiSelic = null;
+        let memoriaPagamentosSelicLida = null;
+        let pagamentosSelecionadosSelic = null;
+
+        async function obterPdfjsPagamentosSelic() {
+            if (promessaPdfjsSicafiSelic) return promessaPdfjsSicafiSelic;
+            promessaPdfjsSicafiSelic = import(URL_PDFJS_SICAFI_SELIC).then(modulo => {
+                if (!modulo?.getDocument) throw new Error('O leitor PDF.js não pôde ser inicializado.');
+                modulo.GlobalWorkerOptions.workerSrc = URL_WORKER_PDFJS_SICAFI_SELIC;
+                return modulo;
+            }).catch(erro => { promessaPdfjsSicafiSelic = null; throw erro; });
+            return promessaPdfjsSicafiSelic;
+        }
+
+        function normalizarTextoMemoriaSelic(texto) {
+            return String(texto || '').replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim();
+        }
+
+        function agruparItensMemoriaSelic(itens, indicePagina) {
+            const grupos = [];
+            const ordenados = itens.filter(i => i.str?.trim()).sort((a, b) =>
+                Math.abs(a.y - b.y) > 2.5 ? a.y - b.y : a.x - b.x);
+            for (const item of ordenados) {
+                let grupo = grupos.find(g => Math.abs(g.y - item.y) <= 2.25);
+                if (!grupo) { grupo = { pagina: indicePagina, y: item.y, itens: [] }; grupos.push(grupo); }
+                grupo.itens.push(item);
+            }
+            return grupos.map(g => {
+                g.itens.sort((a,b) => a.x-b.x);
+                let texto = '', fim = null;
+                for (const item of g.itens) {
+                    const parte = normalizarTextoMemoriaSelic(item.str);
+                    if (!parte) continue;
+                    if (texto && (fim === null || item.x - fim > 1.5)) texto += ' ';
+                    texto += parte;
+                    fim = item.x + item.width;
+                }
+                return { ...g, texto: normalizarTextoMemoriaSelic(texto) };
+            }).filter(g => g.texto).sort((a,b)=>a.y-b.y);
+        }
+
+        async function lerPaginasMemoriaSelic(arquivo) {
+            const pdfjs = await obterPdfjsPagamentosSelic();
+            const tarefaCarregamento = pdfjs.getDocument({
+                data: new Uint8Array(await arquivo.arrayBuffer()),
+                isEvalSupported: false
+            });
+            const documento = await tarefaCarregamento.promise;
+            const paginas = [];
+            try {
+                for (let numero = 1; numero <= documento.numPages; numero++) {
+                    const pagina = await documento.getPage(numero);
+                    const viewport = pagina.getViewport({scale: 1});
+                    const conteudo = await pagina.getTextContent();
+                    const itens = conteudo.items.map(item => {
+                        const t = item.transform || [1,0,0,1,0,0];
+                        return { str: String(item.str || ''), x: Number(t[4]), y: viewport.height-Number(t[5]), width: Number(item.width || 0) };
+                    });
+                    paginas.push({ numero, largura: viewport.width, linhas: agruparItensMemoriaSelic(itens, numero) });
+                }
+            } finally {
+                // O encerramento pertence à tarefa do PDF.js, não necessariamente ao documento.
+                // Não impedir a importação se a versão do leitor não expuser esse método.
+                if (typeof tarefaCarregamento.destroy === 'function') {
+                    try {
+                        await tarefaCarregamento.destroy();
+                    } catch (erroEncerramento) {
+                        console.warn('Não foi possível encerrar a tarefa de leitura do PDF:', erroEncerramento);
+                    }
+                }
+            }
+            return paginas;
+        }
+
+        function campoColunaMemoriaSelic(linha, inicio, fim) {
+            const itens = linha.itens.filter(item => item.x >= inicio && item.x < fim);
+            return normalizarTextoMemoriaSelic(itens.map(item=>item.str).join(' '));
+        }
+
+        function extrairDataMemoriaSelic(texto) {
+            const m = String(texto || '').match(/\b(\d{2})\/(\d{2})\/(\d{4})\b/);
+            if (!m) return '';
+            const dia=+m[1], mes=+m[2], ano=+m[3];
+            const d = new Date(ano, mes - 1, dia);
+            if (d.getFullYear() !== ano || d.getMonth() !== mes-1 || d.getDate() !== dia) return '';
+            return m[0];
+        }
+
+        function numeroPagamentoMemoriaSelic(texto) {
+            const s = String(texto || '').trim();
+            return /^-?\d{1,3}(?:\.\d{3})*,\d{2}$/.test(s) ? s : '';
+        }
+
+        function localizarCabecalhoResumoSelic(linha) {
+            // Identifica as cinco primeiras colunas da tabela (o segundo "Valor" é da GRU).
+            const itens = linha.itens;
+            const localizar = (regex, minimoX) => itens.find(i => i.x > minimoX && regex.test(normalizarTextoMemoriaSelic(i.str)));
+            const tipo = localizar(/^Tipo$/i, -1);
+            const numero = tipo && localizar(/^N[uú]mero$/i, tipo.x + 5);
+            const vencimento = numero && localizar(/^Vencimento$/i, numero.x + 5);
+            const data = vencimento && localizar(/^Data$/i, vencimento.x + 5);
+            const valor = data && localizar(/^Valor$/i, data.x + 5);
+            if (!valor || !tipo) return null;
+            const xs = [tipo.x, numero.x, vencimento.x, data.x, valor.x];
+            const limites = [];
+            for (let i = 0; i < xs.length-1; i++) limites.push((xs[i]+xs[i+1])/2);
+            const proximo = itens.find(i => i.x > valor.x + 12 && /^(Desconto|Multa)$/i.test(i.str.trim()));
+            limites.push(proximo ? (valor.x+proximo.x)/2 : valor.x + (valor.x-data.x)*0.75);
+            return { limites, inicio: linha.y };
+        }
+
+        function normalizarTipoPagamentoSelic(texto) {
+            const tipo = normalizarTextoMemoriaSelic(texto);
+            if (/^(total|totais)\b/i.test(tipo)) return '';
+            // Nas memórias, "Extrajudicial" costuma ocupar uma segunda linha dentro da mesma célula.
+            const ordinal = tipo.match(/^(\d+[º°ªa]?)(?:\s|$)/i);
+            if (ordinal && /\bParcelamento\b/i.test(tipo)) return `${ordinal[1]} Parcelamento`;
+            const m = tipo.match(/^((?:\d+[º°ªa]?\s*)?Parcelamento)(?:\s+.*)?$/i);
+            if (m && /^\d/.test(tipo)) return m[1].replace(/\s+/g,' ');
+            return tipo;
+        }
+
+        function extrairSolicitacoesParcelamentoSelic(paginas) {
+            const resultados = [];
+            for (const pagina of paginas) {
+                for (const linha of pagina.linhas) {
+                    const texto = linha.texto;
+                    if (!/parcelamento/i.test(texto) || /resumo\s*-\s*pagamento/i.test(texto)) continue;
+                    const data = extrairDataMemoriaSelic(texto);
+                    if (!data || !/(cancelad|ativa|vigent|conclu|quitad|parcelas|solicita)/i.test(texto)) continue;
+                    const m = texto.match(/((?:\d+[º°ªa]?\s*)?Parcelamento(?:\s+(?:Extrajudicial|Judicial|Especial|Administrativo))?)/i);
+                    if (m) resultados.push({ tipo: normalizarTipoPagamentoSelic(m[1]), data });
+                }
+            }
+            return resultados;
+        }
+
+        function interpretarMemoriaPagamentosSelic(paginas) {
+            const textoGeral = paginas.map(p => p.linhas.map(l=>l.texto).join('\n')).join('\n');
+            const reconhecida = /MEM[ÓO]RIA\s+DE\s+C[ÁA]LCULO/i.test(textoGeral) &&
+                /INSTITUTO\s+BRASILEIRO\s+DO\s+MEIO\s+AMBIENTE/i.test(textoGeral) &&
+                /Resumo\s*-\s*Pagamento\s*\/\s*Parcelamento/i.test(textoGeral);
+            if (!reconhecida) throw new Error('O arquivo não foi reconhecido como memória de cálculo do SICAFI com a tabela "Resumo - Pagamento / Parcelamento".');
+            const solicitacoes = extrairSolicitacoesParcelamentoSelic(paginas);
+            const pagamentos = [];
+            let lendoResumo = false, cabecalho = null, ultimoTipo = '';
+            for (const pagina of paginas) {
+                for (const linha of pagina.linhas) {
+                    const texto = linha.texto;
+                    if (/Resumo\s*-\s*Pagamento\s*\/\s*Parcelamento/i.test(texto)) { lendoResumo = true; continue; }
+                    if (!lendoResumo) continue;
+                    if (/^(?:Composi[cç][aã]o\s+do\s+d[eé]bito|Consolida[cç][aã]o\s+do\s+d[eé]bito|Anexo\s*-\s*Composi[cç][aã]o)/i.test(texto)) {
+                        lendoResumo = false; break;
+                    }
+                    const novaColuna = localizarCabecalhoResumoSelic(linha);
+                    if (novaColuna) { cabecalho = novaColuna; continue; }
+                    if (!cabecalho) continue;
+                    const limites = cabecalho.limites;
+                    const tipoBruto = campoColunaMemoriaSelic(linha, -Infinity, limites[0]);
+                    const tipo = normalizarTipoPagamentoSelic(tipoBruto) || ultimoTipo;
+                    const vencimento = campoColunaMemoriaSelic(linha, limites[1], limites[2]);
+                    const dataPagamento = extrairDataMemoriaSelic(campoColunaMemoriaSelic(linha, limites[2], limites[3]));
+                    const valor = numeroPagamentoMemoriaSelic(campoColunaMemoriaSelic(linha, limites[3], limites[4]));
+                    if (!tipo || !dataPagamento || !valor) continue;
+                    if (!/^[\p{L}\d]/u.test(tipo)) continue;
+                    // Verifica que a célula de vencimento também tem data: reduz falsos positivos fora do resumo.
+                    if (!extrairDataMemoriaSelic(vencimento)) continue;
+                    pagamentos.push({ tipo, dataPagamento, valorPago: valor });
+                    ultimoTipo = tipo;
+                }
+            }
+            if (!pagamentos.length) throw new Error('Não foram encontrados pagamentos válidos na tabela "Resumo - Pagamento / Parcelamento".');
+            const valorOriginalParcelamento = new Map();
+            for (const p of pagamentos) {
+                if (/parcelamento/i.test(p.tipo) && !valorOriginalParcelamento.has(p.tipo)) valorOriginalParcelamento.set(p.tipo, p.valorPago);
+            }
+            for (const p of pagamentos) {
+                if (/parcelamento/i.test(p.tipo)) {
+                    const solic = solicitacoes.find(s => s.tipo === p.tipo || s.tipo.startsWith(p.tipo) || p.tipo.startsWith(s.tipo));
+                    if (!solic) throw new Error(`A data de solicitação do tipo "${p.tipo}" não foi encontrada na memória.`);
+                    p.mesConsolidacao = solic.data.slice(3);
+                    p.valorOriginal = valorOriginalParcelamento.get(p.tipo);
+                } else {
+                    p.mesConsolidacao = p.dataPagamento.slice(3);
+                    p.valorOriginal = p.valorPago;
+                }
+                p.mesAtualizacao = p.dataPagamento.slice(3);
+                for (const competencia of [p.mesConsolidacao, p.mesAtualizacao]) {
+                    const validacao = validarCompetenciaPermitida(competencia);
+                    if (!validacao.valido) throw new Error(`A memória contém competência não permitida: ${competencia}. ${validacao.mensagem}`);
+                }
+            }
+            return { pagamentos, tipos: [...new Set(pagamentos.map(p=>p.tipo))] };
+        }
+
+        async function aoSelecionarMemoriaPagamentosSelic(input) {
+            const arquivo = input.files?.[0];
+            input.value = ''; // Permite selecionar o mesmo arquivo novamente.
+            if (!arquivo) return;
+            if (!/\.pdf$/i.test(arquivo.name) && arquivo.type !== 'application/pdf') {
+                mostrarAlerta('Selecione um arquivo PDF de memória de cálculo do SICAFI.', 'error'); return;
+            }
+            const botao = document.getElementById('btnCarregarPagamentosSelic');
+            if (botao) botao.disabled = true;
+            try {
+                const paginas = await lerPaginasMemoriaSelic(arquivo);
+                const dados = interpretarMemoriaPagamentosSelic(paginas);
+                memoriaPagamentosSelicLida = dados;
+                pagamentosSelecionadosSelic = null;
+                document.getElementById('statusPagamentosSelic').classList.add('ok');
+                document.getElementById('statusPagamentosSelic').textContent = 'CARREGADO';
+                const lista = document.getElementById('tiposPagamentosSelic');
+                lista.replaceChildren();
+                dados.tipos.forEach((tipo, indice) => {
+                    const rotulo = document.createElement('label');
+                    const check = document.createElement('input');
+                    check.type = 'checkbox'; check.value = tipo; check.id = `tipoPagamentoSicafi_${indice}`;
+                    const nome = document.createElement('span'); nome.textContent = tipo;
+                    rotulo.append(check, nome); lista.appendChild(rotulo);
+                });
+                abrirModalPagamentosSelic('modalTiposPagamentosSelic');
+            } catch (erro) {
+                memoriaPagamentosSelicLida = null;
+                const status = document.getElementById('statusPagamentosSelic');
+                status.classList.remove('ok'); status.textContent = '';
+                mostrarAlerta(erro?.message || 'Não foi possível ler os pagamentos da memória de cálculo.', 'error');
+                console.error('Erro na importação de memória SICAFI:', erro);
+            } finally { if (botao) botao.disabled = false; }
+        }
+
+        function abrirModalPagamentosSelic(id) {
+            fecharModalPagamentosSelic(false);
+            const modal = document.getElementById(id);
+            if (!modal) return;
+            modal.classList.add('aberto'); modal.setAttribute('aria-hidden','false');
+            const destino = modal.querySelector('input[type="checkbox"], button');
+            if (destino) destino.focus();
+        }
+        function fecharModalPagamentosSelic(limparSelecao = true) {
+            for (const id of ['modalTiposPagamentosSelic','modalModoPagamentosSelic']) {
+                const el = document.getElementById(id);
+                el?.classList.remove('aberto');
+                el?.setAttribute('aria-hidden','true');
+            }
+            if (limparSelecao) pagamentosSelecionadosSelic = null;
+        }
+        function possuiDadosTabelaSelic() {
+            return [...document.querySelectorAll('#tabelaSelic tr.data-row[data-linha]')].some(linha =>
+                ['.valor-pagamento','.data-pagamento','.data-atualizacao','.valor-pago-residual'].some(classe =>
+                    !!linha.querySelector(classe)?.value.trim()));
+        }
+        function confirmarTiposPagamentosSelic() {
+            const tipos = [...document.querySelectorAll('#tiposPagamentosSelic input:checked')].map(c => c.value);
+            if (!tipos.length) { mostrarAlerta('Selecione ao menos um tipo de pagamento.', 'error'); return; }
+            pagamentosSelecionadosSelic = memoriaPagamentosSelicLida.pagamentos.filter(p => tipos.includes(p.tipo));
+            if (!pagamentosSelecionadosSelic.length) return;
+            if (possuiDadosTabelaSelic()) abrirModalPagamentosSelic('modalModoPagamentosSelic');
+            else aplicarPagamentosSelecionadosSelic('limpar');
+        }
+
+        function desligarPadroesParaImportacaoSelic() {
+            const configuracoes = [
+                ['padraoValorCheck','padraoValorCampo'],['padraoConsolidacaoCheck','padraoConsolidacaoData'],
+                ['padraoAtualizacaoCheck','padraoAtualizacaoData'],['padraoValorPagoCheck','padraoValorPagoCampo']
+            ];
+            for (const [idCheck,idCampo] of configuracoes) {
+                const check = document.getElementById(idCheck);
+                const campo = document.getElementById(idCampo);
+                if (check) check.checked = false;
+                if (campo) campo.disabled = true;
+            }
+            document.querySelectorAll('#tabelaSelic .data-row[data-linha] input').forEach(input => {
+                if (input.matches('.valor-pagamento,.data-pagamento,.data-atualizacao,.valor-pago-residual')) input.readOnly = false;
+            });
+        }
+        function limparLinhaParaImportacaoSelic(linha) {
+            linha.querySelectorAll('input:not(.numero-linha)').forEach(campo => {
+                campo.value = '';
+                campo.classList.remove('valor-pago-menor','valor-pago-suficiente','loading');
+                delete campo.dataset.ultimoValorValido;
+            });
+        }
+        async function aplicarPagamentosSelecionadosSelic(modo) {
+            const pagamentos = pagamentosSelecionadosSelic;
+            if (!pagamentos?.length || !['manter','limpar'].includes(modo)) return;
+            fecharModalPagamentosSelic();
+            desligarPadroesParaImportacaoSelic();
+            const corpo = document.querySelector('#tabelaSelic tbody');
+            const existentes = [...corpo.querySelectorAll('tr.data-row[data-linha]')];
+            if (modo === 'limpar') {
+                existentes.slice(1).forEach(l => l.remove());
+                if (existentes[0]) limparLinhaParaImportacaoSelic(existentes[0]);
+            }
+            let primeiraDisponivel = modo === 'limpar' || !possuiDadosTabelaSelic()
+                ? corpo.querySelector('tr.data-row[data-linha]') : null;
+            const indices = [];
+            for (const pagamento of pagamentos) {
+                const linha = primeiraDisponivel || adicionarLinha(true);
+                primeiraDisponivel = null;
+                if (!linha) continue;
+                const original = linha.querySelector('.valor-pagamento');
+                const consolidacao = linha.querySelector('.data-pagamento');
+                const atualizacao = linha.querySelector('.data-atualizacao');
+                const pago = linha.querySelector('.valor-pago-residual');
+                original.value = pagamento.valorOriginal;
+                consolidacao.value = pagamento.mesConsolidacao;
+                consolidacao.dataset.ultimoValorValido = pagamento.mesConsolidacao;
+                atualizacao.value = pagamento.mesAtualizacao;
+                atualizacao.dataset.ultimoValorValido = pagamento.mesAtualizacao;
+                pago.value = pagamento.valorPago;
+                indices.push(Number(linha.dataset.linha));
+            }
+            atualizarNumeracaoLinhas();
+            calcularTotal();
+            // Calcula as linhas sem alterar a ordem e sem limpar valores informados no PDF.
+            for (const indice of indices) await calcularLinha(indice, true);
+            mostrarAlerta(`✅ ${indices.length} pagamento(s) importado(s) da memória de cálculo.`, 'success');
+        }
+
     </script>
 </body>
 </html>
