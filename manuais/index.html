@@ -7,8 +7,8 @@
   <title>Manuais - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: manuais_v_6 -->
-  <!-- Base: 05 Manuais_v05.html; mantém identidade visual, cabeçalho, menu e rodapé do CALC-IBAMA. -->
+  <!-- Versão: manuais_v_7 -->
+  <!-- Base: 06 Manuais_v06.html; mantém identidade visual, cabeçalho, menu e rodapé do CALC-IBAMA. -->
 
   <style>
     :root {
@@ -310,50 +310,6 @@
       border: 0;
     }
 
-    /* Mensagem de teste local: arquivo file:// não fornece Referer ao YouTube. */
-    .player-arquivo-local {
-      width: 100%;
-      height: 100%;
-      padding: 24px;
-      background: #172029;
-      color: #ffffff;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      gap: 14px;
-    }
-
-    .player-arquivo-local strong {
-      font-size: 1.05rem;
-      line-height: 1.45;
-    }
-
-    .player-arquivo-local p {
-      max-width: 640px;
-      margin: 0;
-      font-size: 0.88rem;
-      line-height: 1.55;
-      color: rgba(255, 255, 255, 0.86);
-    }
-
-    .player-arquivo-local a {
-      display: inline-block;
-      padding: 8px 14px;
-      background: #ffffff;
-      color: #0f4c81;
-      border-radius: 7px;
-      font-size: 0.9rem;
-      font-weight: 700;
-      text-decoration: none;
-    }
-
-    .player-arquivo-local a:hover,
-    .player-arquivo-local a:focus-visible {
-      text-decoration: underline;
-    }
-
     .aviso-qualidade {
       width: min(960px, 100%);
       margin: 0 auto 12px;
@@ -552,40 +508,5 @@
   <footer class="rodape">
     CALC-IBAMA · SECAT/CCOB
   </footer>
-  <script>
-    // O YouTube exige um Referer válido para incorporar vídeos (erro 153).
-    // Um HTML aberto diretamente por file:// não informa a origem do site.
-    // Nesse cenário, exibe-se uma orientação em vez de um player com erro.
-    // Em HTTP/HTTPS, o iframe original é mantido e o browser envia o Referer.
-    if (window.location.protocol === 'file:') {
-      document.querySelectorAll('.player-video').forEach(function (player) {
-        var iframe = player.querySelector('iframe');
-        if (!iframe) return;
-        var material = player.closest('.material');
-        var linkOriginal = material ? material.querySelector('.material-acoes a[href^="https://youtu.be/"]') : null;
-        var url = linkOriginal ? linkOriginal.href : null;
-
-        iframe.removeAttribute('src');
-        iframe.remove();
-
-        var aviso = document.createElement('div');
-        aviso.className = 'player-arquivo-local';
-        var titulo = document.createElement('strong');
-        titulo.textContent = 'Pré-visualização local do tutorial';
-        var mensagem = document.createElement('p');
-        mensagem.textContent = 'O YouTube exige uma identificação do site para reproduzir vídeos incorporados. Abra a página publicada no GitHub Pages (HTTPS) para testar o player. Ao abrir este HTML diretamente do computador, a reprodução incorporada fica indisponível.';
-        aviso.append(titulo, mensagem);
-        if (url) {
-          var link = document.createElement('a');
-          link.href = url;
-          link.target = '_blank';
-          link.rel = 'noopener noreferrer';
-          link.textContent = 'Assistir no YouTube';
-          aviso.appendChild(link);
-        }
-        player.appendChild(aviso);
-      });
-    }
-  </script>
 </body>
 </html>
