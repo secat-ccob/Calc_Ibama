@@ -7,8 +7,8 @@
   <title>Manuais - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: manuais_v_5 -->
-  <!-- Base: 04 Manuais_v04.html; mantém identidade visual, cabeçalho, menu e rodapé do CALC-IBAMA. -->
+  <!-- Versão: manuais_v_6 -->
+  <!-- Base: 05 Manuais_v05.html; mantém identidade visual, cabeçalho, menu e rodapé do CALC-IBAMA. -->
 
   <style>
     :root {
@@ -154,12 +154,6 @@
       box-shadow: var(--sombra-suave);
     }
 
-    .painel-indice h2 {
-      margin: 0 0 18px;
-      font-size: 1.16rem;
-      line-height: 1.3;
-      color: var(--cor-secundaria);
-    }
 
     .indice-grade {
       display: grid;
@@ -238,11 +232,6 @@
       margin: 34px 0 28px;
     }
 
-    .secao-manuais-titulo {
-      margin: 0 0 22px;
-      font-size: 1.18rem;
-      color: var(--cor-secundaria);
-    }
 
     .manual-grupo {
       scroll-margin-top: 18px;
@@ -295,27 +284,14 @@
       color: var(--cor-secundaria);
     }
 
-    .pdf-pendente {
-      padding: 30px 20px;
-      background: var(--cor-fundo);
-      border: 1px dashed var(--cor-borda);
-      border-radius: 10px;
-      text-align: center;
-    }
-
-    .pdf-pendente strong {
+    /* Visualização integrada, conforme o padrão de PDF das demais páginas. */
+    .pdf-preview {
       display: block;
-      margin-bottom: 8px;
-      font-size: 0.94rem;
-      color: var(--cor-texto);
-    }
-
-    .pdf-pendente p {
-      max-width: 600px;
-      margin: 0 auto;
-      font-size: 0.88rem;
-      line-height: 1.55;
-      color: var(--cor-texto-suave);
+      width: 100%;
+      height: 420px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background: #fff;
     }
 
     .player-video {
@@ -380,28 +356,15 @@
 
     .aviso-qualidade {
       width: min(960px, 100%);
-      display: flex;
-      flex-direction: row-reverse;
-      align-items: flex-start;
-      justify-content: flex-start;
-      gap: 10px;
-      margin: 12px auto 0;
+      margin: 0 auto 12px;
       color: var(--cor-texto-suave);
-    }
-
-    .aviso-qualidade .seta-engrenagem {
-      color: var(--cor-primaria);
-      font-size: 1.6rem;
-      font-weight: 700;
-      line-height: 1;
-      flex: 0 0 auto;
     }
 
     .aviso-qualidade p {
       margin: 0;
       font-size: 0.86rem;
       line-height: 1.5;
-      text-align: right;
+      text-align: left;
     }
 
     .aviso-qualidade strong { color: var(--cor-primaria-escura); }
@@ -496,8 +459,7 @@
       <h1 class="pagina-titulo">Manuais</h1>
       <p class="pagina-descricao">Tutoriais e orientações para utilização das ferramentas do CALC-IBAMA.</p>
 
-      <nav class="painel-indice" id="indice-manuais" aria-labelledby="indice-titulo">
-        <h2 id="indice-titulo">Índice de manuais</h2>
+      <nav class="painel-indice" id="indice-manuais" aria-label="Índice de manuais">
         <div class="indice-grade">
           <div class="indice-grupo">
             <a class="indice-principal" href="#manual-amortizacao">Simulador de amortização</a>
@@ -517,8 +479,6 @@
       </nav>
 
       <div class="separador-secoes" role="separator" aria-label="Separação entre índice e conteúdo"></div>
-      <h2 class="secao-manuais-titulo">Tutoriais e manuais</h2>
-
       <section class="manual-grupo" id="manual-amortizacao" aria-labelledby="titulo-amortizacao">
         <h2 id="titulo-amortizacao">Simulador de amortização</h2>
         <p class="manual-descricao">Material de orientação para utilização do Simulador de amortização do CALC-IBAMA.</p>
@@ -528,12 +488,14 @@
             <h3 id="titulo-pdf-amortizacao">Simulando amortizações no Calc-Ibama</h3>
             <span class="material-tipo">PDF</span>
           </div>
-          <!-- Quando o PDF for encaminhado, substituir este bloco por visualizador e links de abertura/download. -->
-          <div class="pdf-pendente">
-            <strong>Manual em PDF ainda não incluído</strong>
-            <p>Este espaço será utilizado para visualizar o manual na própria página e oferecer as opções de abrir e baixar o arquivo.</p>
-          </div>
+          <iframe
+            class="pdf-preview"
+            src="./arquivos/Simulando_amortizacoes_Calc-Ibama.pdf"
+            title="Manual em PDF: Simulando amortizações no Calc-Ibama"
+            loading="lazy"></iframe>
           <div class="material-acoes">
+            <a href="./arquivos/Simulando_amortizacoes_Calc-Ibama.pdf" target="_blank" rel="noopener noreferrer">Abrir PDF em nova aba</a>
+            <a href="./arquivos/Simulando_amortizacoes_Calc-Ibama.pdf" download="Simulando_amortizacoes_Calc-Ibama.pdf">Baixar PDF</a>
             <a class="voltar-indice" href="#indice-manuais">↑ Voltar ao índice</a>
           </div>
         </article>
@@ -543,6 +505,9 @@
             <h3 id="titulo-video-ai-tcfa">Simulador de amortização (AI e TCFA)</h3>
             <span class="material-tipo">VÍDEO</span>
           </div>
+          <div class="aviso-qualidade">
+            <p>Para visualizar as informações com maior nitidez, clique na <strong>engrenagem ⚙ do vídeo</strong>, selecione <strong>Qualidade</strong> e escolha <strong>720p ou superior</strong>, quando disponível.</p>
+          </div>
           <div class="player-video">
             <iframe
               src="https://www.youtube.com/embed/qAgDy8CQ1zQ?playsinline=1"
@@ -551,10 +516,6 @@
               referrerpolicy="strict-origin-when-cross-origin"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowfullscreen></iframe>
-          </div>
-          <div class="aviso-qualidade">
-            <span class="seta-engrenagem" aria-hidden="true">↗</span>
-            <p>Para visualizar as informações com maior nitidez, clique na <strong>engrenagem ⚙ do vídeo</strong>, selecione <strong>Qualidade</strong> e escolha <strong>720p ou superior</strong>, quando disponível.</p>
           </div>
           <div class="material-acoes">
             <a href="https://youtu.be/qAgDy8CQ1zQ" target="_blank" rel="noopener noreferrer">Assistir no YouTube</a>
@@ -567,6 +528,9 @@
             <h3 id="titulo-video-tcfa-acumulado">Simulador de amortização (TCFA ACUMULADO)</h3>
             <span class="material-tipo">VÍDEO</span>
           </div>
+          <div class="aviso-qualidade">
+            <p>Para visualizar as informações com maior nitidez, clique na <strong>engrenagem ⚙ do vídeo</strong>, selecione <strong>Qualidade</strong> e escolha <strong>720p ou superior</strong>, quando disponível.</p>
+          </div>
           <div class="player-video">
             <iframe
               src="https://www.youtube.com/embed/zfCZThDBjYY?playsinline=1"
@@ -575,10 +539,6 @@
               referrerpolicy="strict-origin-when-cross-origin"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               allowfullscreen></iframe>
-          </div>
-          <div class="aviso-qualidade">
-            <span class="seta-engrenagem" aria-hidden="true">↗</span>
-            <p>Para visualizar as informações com maior nitidez, clique na <strong>engrenagem ⚙ do vídeo</strong>, selecione <strong>Qualidade</strong> e escolha <strong>720p ou superior</strong>, quando disponível.</p>
           </div>
           <div class="material-acoes">
             <a href="https://youtu.be/zfCZThDBjYY" target="_blank" rel="noopener noreferrer">Assistir no YouTube</a>
