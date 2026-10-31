@@ -3,10 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Página em Construção - CALC-IBAMA</title>
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <title>Manuais - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: pagina_construcao_manuais_v_3 -->
+  <!-- Versão: manuais_v_5 -->
+  <!-- Base: 04 Manuais_v04.html; mantém identidade visual, cabeçalho, menu e rodapé do CALC-IBAMA. -->
 
   <style>
     :root {
@@ -21,18 +23,14 @@
       --sombra-suave: 0 10px 30px rgba(15, 76, 81, 0.08);
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
-    html,
-    body {
-      height: 100%;
-    }
+    html, body { height: 100%; }
 
     body {
       margin: 0;
       height: 100vh;
+      height: 100dvh;
       font-family: Arial, Helvetica, sans-serif;
       color: var(--cor-texto);
       background:
@@ -121,62 +119,312 @@
     main {
       flex: 1 1 auto;
       min-height: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 56px 24px;
+      display: block;
+      padding: 32px 24px 48px;
       overflow-y: auto;
+      overscroll-behavior-y: contain;
+      scroll-behavior: smooth;
     }
 
-    .painel-construcao {
-      width: min(760px, 100%);
-      min-height: 260px;
+    .pagina-conteudo {
+      width: min(1080px, 100%);
+      margin: 0 auto;
+    }
+
+    .pagina-titulo {
+      margin: 0 0 8px;
+      font-size: 1.9rem;
+      line-height: 1.2;
+      font-weight: 700;
+      color: var(--cor-primaria-escura);
+    }
+
+    .pagina-descricao {
+      margin: 0 0 26px;
+      font-size: 0.96rem;
+      line-height: 1.55;
+      color: var(--cor-texto-suave);
+    }
+
+    .painel-indice {
+      padding: 24px 26px;
+      border: 1px solid var(--cor-borda);
+      border-radius: 14px;
+      background: var(--cor-superficie);
+      box-shadow: var(--sombra-suave);
+    }
+
+    .painel-indice h2 {
+      margin: 0 0 18px;
+      font-size: 1.16rem;
+      line-height: 1.3;
+      color: var(--cor-secundaria);
+    }
+
+    .indice-grade {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+      gap: 22px 32px;
+      align-items: start;
+    }
+
+    .indice-grupo, .indice-demais {
+      min-width: 0;
+    }
+
+    .indice-principal {
+      display: inline-block;
+      color: var(--cor-primaria-escura);
+      font-size: 0.96rem;
+      font-weight: 700;
+      line-height: 1.5;
+      text-decoration: none;
+      text-underline-offset: 3px;
+    }
+
+    .indice-principal:hover,
+    .indice-principal:focus-visible,
+    .indice-sumario a:hover,
+    .indice-sumario a:focus-visible {
+      color: var(--cor-secundaria);
+      text-decoration: underline;
+    }
+
+    .indice-sumario {
+      margin: 10px 0 0 14px;
+      padding: 0 0 0 16px;
+      border-left: 2px solid var(--cor-borda);
+      list-style: none;
+    }
+
+    .indice-sumario li + li { margin-top: 10px; }
+
+    .indice-sumario a {
+      color: var(--cor-secundaria);
+      font-size: 0.89rem;
+      line-height: 1.45;
+      text-decoration: none;
+      overflow-wrap: anywhere;
+    }
+
+    .indice-sumario a::before {
+      content: "›";
+      display: inline-block;
+      margin-left: -15px;
+      margin-right: 7px;
+      color: var(--cor-primaria);
+      font-weight: 700;
+    }
+
+    .indice-demais {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 14px;
+    }
+
+    .indice-inativo {
+      color: var(--cor-texto-suave);
+      font-size: 0.96rem;
+      font-weight: 600;
+      line-height: 1.45;
+      cursor: default;
+    }
+
+    .separador-secoes {
+      height: 1px;
+      background: var(--cor-borda);
+      margin: 34px 0 28px;
+    }
+
+    .secao-manuais-titulo {
+      margin: 0 0 22px;
+      font-size: 1.18rem;
+      color: var(--cor-secundaria);
+    }
+
+    .manual-grupo {
+      scroll-margin-top: 18px;
+    }
+
+    .manual-grupo > h2 {
+      margin: 0 0 8px;
+      font-size: 1.5rem;
+      line-height: 1.3;
+      color: var(--cor-primaria-escura);
+    }
+
+    .manual-descricao {
+      margin: 0 0 22px;
+      font-size: 0.94rem;
+      color: var(--cor-texto-suave);
+      line-height: 1.55;
+    }
+
+    .material {
+      padding: 24px 26px;
+      margin-bottom: 22px;
+      background: var(--cor-superficie);
+      border: 1px solid var(--cor-borda);
+      border-radius: 14px;
+      box-shadow: var(--sombra-suave);
+      scroll-margin-top: 16px;
+    }
+
+    .material-cabecalho {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 8px 16px;
+      margin-bottom: 17px;
+    }
+
+    .material h3 {
+      margin: 0;
+      font-size: 1.08rem;
+      line-height: 1.45;
+      color: var(--cor-texto);
+    }
+
+    .material-tipo {
+      font-size: 0.78rem;
+      font-weight: 700;
+      line-height: 1.4;
+      color: var(--cor-secundaria);
+    }
+
+    .pdf-pendente {
+      padding: 30px 20px;
+      background: var(--cor-fundo);
+      border: 1px dashed var(--cor-borda);
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .pdf-pendente strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.94rem;
+      color: var(--cor-texto);
+    }
+
+    .pdf-pendente p {
+      max-width: 600px;
+      margin: 0 auto;
+      font-size: 0.88rem;
+      line-height: 1.55;
+      color: var(--cor-texto-suave);
+    }
+
+    .player-video {
+      width: min(960px, 100%);
+      margin: 0 auto;
+      aspect-ratio: 16 / 9;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #111;
+    }
+
+    .player-video iframe {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    /* Mensagem de teste local: arquivo file:// não fornece Referer ao YouTube. */
+    .player-arquivo-local {
+      width: 100%;
+      height: 100%;
+      padding: 24px;
+      background: #172029;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      gap: 14px;
+    }
+
+    .player-arquivo-local strong {
+      font-size: 1.05rem;
+      line-height: 1.45;
+    }
+
+    .player-arquivo-local p {
+      max-width: 640px;
+      margin: 0;
+      font-size: 0.88rem;
+      line-height: 1.55;
+      color: rgba(255, 255, 255, 0.86);
+    }
+
+    .player-arquivo-local a {
+      display: inline-block;
+      padding: 8px 14px;
+      background: #ffffff;
+      color: #0f4c81;
+      border-radius: 7px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .player-arquivo-local a:hover,
+    .player-arquivo-local a:focus-visible {
+      text-decoration: underline;
+    }
+
+    .aviso-qualidade {
+      width: min(960px, 100%);
+      display: flex;
+      flex-direction: row-reverse;
+      align-items: flex-start;
+      justify-content: flex-start;
+      gap: 10px;
+      margin: 12px auto 0;
+      color: var(--cor-texto-suave);
+    }
+
+    .aviso-qualidade .seta-engrenagem {
+      color: var(--cor-primaria);
+      font-size: 1.6rem;
+      font-weight: 700;
+      line-height: 1;
+      flex: 0 0 auto;
+    }
+
+    .aviso-qualidade p {
+      margin: 0;
+      font-size: 0.86rem;
+      line-height: 1.5;
+      text-align: right;
+    }
+
+    .aviso-qualidade strong { color: var(--cor-primaria-escura); }
+
+    .material-acoes {
       display: flex;
       align-items: center;
-      justify-content: center;
-      position: relative;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
     }
 
-    .painel-construcao::before {
-      content: "";
-      position: absolute;
-      width: min(420px, 70vw);
-      height: min(420px, 70vw);
-      border-radius: 50%;
-      background: rgba(31, 111, 84, 0.045);
-      filter: blur(1px);
-      z-index: 0;
-    }
-
-    .aviso-construcao {
-      position: relative;
-      z-index: 1;
-      width: min(620px, 100%);
-      text-align: center;
-      padding: 42px 48px;
-      border: 1px solid rgba(217, 226, 221, 0.85);
-      border-radius: 24px;
-      background: rgba(255, 255, 255, 0.72);
-      box-shadow: var(--sombra-suave);
-      backdrop-filter: blur(4px);
-    }
-
-    .aviso-construcao h1 {
-      margin: 0;
-      font-size: clamp(2.2rem, 6vw, 4.2rem);
-      line-height: 1.05;
-      letter-spacing: 0.03em;
-      color: var(--cor-primaria-escura);
-      font-weight: 800;
-    }
-
-    .aviso-construcao p {
-      margin: 14px auto 0;
-      font-size: clamp(0.9rem, 2vw, 1.08rem);
-      letter-spacing: 0.05em;
-      color: var(--cor-secundaria);
+    .material-acoes a {
+      font-size: 0.87rem;
       font-weight: 600;
-      text-align: center;
+      text-underline-offset: 3px;
+      color: var(--cor-secundaria);
+    }
+
+    .material-acoes .voltar-indice {
+      margin-left: auto;
+      color: var(--cor-primaria-escura);
     }
 
     .rodape {
@@ -193,35 +441,33 @@
     }
 
     @media (max-width: 720px) {
-      .cabecalho-conteudo {
-        padding: 0;
-      }
-
+      .cabecalho-conteudo { padding: 0; }
       .marca-topo {
         flex-direction: column;
         align-items: flex-start;
         gap: 2px;
         padding: 12px 16px;
       }
-
       .menu-principal {
         gap: 5px;
         padding: 0 16px 10px;
       }
-
       .menu-principal a {
         font-size: 0.86rem;
         padding: 7px 10px;
       }
+      main { padding: 26px 16px 36px; }
+      .pagina-titulo { font-size: 1.6rem; }
+      .painel-indice, .material { padding: 20px 18px; }
+      .indice-grade { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+      .indice-sumario { margin-left: 10px; }
+      .separador-secoes { margin: 28px 0 24px; }
+      .manual-grupo > h2 { font-size: 1.32rem; }
+      .aviso-qualidade p { font-size: 0.83rem; }
+    }
 
-      main {
-        padding: 42px 16px;
-      }
-
-      .aviso-construcao {
-        padding: 34px 24px;
-        border-radius: 20px;
-      }
+    @media (prefers-reduced-motion: reduce) {
+      main { scroll-behavior: auto; }
     }
   </style>
 </head>
@@ -245,17 +491,141 @@
     </div>
   </header>
 
-  <main>
-    <section class="painel-construcao" aria-label="Página em construção">
-      <div class="aviso-construcao">
-        <h1>Página em Construção!</h1>
-        <p>Esta ferramenta será disponibilizada em breve.</p>
-      </div>
-    </section>
+  <main id="conteudo">
+    <div class="pagina-conteudo">
+      <h1 class="pagina-titulo">Manuais</h1>
+      <p class="pagina-descricao">Tutoriais e orientações para utilização das ferramentas do CALC-IBAMA.</p>
+
+      <nav class="painel-indice" id="indice-manuais" aria-labelledby="indice-titulo">
+        <h2 id="indice-titulo">Índice de manuais</h2>
+        <div class="indice-grade">
+          <div class="indice-grupo">
+            <a class="indice-principal" href="#manual-amortizacao">Simulador de amortização</a>
+            <ul class="indice-sumario">
+              <li><a href="#pdf-amortizacao">PDF Simulando amortizações no Calc-Ibama</a></li>
+              <li><a href="#video-ai-tcfa">Vídeo Simulador de amortização (AI e TCFA)</a></li>
+              <li><a href="#video-tcfa-acumulado">Vídeo Simulador de amortização (TCFA ACUMULADO)</a></li>
+            </ul>
+          </div>
+          <ul class="indice-demais" aria-label="Outros manuais ainda sem navegação">
+            <li><span class="indice-inativo">Simulador de consolidação</span></li>
+            <li><span class="indice-inativo">Calculadora Selic</span></li>
+            <li><span class="indice-inativo">Calculadora de restituição</span></li>
+            <li><span class="indice-inativo">Extensão SEI</span></li>
+          </ul>
+        </div>
+      </nav>
+
+      <div class="separador-secoes" role="separator" aria-label="Separação entre índice e conteúdo"></div>
+      <h2 class="secao-manuais-titulo">Tutoriais e manuais</h2>
+
+      <section class="manual-grupo" id="manual-amortizacao" aria-labelledby="titulo-amortizacao">
+        <h2 id="titulo-amortizacao">Simulador de amortização</h2>
+        <p class="manual-descricao">Material de orientação para utilização do Simulador de amortização do CALC-IBAMA.</p>
+
+        <article class="material" id="pdf-amortizacao" aria-labelledby="titulo-pdf-amortizacao">
+          <div class="material-cabecalho">
+            <h3 id="titulo-pdf-amortizacao">Simulando amortizações no Calc-Ibama</h3>
+            <span class="material-tipo">PDF</span>
+          </div>
+          <!-- Quando o PDF for encaminhado, substituir este bloco por visualizador e links de abertura/download. -->
+          <div class="pdf-pendente">
+            <strong>Manual em PDF ainda não incluído</strong>
+            <p>Este espaço será utilizado para visualizar o manual na própria página e oferecer as opções de abrir e baixar o arquivo.</p>
+          </div>
+          <div class="material-acoes">
+            <a class="voltar-indice" href="#indice-manuais">↑ Voltar ao índice</a>
+          </div>
+        </article>
+
+        <article class="material" id="video-ai-tcfa" aria-labelledby="titulo-video-ai-tcfa">
+          <div class="material-cabecalho">
+            <h3 id="titulo-video-ai-tcfa">Simulador de amortização (AI e TCFA)</h3>
+            <span class="material-tipo">VÍDEO</span>
+          </div>
+          <div class="player-video">
+            <iframe
+              src="https://www.youtube.com/embed/qAgDy8CQ1zQ?playsinline=1"
+              title="Tutorial do Simulador de amortização: Auto de Infração e TCFA simples"
+              loading="lazy"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen></iframe>
+          </div>
+          <div class="aviso-qualidade">
+            <span class="seta-engrenagem" aria-hidden="true">↗</span>
+            <p>Para visualizar as informações com maior nitidez, clique na <strong>engrenagem ⚙ do vídeo</strong>, selecione <strong>Qualidade</strong> e escolha <strong>720p ou superior</strong>, quando disponível.</p>
+          </div>
+          <div class="material-acoes">
+            <a href="https://youtu.be/qAgDy8CQ1zQ" target="_blank" rel="noopener noreferrer">Assistir no YouTube</a>
+            <a class="voltar-indice" href="#indice-manuais">↑ Voltar ao índice</a>
+          </div>
+        </article>
+
+        <article class="material" id="video-tcfa-acumulado" aria-labelledby="titulo-video-tcfa-acumulado">
+          <div class="material-cabecalho">
+            <h3 id="titulo-video-tcfa-acumulado">Simulador de amortização (TCFA ACUMULADO)</h3>
+            <span class="material-tipo">VÍDEO</span>
+          </div>
+          <div class="player-video">
+            <iframe
+              src="https://www.youtube.com/embed/zfCZThDBjYY?playsinline=1"
+              title="Tutorial do Simulador de amortização: TCFA acumulado"
+              loading="lazy"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowfullscreen></iframe>
+          </div>
+          <div class="aviso-qualidade">
+            <span class="seta-engrenagem" aria-hidden="true">↗</span>
+            <p>Para visualizar as informações com maior nitidez, clique na <strong>engrenagem ⚙ do vídeo</strong>, selecione <strong>Qualidade</strong> e escolha <strong>720p ou superior</strong>, quando disponível.</p>
+          </div>
+          <div class="material-acoes">
+            <a href="https://youtu.be/zfCZThDBjYY" target="_blank" rel="noopener noreferrer">Assistir no YouTube</a>
+            <a class="voltar-indice" href="#indice-manuais">↑ Voltar ao índice</a>
+          </div>
+        </article>
+      </section>
+    </div>
   </main>
 
   <footer class="rodape">
     CALC-IBAMA · SECAT/CCOB
   </footer>
+  <script>
+    // O YouTube exige um Referer válido para incorporar vídeos (erro 153).
+    // Um HTML aberto diretamente por file:// não informa a origem do site.
+    // Nesse cenário, exibe-se uma orientação em vez de um player com erro.
+    // Em HTTP/HTTPS, o iframe original é mantido e o browser envia o Referer.
+    if (window.location.protocol === 'file:') {
+      document.querySelectorAll('.player-video').forEach(function (player) {
+        var iframe = player.querySelector('iframe');
+        if (!iframe) return;
+        var material = player.closest('.material');
+        var linkOriginal = material ? material.querySelector('.material-acoes a[href^="https://youtu.be/"]') : null;
+        var url = linkOriginal ? linkOriginal.href : null;
+
+        iframe.removeAttribute('src');
+        iframe.remove();
+
+        var aviso = document.createElement('div');
+        aviso.className = 'player-arquivo-local';
+        var titulo = document.createElement('strong');
+        titulo.textContent = 'Pré-visualização local do tutorial';
+        var mensagem = document.createElement('p');
+        mensagem.textContent = 'O YouTube exige uma identificação do site para reproduzir vídeos incorporados. Abra a página publicada no GitHub Pages (HTTPS) para testar o player. Ao abrir este HTML diretamente do computador, a reprodução incorporada fica indisponível.';
+        aviso.append(titulo, mensagem);
+        if (url) {
+          var link = document.createElement('a');
+          link.href = url;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.textContent = 'Assistir no YouTube';
+          aviso.appendChild(link);
+        }
+        player.appendChild(aviso);
+      });
+    }
+  </script>
 </body>
 </html>
