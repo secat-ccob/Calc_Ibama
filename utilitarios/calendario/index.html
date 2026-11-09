@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calendário - CALC-IBAMA</title>
+  <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png" />
+  <!-- Versão: calendario_interativo_v_13 -->
+  <style>
+    :root {
+      --cor-primaria: #1f6f54;
+      --cor-primaria-escura: #15513d;
+      --cor-secundaria: #0f4c81;
+      --cor-fundo: #f4f7f6;
+      --cor-superficie: #ffffff;
+      --cor-texto: #1f2933;
+      --cor-texto-suave: #5b6770;
+      --cor-borda: #d9e2dd;
+      --sombra-suave: 0 10px 30px rgba(15, 76, 81, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--cor-texto);
+      background:
+        radial-gradient(circle at center, rgba(31, 111, 84, 0.07) 0, rgba(31, 111, 84, 0.03) 28%, transparent 55%),
+        linear-gradient(180deg, #ffffff 0%, var(--cor-fundo) 100%);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .cabecalho {
+      flex: 0 0 auto;
+      width: 100%;
+      background: var(--cor-superficie);
+      border-bottom: 1px solid var(--cor-borda);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+      z-index: 10;
+    }
+
+    .cabecalho-conteudo {
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 0;
+    }
+
+    .marca-topo {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding: 12px 24px;
+      background: #1f4e79;
+      box-shadow: 0 0 0 100vmax #1f4e79;
+      clip-path: inset(0 -100vmax);
+      box-sizing: border-box;
+    }
+
+    .marca-topo strong {
+      font-size: 1.15rem;
+      letter-spacing: 0.08em;
+      color: #ffffff;
+    }
+
+    .marca-topo span {
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.82);
+    }
+
+    .menu-principal {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      padding: 0 24px 10px;
+      box-sizing: border-box;
+    }
+
+    .menu-principal a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 8px 12px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: var(--cor-texto);
+      font-size: 0.92rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+    }
+
+    .menu-principal a:hover,
+    .menu-principal a:focus {
+      background: rgba(31, 111, 84, 0.08);
+      border-color: rgba(31, 111, 84, 0.22);
+      color: var(--cor-primaria-escura);
+      outline: none;
+    }
+
+    .menu-principal a.ativo {
+      background: var(--cor-primaria);
+      color: #ffffff;
+      border-color: var(--cor-primaria);
+    }
+
+    main {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 56px 24px;
+      overflow-y: auto;
+    }
+
+    .painel-construcao {
+      width: min(760px, 100%);
+      min-height: 260px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .painel-construcao::before {
+      content: "";
+      position: absolute;
+      width: min(420px, 70vw);
+      height: min(420px, 70vw);
+      border-radius: 50%;
+      background: rgba(31, 111, 84, 0.045);
+      filter: blur(1px);
+      z-index: 0;
+    }
+
+    .aviso-construcao {
+      position: relative;
+      z-index: 1;
+      width: min(620px, 100%);
+      text-align: center;
+      padding: 42px 48px;
+      border: 1px solid rgba(217, 226, 221, 0.85);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: var(--sombra-suave);
+      backdrop-filter: blur(4px);
+    }
+
+    .aviso-construcao h1 {
+      margin: 0;
+      font-size: clamp(2.2rem, 6vw, 4.2rem);
+      line-height: 1.05;
+      letter-spacing: 0.03em;
+      color: var(--cor-primaria-escura);
+      font-weight: 800;
+    }
+
+    .aviso-construcao p {
+      margin: 14px auto 0;
+      font-size: clamp(0.9rem, 2vw, 1.08rem);
+      letter-spacing: 0.05em;
+      color: var(--cor-secundaria);
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .rodape {
+      flex: 0 0 auto;
+      width: 100%;
+      padding: 12px 24px;
+      border-top: 1px solid var(--cor-borda);
+      background: rgba(255, 255, 255, 0.88);
+      color: var(--cor-texto-suave);
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 600;
+      z-index: 10;
+    }
+
+    @media (max-width: 720px) {
+      .cabecalho-conteudo {
+        padding: 0;
+      }
+
+      .marca-topo {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        padding: 12px 16px;
+      }
+
+      .menu-principal {
+        gap: 5px;
+        padding: 0 16px 10px;
+      }
+
+      .menu-principal a {
+        font-size: 0.86rem;
+        padding: 7px 10px;
+      }
+
+      main {
+        padding: 42px 16px;
+      }
+
+      .aviso-construcao {
+        padding: 34px 24px;
+        border-radius: 20px;
+      }
+    }
+  
+    /* Menu secundário compartilhado pelas páginas de Utilitários. */
+    .menu-utilitarios-area {
+      padding: 0 24px 0;
+    }
+    .menu-utilitarios {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 7px;
+      padding: 0 0 10px;
+    }
+    .menu-utilitarios a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 6px 11px;
+      border-radius: 7px;
+      border: 1px solid transparent;
+      color: var(--cor-texto-suave);
+      font-size: 0.81rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background-color .18s ease, border-color .18s ease, color .18s ease;
+    }
+    .menu-utilitarios a:hover, .menu-utilitarios a:focus-visible {
+      color: var(--cor-primaria-escura);
+      border-color: rgba(31,111,84,.20);
+      background: rgba(31,111,84,.06);
+      outline: none;
+    }
+    .menu-utilitarios a.ativo {
+      color: var(--cor-primaria-escura);
+      background: rgba(31,111,84,.10);
+      border-color: rgba(31,111,84,.26);
+    }
+    .divisoria-utilitarios {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #cadbd1 8%, #cadbd1 92%, transparent);
+    }
+    .orientacao-utilitarios {
+      width: min(650px,100%);
+      padding: 38px 36px;
+      border: 1px solid rgba(217,226,221,.85);
+      border-radius: 22px;
+      background: rgba(255,255,255,.78);
+      box-shadow: 0 10px 30px rgba(15,76,81,.08);
+      text-align: center;
+    }
+    .orientacao-utilitarios .seta-utilitarios {
+      display: block;
+      color: var(--cor-primaria);
+      font-size: 50px;
+      line-height: 1.15;
+      font-weight: 400;
+      margin-bottom: 12px;
+    }
+    .orientacao-utilitarios h1 {
+      font-size: clamp(1.25rem,2vw,1.8rem);
+      line-height: 1.35;
+      margin: 0;
+      color: var(--cor-primaria-escura);
+      font-weight: 700;
+    }
+    @media(max-width:720px) {
+      .menu-utilitarios-area { padding: 0 16px; }
+      .menu-utilitarios { gap: 5px; }
+      .menu-utilitarios a { font-size: .78rem; padding: 5px 9px; }
+      .orientacao-utilitarios { padding: 30px 20px; }
+    }
+
+#calendario-escopo{--navy:#163454;--blue:#2d72bf;--line:#dce5ef;--bg:#f4f7fb;--card:#fff;--sub:#5c6e83;--red:#b7293c;--holiday:#fff0f1;--optional:#fff6df;--df:#e8f2ff;--text:#243349}
+#calendario-escopo *{box-sizing:border-box}#calendario-escopo{font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:var(--text)}#calendario-escopo{margin:0;background:var(--bg)}#calendario-escopo .calendario-main{max-width:1500px;margin:0 auto;padding:26px 28px 35px}
+#calendario-escopo header{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:22px}#calendario-escopo h1{font-size:clamp(23px,2.4vw,34px);letter-spacing:-.6px;margin:0;color:var(--navy)}#calendario-escopo .subtitle{margin:6px 0 0;font-size:14px;color:var(--sub)}
+#calendario-escopo .controls{display:flex;align-items:center;gap:9px;flex-wrap:wrap}#calendario-escopo .controls button, #calendario-escopo .controls select, #calendario-escopo .controls input{font:inherit;background:#fff;color:var(--navy);border:1px solid #cdd9e5;border-radius:9px;min-height:41px;padding:8px 11px}#calendario-escopo .controls button{cursor:pointer;font-weight:700}#calendario-escopo .controls button:hover{border-color:var(--blue);background:#f1f7ff}#calendario-escopo .controls button.arrow{font-size:20px;min-width:45px;line-height:1}#calendario-escopo .controls input{width:95px;font-variant-numeric:tabular-nums}#calendario-escopo #monthSelect{min-width:138px}#calendario-escopo .controls .today{background:var(--navy);color:white;border-color:var(--navy)}#calendario-escopo .controls .today:hover{background:#295477}
+#calendario-escopo .options{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 20px;min-height:33px;font-size:13px;color:var(--sub)}#calendario-escopo .option-checks{display:flex;align-items:center;gap:15px;flex-wrap:wrap}#calendario-escopo label{display:inline-flex;align-items:center;gap:7px;cursor:pointer;white-space:nowrap}#calendario-escopo label input{accent-color:var(--blue);width:15px;height:15px}#calendario-escopo .clear-selection{font:inherit;color:var(--navy);border:1px solid #cdd9e5;border-radius:9px;background:#fff;padding:7px 12px;cursor:pointer;font-weight:700;white-space:nowrap}#calendario-escopo .clear-selection:hover:not(:disabled){border-color:var(--blue);background:#f1f7ff}#calendario-escopo .clear-selection:disabled{opacity:.48;cursor:default}#calendario-escopo .legend{margin-left:auto;display:flex;flex-wrap:wrap;gap:13px}#calendario-escopo .dot{width:11px;height:11px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:-1px;background:#f5cad0}#calendario-escopo .dot.optional{background:#f7df96}#calendario-escopo .dot.df{background:#bbd9fc}
+#calendario-escopo .calendars{display:grid;grid-template-columns:1fr 1fr;gap:18px}#calendario-escopo .calendars.single{grid-template-columns:minmax(0,1fr)}#calendario-escopo .calendars.single .day{height:clamp(90px,9vw,136px)}#calendario-escopo .calendars.single .num{font-size:clamp(30px,3vw,40px);width:52px;height:52px}#calendario-escopo .month{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:20px 18px 18px;box-shadow:0 6px 20px #1b36510d;min-width:0}#calendario-escopo .month h2{color:var(--navy);margin:0 0 19px;font-size:23px;text-transform:capitalize;letter-spacing:-.4px}#calendario-escopo .grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}#calendario-escopo .week{font-weight:750;text-align:center;color:#667990;font-size:12px;text-transform:uppercase;padding:0 0 7px}#calendario-escopo .day{height:clamp(61px,6.4vw,104px);width:100%;min-width:0;display:block;text-align:left;font:inherit;line-height:normal;appearance:none;opacity:1;border:1px solid #e6ebf2;border-radius:8px;background:#fff;padding:7px 5px 4px;overflow:hidden;position:relative;cursor:default}#calendario-escopo .day.selectable{cursor:pointer}#calendario-escopo .day.selectable:hover{border-color:var(--blue)}#calendario-escopo .day.selectable:focus-visible{outline:3px solid var(--blue);outline-offset:2px;z-index:1}#calendario-escopo .day.selected{background:#e5f3ff;border-color:var(--blue);box-shadow:inset 0 0 0 2px var(--blue)}#calendario-escopo .day.out.hidden-other{visibility:hidden;pointer-events:none}#calendario-escopo .day.weekend{background:#f9fbfe}#calendario-escopo .day.out{background:#f5f7fa;border-color:#f1f3f7}#calendario-escopo .day.out .num{color:#afbac8}#calendario-escopo .day.holiday{background:var(--holiday);border-color:#edcad0}#calendario-escopo .day.optional{background:var(--optional);border-color:#f0dfb5}#calendario-escopo .day.df{background:var(--df);border-color:#c5daf4}#calendario-escopo .num{font-size:clamp(22px,2.1vw,30px);font-weight:750;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;color:#30465e}#calendario-escopo .day.current .num{background:var(--blue);color:white}#calendario-escopo .day .event{font-size:10px;line-height:1.25;display:block;padding-top:3px;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;font-weight:600;color:#9a2840;overflow-wrap:anywhere}#calendario-escopo .day.optional .event{color:#906100}#calendario-escopo .day.df .event{color:#285c9d}
+#calendario-escopo .events{margin-top:16px;border-top:1px solid var(--line);padding-top:12px;min-height:57px}#calendario-escopo .events .ev{display:flex;gap:8px;align-items:flex-start;padding:4px 1px;font-size:12px;line-height:1.4}#calendario-escopo .events .date{font-weight:750;min-width:52px;font-variant-numeric:tabular-nums;color:#4a5b6d}#calendario-escopo .ev.holiday .what{color:var(--red)}#calendario-escopo .ev.optional .what{color:#9a6e16}#calendario-escopo .ev.df .what{color:#2d66a6}#calendario-escopo .noevents{color:#9aa5b3;font-size:12px;margin:0}
+#calendario-escopo .small{font-size:11px;color:#8a99aa}#calendario-escopo .screenreader{position:absolute;height:1px;width:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+@media (max-width:950px){#calendario-escopo .calendario-main{padding:18px 15px}#calendario-escopo .calendars{grid-template-columns:1fr}#calendario-escopo .calendars.single .day{height:clamp(55px,10vw,92px)}#calendario-escopo .month{padding:18px 13px}#calendario-escopo .day{height:clamp(55px,10vw,92px)}#calendario-escopo .legend{margin-left:0}#calendario-escopo .controls{width:100%}#calendario-escopo .controls .arrow{flex:0 0 42px}}
+@media (max-width:510px){#calendario-escopo .day, #calendario-escopo .calendars.single .day{height:62px;padding:4px 2px}#calendario-escopo .num{font-size:21px;width:30px;height:30px}#calendario-escopo .calendars.single .num{font-size:24px;width:34px;height:34px}#calendario-escopo .day .event{font-size:8px;line-height:1.14;-webkit-line-clamp:2;line-clamp:2}#calendario-escopo .grid{gap:3px}#calendario-escopo .options{gap:9px}#calendario-escopo .legend{gap:8px}#calendario-escopo .month h2{font-size:21px}}
+
+/* Três calculadoras no espaço entre o título e o seletor de meses. */
+#calendario-escopo .page-header{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;column-gap:18px;row-gap:12px;margin-bottom:18px}
+#calendario-escopo .page-heading{align-self:start;padding-top:4px;min-width:145px}
+#calendario-escopo .page-header .controls{justify-content:flex-end}
+#calendario-escopo .date-tools{display:flex;flex-direction:column;gap:9px;min-width:0}
+#calendario-escopo .date-tools:empty{display:none}
+#calendario-escopo .date-tool{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 3px 12px #1b36510a;padding:9px 12px;min-width:0}
+#calendario-escopo .date-tool[hidden]{display:none}
+#calendario-escopo .date-tool.active-calc{border-color:#a8c7ea;box-shadow:0 0 0 1px #d8eaff,0 3px 12px #1b365108}
+#calendario-escopo .date-tool-title{margin:0 0 7px;font-size:12px;font-weight:780;color:#34526f}
+#calendario-escopo .date-tool-main{display:flex;align-items:flex-end;flex-wrap:wrap;column-gap:7px;row-gap:8px}
+#calendario-escopo .date-tool-field{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:#586b80}
+#calendario-escopo .date-tool-field input{font-family:inherit;font-size:13px;font-weight:550;height:35px;border:1px solid #ccd9e6;border-radius:8px;background:#fff;color:var(--text);padding:5px 8px}
+#calendario-escopo .date-tool-field input:focus-visible{outline:2px solid #78b4ff;outline-offset:1px}
+#calendario-escopo .date-tool-field input[type=date]{width:138px;color-scheme:light}
+#calendario-escopo .date-tool-field input[type=number]{width:72px}
+#calendario-escopo .date-tool-buttons{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+#calendario-escopo .date-tool-buttons button, #calendario-escopo .result-pill, #calendario-escopo .clear-calc{font:inherit;font-size:12px;min-height:35px;border:1px solid #cdd9e5;border-radius:8px;background:#fff;color:var(--navy);padding:7px 9px;font-weight:730;white-space:nowrap;cursor:pointer}
+#calendario-escopo .date-tool-buttons button:hover, #calendario-escopo .clear-calc:hover:not(:disabled){background:#f1f7ff;border-color:var(--blue)}
+#calendario-escopo .date-tool-buttons .do-calc{background:var(--navy);color:#fff;border-color:var(--navy)}
+#calendario-escopo .date-tool-buttons .do-calc:hover{background:#295477;border-color:#295477}
+#calendario-escopo .clear-calc:disabled{opacity:.48;cursor:default}
+#calendario-escopo .result-pill{min-width:113px;cursor:pointer;background:#fff6c6;border-color:#e0b641;color:#8c5a00;font-weight:800;letter-spacing:.1px;font-variant-numeric:tabular-nums}
+#calendario-escopo .result-pill:disabled{background:#f6f8fa;border-color:#d7dee8;color:#98a7b8;cursor:default}
+#calendario-escopo .result-pill:hover:not(:disabled){background:#ffec99;border-color:#c6941f}
+#calendario-escopo .result-pill:focus-visible{outline:3px solid #b87b1a;outline-offset:2px}
+#calendario-escopo .date-tool-error{font-size:12px;font-weight:700;color:#b12b40;margin:7px 0 0;line-height:1.4}
+#calendario-escopo .date-tool-error:empty{display:none}
+/* A marcação do cálculo se sobrepõe ao destaque manual azul. */
+#calendario-escopo .day.selected{background:#e5f3ff;border-color:var(--blue);box-shadow:inset 0 0 0 2px var(--blue)}
+#calendario-escopo .day.calc-between{background:#e8ecf1;border-color:#adb8c7;box-shadow:inset 0 0 0 1px #bec8d3}
+#calendario-escopo .day.calc-start{background:#ccf2d4;border-color:#72bd83;box-shadow:inset 0 0 0 2px #59af73}
+#calendario-escopo .day.calc-end{background:#fff0ad;border-color:#d1a63b;box-shadow:inset 0 0 0 2px #e0b641}
+#calendario-escopo .day.calc-same{background:linear-gradient(135deg,#ccf2d4 50%,#fff0ad 50%);border-color:#77ad77;box-shadow:inset 0 0 0 2px #a6b966}
+/* Data em que o prazo terminaria antes da prorrogação. */
+#calendario-escopo .day.calc-original{background:#fff1d8;border:2px dashed #d37717;box-shadow:inset 0 0 0 1px #f3ba6a}
+#calendario-escopo .day.calc-start.calc-original{background:#ccf2d4}
+#calendario-escopo .day.calc-original::after{content:"Encerramento original do Prazo";position:absolute;right:3px;bottom:3px;border-radius:4px;padding:2px 4px;background:#f8dbaa;color:#8d4b08;font-size:9px;line-height:1.1;font-weight:800;letter-spacing:.1px}
+@media (max-width:510px){#calendario-escopo .day.calc-original::after{font-size:7px;padding:1px 2px;right:1px;bottom:1px}}
+@media (max-width:1350px){#calendario-escopo .page-header{grid-template-columns:auto minmax(0,1fr)}#calendario-escopo .page-header .controls{grid-column:1/-1;justify-content:flex-start}#calendario-escopo .date-tool-main{gap:8px}}
+@media (max-width:720px){#calendario-escopo .page-header{grid-template-columns:minmax(0,1fr)}#calendario-escopo .date-tools{grid-column:1/-1}#calendario-escopo .page-header .controls{grid-column:1/-1}#calendario-escopo .date-tool-field input[type=date]{width:150px}#calendario-escopo .date-tool-field input[type=number]{width:95px}#calendario-escopo .date-tool-buttons{flex:1 1 auto}#calendario-escopo .date-tool-buttons button{flex:1 1 auto}#calendario-escopo .result-pill{flex:1 1 auto}}
+
+/* v7: a calculadora só ocupa a largura efetivamente necessária e
+   não empurra a navegação dos meses para outra linha em telas desktop. */
+#calendario-escopo .date-tools{width:max-content;max-width:100%}
+#calendario-escopo .date-tools.is-hidden{display:none}
+#calendario-escopo .date-tool{width:max-content;max-width:100%;padding:8px 10px}
+#calendario-escopo .date-tool-main{gap:6px}
+#calendario-escopo .date-tool-field input[type=date]{width:134px}
+#calendario-escopo .date-tool-field input[type=number]{width:66px}
+#calendario-escopo .date-tool-buttons{gap:5px}
+#calendario-escopo .date-tool-buttons button, #calendario-escopo .result-pill, #calendario-escopo .clear-calc{padding-left:8px;padding-right:8px}
+#calendario-escopo .result-pill{min-width:108px}
+@media  (min-width:1260px){
+  #calendario-escopo .page-header{grid-template-columns:154px max-content minmax(0,1fr);column-gap:12px}
+  #calendario-escopo .page-heading{min-width:0}
+  #calendario-escopo .page-header .controls{grid-column:auto;justify-content:flex-end;flex-wrap:nowrap;width:auto;gap:6px}
+  #calendario-escopo .page-header .controls button, #calendario-escopo .page-header .controls select, #calendario-escopo .page-header .controls input{min-height:39px;padding:7px 8px}
+  #calendario-escopo .page-header .controls button.arrow{min-width:40px}
+  #calendario-escopo .page-header .controls #monthSelect{min-width:130px}
+  #calendario-escopo .page-header .controls #yearInput{width:84px}
+}
+@media  (min-width:1260px){
+  #calendario-escopo .date-tool-main{flex-wrap:nowrap}
+  #calendario-escopo .date-tool-buttons{flex-wrap:nowrap}
+}
+
+/* v8: título, calculadora e navegação formam uma mesma faixa.
+   A navegação sempre ocupa a borda direita, inclusive sem calculadora. */
+#calendario-escopo .page-header{
+  display:flex; flex-wrap:nowrap; align-items:center;
+  justify-content:space-between; gap:10px; margin-bottom:18px;
+}
+#calendario-escopo .page-heading{flex:0 0 auto; align-self:center; min-width:0; padding-top:0}
+#calendario-escopo .date-tools{flex:0 1 auto; width:auto; max-width:100%; min-width:0}
+#calendario-escopo .date-tools.is-hidden{display:none}
+#calendario-escopo .date-tool{display:flex; align-items:center; gap:9px; width:max-content;
+  max-width:100%; padding:8px 9px}
+#calendario-escopo .date-tool[hidden]{display:none}
+#calendario-escopo .date-tool-title{margin:0; flex:0 0 auto; font-size:11px; line-height:1.3; white-space:nowrap}
+#calendario-escopo .date-tool-main{display:flex; flex-wrap:nowrap; align-items:flex-end; gap:5px}
+#calendario-escopo .date-tool-field{gap:3px; font-size:10px}
+#calendario-escopo .date-tool-field input{height:34px; font-size:12px}
+#calendario-escopo .date-tool-field input[type=date]{width:125px}
+#calendario-escopo .date-tool-field input[type=number]{width:61px}
+#calendario-escopo .date-tool-buttons{display:flex; flex-wrap:nowrap; gap:4px}
+#calendario-escopo .date-tool-buttons button, #calendario-escopo .result-pill, #calendario-escopo .clear-calc{
+  min-height:34px; padding:6px 7px; font-size:11px;
+}
+#calendario-escopo .result-pill{min-width:101px}
+#calendario-escopo .page-header .controls{
+  display:flex; grid-column:auto; align-items:center; justify-content:flex-end;
+  width:auto; flex:0 0 auto; flex-wrap:nowrap; margin-left:auto; gap:5px;
+}
+#calendario-escopo .page-header .controls button, #calendario-escopo .page-header .controls select, #calendario-escopo .page-header .controls input{
+  min-height:39px; padding:7px 8px; font-size:14px;
+}
+#calendario-escopo .page-header .controls button.arrow{min-width:38px}
+#calendario-escopo .page-header .controls #monthSelect{min-width:125px}
+#calendario-escopo .page-header .controls #yearInput{width:80px}
+/* When the viewport cannot contain the three groups, the month chooser
+   moves to a full-width row but stays anchored to the right. */
+@media (max-width:1170px){
+  #calendario-escopo .page-header{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px}
+  #calendario-escopo .date-tools{grid-column:2;justify-self:start}
+  #calendario-escopo .page-header .controls{grid-column:1/-1;justify-self:end;margin-left:auto;width:auto;justify-content:flex-end}
+}
+@media (max-width:820px){
+  #calendario-escopo .page-header{grid-template-columns:minmax(0,1fr);gap:13px}
+  #calendario-escopo .page-heading{grid-column:1}
+  #calendario-escopo .date-tools{grid-column:1;width:100%}
+  #calendario-escopo .date-tool{width:100%;flex-wrap:wrap}
+  #calendario-escopo .date-tool-main{flex-wrap:wrap}
+  #calendario-escopo .page-header .controls{grid-column:1;justify-self:end;max-width:100%}
+}
+@media (max-width:510px){
+  #calendario-escopo .page-header .controls{gap:4px}
+  #calendario-escopo .page-header .controls #monthSelect{min-width:116px}
+  #calendario-escopo .page-header .controls #yearInput{width:74px}
+  #calendario-escopo .page-header .controls button.arrow{min-width:32px}
+}
+
+/* v8 final: sinalização completa do encerramento anterior à prorrogação,
+   limitada ao quadrinho do dia, inclusive quando há dois meses. */
+#calendario-escopo .day.calc-original{min-height:92px}
+#calendario-escopo .day.calc-original::after{
+  content:"Encerramento original do Prazo";
+  display:block;
+  box-sizing:border-box;
+  max-width:calc(100% - 6px);
+  width:max-content;
+  white-space:normal;
+  overflow-wrap:break-word;
+  text-align:center;
+  font-size:9px;
+  line-height:1.12;
+  letter-spacing:0;
+  padding:3px;
+}
+@media (max-width:950px){#calendario-escopo .day.calc-original{min-height:98px}}
+@media (max-width:510px){#calendario-escopo .day.calc-original::after{font-size:7.3px;line-height:1.1}}
+
+/* Evita sobreposição entre o rótulo do prazo original e eventuais feriados: o feriado continua na lista e no tooltip da data. */
+#calendario-escopo .day.calc-original .event{display:none}
+/* Mantém a navegação à direita, com folga para o resultado calculado. */
+#calendario-escopo .calendars:not(.single) .day.calc-original::after{font-size:8px;letter-spacing:-.1px}
+@media (min-width:1280px){#calendario-escopo .page-header .controls #monthSelect{min-width:112px;width:112px}}
+@media (min-width:1171px) and (max-width:1279px){
+  #calendario-escopo .page-header{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px}
+  #calendario-escopo .date-tools{grid-column:2;justify-self:start}
+  #calendario-escopo .page-header .controls{grid-column:1/-1;justify-self:end;margin-left:auto;width:auto;justify-content:flex-end}
+}
+
+/* v9: título destacado acima da moldura, sem acrescentar altura à
+   calculadora. A moldura agora envolve apenas os controles da linha. */
+#calendario-escopo .date-tool{position:relative;background:transparent;border:0;box-shadow:none;
+  border-radius:0;padding:0;overflow:visible}
+#calendario-escopo .date-tool.active-calc{border:0;box-shadow:none}
+#calendario-escopo .date-tool-title{position:absolute;bottom:calc(100% + 4px);left:2px;
+  margin:0;max-width:100%;font-size:11px;font-weight:780;
+  color:#34526f;line-height:1.2;white-space:nowrap}
+#calendario-escopo .date-tool-main{background:#fff;border:1px solid var(--line);border-radius:11px;
+  box-shadow:0 3px 12px #1b36510a;padding:8px 9px}
+#calendario-escopo .date-tool.active-calc .date-tool-main{border-color:#a8c7ea;
+  box-shadow:0 0 0 1px #d8eaff,0 3px 12px #1b365108}
+
+/* Mostra sempre o formato dd/mm/aaaa nos campos inicialmente vazios,
+   sem remover o seletor de datas nativo do navegador. */
+#calendario-escopo .date-input-wrap{position:relative;display:block;width:125px;height:34px}
+#calendario-escopo .date-tool-field .date-input-wrap input[type=date]{width:100%}
+#calendario-escopo .date-input-hint{position:absolute;left:9px;top:10px;pointer-events:none;
+  font-size:12px;font-weight:500;line-height:1.2;color:#6a7a8e}
+#calendario-escopo .date-input-wrap input:valid+.date-input-hint, #calendario-escopo .date-input-wrap input:focus+.date-input-hint{display:none}
+#calendario-escopo .date-input-wrap input[type=date]:invalid:not(:focus)::-webkit-datetime-edit{color:transparent}
+@media (max-width:720px){#calendario-escopo .date-input-wrap{width:150px}}
+
+/* v10: a linha de meses só quebra quando a largura realmente não comporta
+   os três grupos. A v9 utilizava uma quebra artificial em 1279 px. */
+@media  (min-width:1115px){
+  #calendario-escopo .page-header{
+    display:flex;flex-wrap:nowrap;align-items:center;
+    justify-content:space-between;column-gap:10px;row-gap:0;
+  }
+  #calendario-escopo .page-heading{flex:0 0 auto;align-self:center}
+  #calendario-escopo .date-tools{flex:0 0 auto;max-width:none;width:max-content;grid-column:auto}
+  #calendario-escopo .page-header .controls{
+    display:flex;flex:0 0 auto;grid-column:auto;justify-content:flex-end;
+    margin-left:auto;width:auto;flex-wrap:nowrap;
+  }
+}
+/* Mantém a altura da caixa da calculadora igual à dos seletores (39 px).
+   Seu título fica acima e os nomes dos campos ficam abaixo da caixa. */
+#calendario-escopo .date-tool{align-items:center}
+#calendario-escopo .date-tool-main{
+  box-sizing:border-box;height:39px;min-height:39px;
+  align-items:center;gap:5px;padding:2px 5px;
+  flex-wrap:nowrap;
+}
+#calendario-escopo .date-tool-field{position:relative;display:flex;flex-direction:row;
+  align-items:center;justify-content:flex-start;flex:0 0 auto;
+  height:33px;min-height:33px;gap:0}
+#calendario-escopo .date-field-caption{
+  position:absolute;top:calc(100% + 6px);left:1px;
+  font-size:10px;line-height:1.1;font-weight:700;
+  color:#586b80;white-space:nowrap;pointer-events:none;
+}
+#calendario-escopo .date-input-wrap{height:33px}
+#calendario-escopo .date-tool-field input{height:33px}
+#calendario-escopo .date-tool-buttons button, #calendario-escopo .result-pill, #calendario-escopo .clear-calc{height:33px;min-height:33px;
+  display:inline-flex;align-items:center;justify-content:center}
+#calendario-escopo .date-tool-title{bottom:calc(100% + 5px)}
+#calendario-escopo .date-tool-error{position:absolute;top:calc(100% + 18px);left:0;
+  margin:0;max-width:100%;z-index:2}
+#calendario-escopo .page-header .controls button, #calendario-escopo .page-header .controls select, #calendario-escopo .page-header .controls input{height:39px;min-height:39px}
+/* Só em espaços realmente reduzidos a navegação vai para uma linha
+   inferior, sempre encostada à direita. */
+@media  (min-width:821px) and (max-width:1114px){
+  #calendario-escopo .page-header{display:grid;grid-template-columns:auto minmax(0,1fr);
+    column-gap:10px;row-gap:20px;align-items:center}
+  #calendario-escopo .page-heading{grid-column:1;grid-row:1;align-self:center}
+  #calendario-escopo .date-tools{grid-column:2;grid-row:1;justify-self:start;width:max-content}
+  #calendario-escopo .page-header .controls{grid-column:1/-1;grid-row:2;justify-self:end;
+    margin-left:auto;width:auto;justify-content:flex-end}
+}
+@media  (max-width:820px){
+  #calendario-escopo .page-header{display:grid;grid-template-columns:minmax(0,1fr);
+    column-gap:0;row-gap:27px}
+  #calendario-escopo .page-heading{grid-column:1;grid-row:1}
+  #calendario-escopo .date-tools{grid-column:1;grid-row:2;width:100%;max-width:100%}
+  #calendario-escopo .page-header .controls{grid-column:1;grid-row:3;justify-self:end;
+    margin-left:auto;width:auto;max-width:100%}
+  #calendario-escopo .date-tool{width:100%}
+  #calendario-escopo .date-tool-main{width:max-content;max-width:100%}
+}
+@media  (max-width:610px){
+  #calendario-escopo .date-tool-main{height:auto;min-height:39px;flex-wrap:wrap;
+    align-items:flex-end;padding:8px;gap:8px}
+  #calendario-escopo .date-tool-field{height:auto;min-height:0;display:flex;
+    flex-direction:column;align-items:flex-start;gap:4px}
+  #calendario-escopo .date-field-caption{position:static;order:-1;pointer-events:auto}
+  #calendario-escopo .date-tool-error{position:static;margin:6px 0 0}
+  #calendario-escopo .page-header{row-gap:22px}
+  #calendario-escopo .page-header .controls{flex-wrap:wrap;justify-content:flex-end}
+}
+
+/* v11 — cabeçalho: título centralizado na altura; calculadora central no espaço
+   intermediário; navegação do mês permanentemente ancorada à direita. */
+#calendario-escopo{--event-national:#be344c;--event-facultative:#7b45b5;--event-district:#087eaa}
+#calendario-escopo .page-header{
+  display:grid;grid-template-columns:max-content minmax(0,1fr) max-content;
+  align-items:center;column-gap:12px;row-gap:22px;margin-bottom:22px;
+}
+#calendario-escopo .page-heading{grid-column:1;grid-row:1;align-self:center;padding:0;min-width:0}
+#calendario-escopo .page-heading h1{margin:0}
+#calendario-escopo .date-tools, #calendario-escopo .date-tools.is-hidden{
+  display:flex;grid-column:2;grid-row:1;min-width:0;max-width:100%;width:100%;
+  justify-content:center;align-items:center;justify-self:stretch;
+}
+#calendario-escopo .date-tool{width:max-content;max-width:none;flex:0 0 auto}
+#calendario-escopo .page-header .controls{
+  display:flex;grid-column:3;grid-row:1;justify-self:end;
+  justify-content:flex-end;align-items:center;flex-wrap:nowrap;
+  margin-left:0;min-width:0;width:max-content;
+}
+#calendario-escopo .date-tool-title{
+  left:50%;transform:translateX(-50%);max-width:none;width:max-content;
+  text-align:center;white-space:nowrap;font-size:10.8px;
+}
+#calendario-escopo .date-tool.inactive-calc .date-tool-title{color:#8793a3}
+#calendario-escopo .date-tool.inactive-calc .date-tool-main{
+  background:#f2f5f9;border-color:#dce3eb;box-shadow:none;
+}
+#calendario-escopo .date-tool.inactive-calc .date-tool-field input{background:#eff2f6;color:#8c99a9;cursor:not-allowed}
+#calendario-escopo .date-tool.inactive-calc .date-input-hint, #calendario-escopo .date-tool.inactive-calc .date-field-caption{color:#9aa8b8}
+#calendario-escopo .date-tool.inactive-calc .do-calc{
+  background:#acb6c4;border-color:#acb6c4;color:#fff;cursor:not-allowed;
+}
+#calendario-escopo .date-tool.inactive-calc .clear-calc, #calendario-escopo .date-tool.inactive-calc .result-pill{opacity:.55;cursor:not-allowed}
+#calendario-escopo .date-tool-buttons button.do-calc:disabled{background:#acb6c4;border-color:#acb6c4;color:#fff;cursor:not-allowed}
+/* O campo mantém dd/mm/aaaa mesmo em navegadores com configuração
+   de idioma diferente. No modo inativo, ocultamos o placeholder nativo
+   do input disabled para impedir sobreposição com a dica brasileira. */
+#calendario-escopo .date-tool.inactive-calc .date-input-wrap input[type=date]::-webkit-datetime-edit{color:transparent!important}
+#calendario-escopo .date-tool.inactive-calc .date-input-hint{display:block!important}
+/* Eventos usam cores apenas nos números, não no fundo do quadrinho. */
+#calendario-escopo .day:where(.holiday,.optional,.df):not(:is(.selected,.calc-between,.calc-start,.calc-end,.calc-same,.calc-original)){
+  background:#fff;border-color:#e6ebf2;
+}
+#calendario-escopo .day.weekend:where(.holiday,.optional,.df):not(:is(.selected,.calc-between,.calc-start,.calc-end,.calc-same,.calc-original)){
+  background:#f9fbfe;
+}
+#calendario-escopo .day.selected:where(.holiday,.optional,.df):not(:is(.calc-between,.calc-start,.calc-end,.calc-same,.calc-original)){
+  background:#e5f3ff;border-color:var(--blue);
+}
+#calendario-escopo .day.holiday .num{color:var(--event-national)}
+#calendario-escopo .day.optional .num{color:var(--event-facultative)}
+#calendario-escopo .day.df .num{color:var(--event-district)}
+#calendario-escopo .day.current:where(.holiday,.optional,.df) .num{background:transparent;box-shadow:inset 0 0 0 2px var(--blue)}
+#calendario-escopo .day.optional .event{color:var(--event-facultative)}
+#calendario-escopo .day.df .event{color:var(--event-district)}
+#calendario-escopo .day.holiday .event{color:var(--event-national)}
+#calendario-escopo .legend{align-items:center;gap:15px}
+#calendario-escopo .legend>span{display:inline-flex;align-items:center;gap:5px}
+#calendario-escopo .legend-number{font-size:15px;font-weight:850;font-variant-numeric:tabular-nums}
+#calendario-escopo .legend-number.national{color:var(--event-national)}
+#calendario-escopo .legend-number.facultative{color:var(--event-facultative)}
+#calendario-escopo .legend-number.district{color:var(--event-district)}
+@media (max-width:1090px){
+  #calendario-escopo .page-header{grid-template-columns:max-content minmax(0,1fr)}
+  #calendario-escopo .page-heading{grid-column:1;grid-row:1}
+  #calendario-escopo .date-tools, #calendario-escopo .date-tools.is-hidden{grid-column:2;grid-row:1}
+  #calendario-escopo .page-header .controls{grid-column:1/-1;grid-row:2;justify-self:end}
+}
+@media (max-width:720px){
+  #calendario-escopo .page-header{grid-template-columns:minmax(0,1fr);row-gap:25px}
+  #calendario-escopo .page-heading{grid-column:1;grid-row:1}
+  #calendario-escopo .date-tools, #calendario-escopo .date-tools.is-hidden{grid-column:1;grid-row:2;width:100%;justify-content:flex-start}
+  #calendario-escopo .page-header .controls{grid-column:1;grid-row:3;justify-self:end;max-width:100%}
+  #calendario-escopo .date-tool{max-width:100%}
+  #calendario-escopo .date-tool-title{left:2px;transform:none;text-align:left;max-width:100%;font-size:10px;white-space:normal}
+}
+@media (max-width:610px){
+  #calendario-escopo .date-tool{width:100%}
+  #calendario-escopo .date-tool-main{width:100%;max-width:100%;height:auto;min-height:39px;flex-wrap:wrap}
+  #calendario-escopo .page-header .controls{flex-wrap:wrap}
+}
+
+/* v12 — Feriados/pontos facultativos por extenso dentro dos dias.
+   As linhas da grade ganham altura apenas quando o texto não couber;
+   isto evita cortes nas visões de um ou dois meses, inclusive em telas estreitas. */
+#calendario-escopo .day, #calendario-escopo .calendars.single .day{height:auto;min-height:clamp(61px,6.4vw,104px);}
+#calendario-escopo .calendars.single .day{min-height:clamp(90px,9vw,136px);}
+#calendario-escopo .day .event{
+  display:block;
+  overflow:visible;
+  -webkit-line-clamp:unset;
+  line-clamp:unset;
+  -webkit-box-orient:initial;
+  font-size:clamp(7px,.78vw,10px);
+  line-height:1.14;
+  overflow-wrap:anywhere;
+  word-break:normal;
+  white-space:normal;
+  padding-top:2px;
+}
+/* Lista abaixo do mês: mesmas cores utilizadas nos números das datas. */
+#calendario-escopo .events .ev.holiday :is(.date,.what){color:var(--event-national);}
+#calendario-escopo .events .ev.optional :is(.date,.what){color:var(--event-facultative);}
+#calendario-escopo .events .ev.df :is(.date,.what){color:var(--event-district);}
+/* Legenda superior: pequenos quadrados, não números. */
+#calendario-escopo .legend .dot{width:11px;height:11px;flex:0 0 11px;display:inline-block;margin-right:1px;border-radius:3px;vertical-align:middle;}
+#calendario-escopo .legend .dot.national{background:var(--event-national);}
+#calendario-escopo .legend .dot.optional{background:var(--event-facultative);}
+#calendario-escopo .legend .dot.df{background:var(--event-district);}
+@media (max-width:950px){
+  #calendario-escopo .day, #calendario-escopo .calendars.single .day{height:auto;min-height:clamp(55px,10vw,92px);}
+}
+@media (max-width:510px){
+  #calendario-escopo .day, #calendario-escopo .calendars.single .day{height:auto;min-height:62px;}
+  #calendario-escopo .day .event{font-size:clamp(7px,1.6vw,8px);line-height:1.11;padding-top:2px;}
+}
+/* Se o prazo original coincidir com um feriado, mostrar os dois textos
+   integralmente, em vez de esconder o nome da comemoração. */
+#calendario-escopo .day.calc-original .event{display:block;}
+#calendario-escopo .day.calc-original::after{
+  position:static;display:block;right:auto;bottom:auto;
+  box-sizing:border-box;width:100%;margin-top:2px;
+  font-size:clamp(7px,.78vw,9px);line-height:1.1;
+  overflow-wrap:anywhere;white-space:normal;text-align:left;
+}
+@media (max-width:510px){#calendario-escopo .day.calc-original::after{font-size:7px;line-height:1.1;}}
+
+    main.conteudo-calendario {
+      display:block;
+      flex:1 1 auto;
+      min-height:0;
+      overflow-y:auto;
+      overflow-x:hidden;
+      padding:0;
+      scrollbar-gutter:stable;
+    }
+    #calendario-escopo { background:transparent; width:100%; min-width:0; }
+    #calendario-escopo .calendario-main { width:100%; }
+    @media print {
+      body { height:auto; overflow:visible; }
+      .cabecalho, .rodape { display:none!important; }
+      main.conteudo-calendario { overflow:visible; }
+    }
+</style>
+</head>
+<body>
+  <header class="cabecalho">
+    <div class="cabecalho-conteudo">
+      <div class="marca-topo">
+        <strong>CALC-IBAMA</strong>
+        <span>Ferramentas de apoio administrativo</span>
+      </div>
+      <nav class="menu-principal" aria-label="Menu principal">
+        <a href="../../">Início</a>
+        <a href="../../simulador-amortizacao/">Simulador de amortização</a>
+        <a href="../../simulador-consolidacao-debito/">Simulador de consolidação</a>
+        <a href="../../calculadora-selic/">Calculadora Selic</a>
+        <a href="../../calculadora-restituicao/">Calculadora de restituição</a>
+        <a class="ativo" href="../">Utilitários</a>
+        <a href="../../manuais/">Manuais</a>
+      </nav>
+      <div class="menu-utilitarios-area">
+        <nav class="menu-utilitarios" aria-label="Utilitários">
+          <a class="ativo" href="./">Calendário</a>
+          <a href="../extensao-sei/">Extensão SEI</a>
+        </nav>
+        <div class="divisoria-utilitarios" role="separator" aria-label="Separador entre menu e conteúdo"></div>
+      </div>
+    </div>
+  </header>
+  <main class="conteudo-calendario" id="conteudo"><div id="calendario-escopo"><div class="calendario-main">
+<div class="page-header">
+  <div class="page-heading"><h1>Calendário</h1></div>
+  <div class="date-tools" id="dateTools" aria-label="Calculadoras de datas">
+    <section class="date-tool inactive-calc" id="tool-calendar" aria-label="Calculadora de dias corridos">
+      <h2 class="date-tool-title">Nenhuma calculadora está selecionada</h2>
+      <div class="date-tool-main">
+        <label class="date-tool-field" for="base-calendar"><span class="date-field-caption">Data-base</span>
+          <span class="date-input-wrap"><input id="base-calendar" type="date" lang="pt-BR" placeholder="dd/mm/aaaa" min="1900-01-01" max="2100-12-31" required/><span class="date-input-hint" aria-hidden="true">dd/mm/aaaa</span></span>
+        </label>
+        <label class="date-tool-field" for="amount-calendar"><span class="date-field-caption">Dias</span>
+          <input id="amount-calendar" type="number" min="0" max="100000" step="1" inputmode="numeric" required/>
+        </label>
+        <div class="date-tool-buttons">
+          <button type="button" class="do-calc" id="add-calendar">+ Somar</button>
+          <button type="button" class="do-calc" id="subtract-calendar">− Subtrair</button>
+        </div>
+        <button type="button" class="result-pill" id="result-calendar" title="Data final — clique para mostrar no calendário" aria-label="Data final de dias corridos" disabled>—</button>
+        <button type="button" class="clear-calc" id="clear-calendar" disabled>Limpar cálculo</button>
+      </div>
+      <p class="date-tool-error" id="error-calendar" role="alert"></p>
+    </section>
+    <section class="date-tool" id="tool-business" aria-label="Calculadora de dias úteis" hidden>
+      <h2 class="date-tool-title">Calculadora de dias úteis</h2>
+      <div class="date-tool-main">
+        <label class="date-tool-field" for="base-business"><span class="date-field-caption">Data-base</span>
+          <span class="date-input-wrap"><input id="base-business" type="date" lang="pt-BR" placeholder="dd/mm/aaaa" min="1900-01-01" max="2100-12-31" required/><span class="date-input-hint" aria-hidden="true">dd/mm/aaaa</span></span>
+        </label>
+        <label class="date-tool-field" for="amount-business"><span class="date-field-caption">Dias</span>
+          <input id="amount-business" type="number" min="0" max="100000" step="1" inputmode="numeric" required/>
+        </label>
+        <div class="date-tool-buttons">
+          <button type="button" class="do-calc" id="add-business">+ Somar</button>
+          <button type="button" class="do-calc" id="subtract-business">− Subtrair</button>
+        </div>
+        <button type="button" class="result-pill" id="result-business" title="Data final — clique para mostrar no calendário" aria-label="Data final de dias úteis" disabled>—</button>
+        <button type="button" class="clear-calc" id="clear-business" disabled>Limpar cálculo</button>
+      </div>
+      <p class="date-tool-error" id="error-business" role="alert"></p>
+    </section>
+    <section class="date-tool" id="tool-extended" aria-label="Calculadora de dias corridos com prorrogação de vencimento para o próximo dia útil" hidden>
+      <h2 class="date-tool-title">Calculadora de dias corridos com prorrogação de vencimento para o próximo dia útil</h2>
+      <div class="date-tool-main">
+        <label class="date-tool-field" for="base-extended"><span class="date-field-caption">Data-base</span>
+          <span class="date-input-wrap"><input id="base-extended" type="date" lang="pt-BR" placeholder="dd/mm/aaaa" min="1900-01-01" max="2100-12-31" required/><span class="date-input-hint" aria-hidden="true">dd/mm/aaaa</span></span>
+        </label>
+        <label class="date-tool-field" for="amount-extended"><span class="date-field-caption">Dias</span>
+          <input id="amount-extended" type="number" min="0" max="100000" step="1" inputmode="numeric" required/>
+        </label>
+        <div class="date-tool-buttons">
+          <button type="button" class="do-calc" id="add-extended">+ Somar</button>
+        </div>
+        <button type="button" class="result-pill" id="result-extended" title="Data final prorrogada — clique para mostrar no calendário" aria-label="Data final prorrogada" disabled>—</button>
+        <button type="button" class="clear-calc" id="clear-extended" disabled>Limpar cálculo</button>
+      </div>
+      <p class="date-tool-error" id="error-extended" role="alert"></p>
+    </section>
+  </div>
+  <div class="controls" aria-label="Navegação do calendário">
+    <button id="prev" class="arrow" title="Mês anterior" aria-label="Mês anterior">‹</button>
+    <select id="monthSelect" aria-label="Selecionar mês"></select>
+    <input type="number" id="yearInput" min="1900" max="2100" step="1" aria-label="Selecionar ano" title="Digite o ano de 1900 a 2100"/>
+    <button id="next" class="arrow" title="Próximo mês" aria-label="Próximo mês">›</button>
+    <button id="today" class="today">Hoje</button>
+  </div>
+</div>
+<div class="options">
+  <div class="option-checks">
+    <label><input type="checkbox" id="twoMonths"/> Exibir dois meses</label>
+    <label><input type="checkbox" id="enableSelection" checked/> Permitir seleção de datas</label>
+    <label><input type="checkbox" id="showOpt" checked/> Mostrar pontos facultativos usuais</label>
+    <label><input type="checkbox" id="showDF"/> Mostrar feriados do DF</label>
+    <label><input type="checkbox" id="showAdjacent"/> Mostrar dias de meses vizinhos</label>
+    <label><input type="checkbox" id="showCalculatorCalendar"/> Calculadora de dias corridos</label>
+    <label><input type="checkbox" id="showCalculatorBusiness"/> Calculadora de dias úteis</label>
+    <label><input type="checkbox" id="showCalculatorExtended"/> Calculadora com prorrogação de prazo</label>
+  </div>
+  <button type="button" id="clearSelection" class="clear-selection" disabled>Limpar seleção</button>
+  <div class="legend" aria-label="Cores das datas especiais"><span><i class="dot national" aria-hidden="true"></i> Feriado</span><span><i class="dot optional" aria-hidden="true"></i> Facultativo</span><span><i class="dot df" aria-hidden="true"></i> DF</span></div>
+</div>
+<section id="calendars" class="calendars" aria-live="polite"></section>
+</div></div></main>
+  <footer class="rodape">CALC-IBAMA · SECAT/CCOB</footer>
+  <script>
+(() => {
+  'use strict';
+  const names=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const weekdays=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const now=new Date();let displayYear=now.getFullYear(),displayMonth=now.getMonth();
+  const selectedDates=new Set();
+  const MS_PER_DAY=86400000;
+  const modes=['calendar','business','extended'];
+  const calculations={calendar:null,business:null,extended:null};
+  let calculationOrder=0;
+  let dayCalculation=null; // Última calculadora usada dentre as que estiverem visíveis
+  const toolCheck={calendar:'showCalculatorCalendar',business:'showCalculatorBusiness',extended:'showCalculatorExtended'};
+  const el=id=>document.getElementById(id);
+  // Datas UTC evitam erros quando há transições de horário de verão.
+  const utcMillis=(y,m,d)=>Date.UTC(y,m-1,d);
+  function parseISODate(value){
+    const match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if(!match)return null;
+    const [y,m,d]=match.slice(1).map(Number),epoch=utcMillis(y,m,d),dt=new Date(epoch);
+    if(dt.getUTCFullYear()!==y||dt.getUTCMonth()+1!==m||dt.getUTCDate()!==d)return null;
+    return {y,m,d,epoch};
+  }
+  function isoFromEpoch(epoch){return new Date(epoch).toISOString().slice(0,10)}
+  function formatPt(value){const [y,m,d]=value.split('-');return `${d}/${m}/${y}`}
+  function calcColorFor(id){
+    if(!dayCalculation)return '';
+    const postponed=dayCalculation.mode==='extended'&&dayCalculation.original!==dayCalculation.end;
+    const originalFlag=postponed&&id===dayCalculation.original?' calc-original':'';
+    if(id===dayCalculation.base&&id===dayCalculation.end)return ' calc-same'+originalFlag;
+    if(id===dayCalculation.base)return ' calc-start'+originalFlag;
+    if(id===dayCalculation.end)return ' calc-end'+originalFlag;
+    if(id>dayCalculation.min&&id<dayCalculation.max)return ' calc-between'+originalFlag;
+    return originalFlag;
+  }
+  function refreshActiveCalculation(){
+    const list=modes.map(m=>calculations[m]).filter(c=>c&&el(toolCheck[c.mode]).checked);
+    list.sort((a,b)=>b.order-a.order);
+    dayCalculation=list[0]||null;
+    for(const mode of modes)el('tool-'+mode).classList.toggle('active-calc',Boolean(dayCalculation&&dayCalculation.mode===mode));
+  }
+  function updateToolResult(mode){
+    const c=calculations[mode],result=el('result-'+mode),clear=el('clear-'+mode);
+    result.textContent=c?formatPt(c.end):'—';
+    result.disabled=!c;
+    clear.disabled=!c;
+    result.title=c?(mode==='extended'&&c.original!==c.end?
+      'Encerramento original do Prazo: '+formatPt(c.original)+' · Prorrogado para: '+formatPt(c.end)+' · Clique para ver no calendário':
+      'Ir à data final no calendário'):'Data final';
+  }
+  function dateInsideBounds(epoch){
+    const year=new Date(epoch).getUTCFullYear();
+    return year>=1900&&year<=2100;
+  }
+  // Dia útil: segunda a sexta-feira, sem feriados nacionais; feriados do DF são
+  // incluídos apenas quando 'Mostrar feriados do DF' está ativado. Os pontos
+  // facultativos usuais não são tratados automaticamente como feriados.
+  const businessHolidayCache=new Map();
+  function isBusinessDay(epoch){
+    const dt=new Date(epoch),weekday=dt.getUTCDay();
+    if(weekday===0||weekday===6)return false;
+    const y=dt.getUTCFullYear();
+    if(!businessHolidayCache.has(y))businessHolidayCache.set(y,holidays(y));
+    const events=businessHolidayCache.get(y).get(key(dt.getUTCMonth(),dt.getUTCDate()))||[];
+    return !events.some(e=>e.type==='holiday'||e.type==='df');
+  }
+  function computeEndEpoch(mode,baseEpoch,amount,direction){
+    let end=baseEpoch;
+    if(mode==='calendar'||mode==='extended'){
+      end=baseEpoch+direction*amount*MS_PER_DAY;
+      if(!dateInsideBounds(end))throw Error('A data final precisa estar entre 1900 e 2100.');
+      if(mode==='extended'){
+        while(!isBusinessDay(end)){
+          end+=MS_PER_DAY;
+          if(!dateInsideBounds(end))throw Error('A data final prorrogada precisa estar entre 1900 e 2100.');
+        }
+      }
+    }else{
+      // A data-base é excluída da contagem, mesmo quando ela é dia útil.
+      let counted=0;
+      while(counted<amount){
+        end+=direction*MS_PER_DAY;
+        if(!dateInsideBounds(end))throw Error('A data final precisa estar entre 1900 e 2100.');
+        if(isBusinessDay(end))counted++;
+      }
+    }
+    return end;
+  }
+  function runDayCalculation(mode,direction,options={}){
+    const err=el('error-'+mode);err.textContent='';
+    const base= parseISODate(el('base-'+mode).value),input=el('amount-'+mode);
+    const amount=Number(input.value);
+    if(!base||base.y<1900||base.y>2100){err.textContent='Informe uma data-base válida entre 1900 e 2100.';return false}
+    if(input.value.trim()===''||!Number.isSafeInteger(amount)||amount<0||amount>100000){err.textContent='Informe uma quantidade inteira de dias entre 0 e 100.000.';return false}
+    try{
+      const endEpoch=computeEndEpoch(mode,base.epoch,amount,direction);
+      const baseKey=el('base-'+mode).value,endKey=isoFromEpoch(endEpoch);
+      const originalKey=mode==='extended'?isoFromEpoch(base.epoch+amount*MS_PER_DAY):null;
+      const previous=calculations[mode];
+      calculations[mode]={mode,base:baseKey,end:endKey,
+        min:baseKey<endKey?baseKey:endKey,max:baseKey>endKey?baseKey:endKey,
+        amount,direction,original:originalKey,order:options.keepOrder&&previous?previous.order:++calculationOrder};
+      updateToolResult(mode);
+      refreshActiveCalculation();
+      if(!options.noNavigate){displayYear=base.y;displayMonth=base.m-1}
+      render();
+      return true;
+    }catch(e){err.textContent=e.message;return false}
+  }
+  function jumpToKey(id){const parsed=parseISODate(id);if(!parsed)return;displayYear=parsed.y;displayMonth=parsed.m-1;render()}
+  function clearDayCalculation(mode){
+    calculations[mode]=null;
+    el('error-'+mode).textContent='';
+    updateToolResult(mode);
+    refreshActiveCalculation();
+    render();
+  }
+  // Ao selecionar uma calculadora, reinicia sua data-base, dias e resultado.
+  // As caixas são mutuamente exclusivas; desmarcar a ativa apenas a oculta.
+  function resetCalculator(mode){
+    el('base-'+mode).value='';
+    el('amount-'+mode).value='';
+    calculations[mode]=null;
+    el('error-'+mode).textContent='';
+    updateToolResult(mode);
+  }
+  function toggleCalculator(mode){
+    const isEnabled=el(toolCheck[mode]).checked;
+    // Exatamente uma calculadora ativa, ou nenhuma; cada ativação recomeça vazia.
+    for(const other of modes){
+      if(other!==mode)el(toolCheck[other]).checked=false;
+      resetCalculator(other);
+    }
+    const activeMode=isEnabled?mode:null;
+    // Na ausência de calculadora selecionada, a calculadora de dias corridos
+    // permanece visível apenas como modelo inativo, sem campos editáveis.
+    for(const other of modes){
+      const section=el('tool-'+other);
+      section.hidden=other!==(activeMode||'calendar');
+      section.classList.toggle('inactive-calc',!activeMode&&other==='calendar');
+      const inactive=!activeMode&&other==='calendar';
+      if(other==='calendar')section.querySelector('.date-tool-title').textContent=
+        inactive?'Nenhuma calculadora está selecionada':'Calculadora de dias corridos';
+      el('base-'+other).disabled=inactive;
+      el('amount-'+other).disabled=inactive;
+      el('add-'+other).disabled=inactive;
+      if(other!=='extended')el('subtract-'+other).disabled=inactive;
+    }
+    refreshActiveCalculation();
+    render();
+  }
+  function refreshBusinessCalculations(){
+    businessHolidayCache.clear();
+    for(const mode of ['business','extended'])if(calculations[mode]){
+      const original=calculations[mode];
+      runDayCalculation(mode,original.direction,{keepOrder:true,noNavigate:true});
+    }
+    refreshActiveCalculation();render();
+  }
+  const dateKey=dt=>`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+  function updateClearButton(){document.getElementById('clearSelection').disabled=selectedDates.size===0}
+  function toggleDate(id){
+    if(!document.getElementById('enableSelection').checked)return;
+    if(selectedDates.has(id))selectedDates.delete(id);else selectedDates.add(id);
+    root.querySelectorAll(`.day[data-date=\"${id}\"]`).forEach(cell=>{
+      const selected=selectedDates.has(id);cell.classList.toggle('selected',selected);cell.setAttribute('aria-pressed',String(selected));
+    });
+    updateClearButton();
+  }
+  const root=document.getElementById('calendars'),monthSelect=document.getElementById('monthSelect'),yearInput=document.getElementById('yearInput');
+  names.forEach((name,i)=>{const opt=document.createElement('option');opt.value=i;opt.textContent=name.charAt(0).toUpperCase()+name.slice(1);monthSelect.append(opt)});
+  const key=(m,d)=>String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+  function easter(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k+7)%7,m=Math.floor((a+11*h+22*l)/451),month=Math.floor((h+l-7*m+114)/31)-1,day=((h+l-7*m+114)%31)+1;return new Date(y,month,day,12)}
+  function holidays(y){const map=new Map();function add(m,d,name,type){const k=key(m,d);if(!map.has(k))map.set(k,[]);map.get(k).push({name,type})}
+    [ [0,1,'Confraternização Universal'],[3,21,'Tiradentes'],[4,1,'Dia do Trabalho'],[8,7,'Independência do Brasil'],[10,2,'Finados'],[10,15,'Proclamação da República'],[11,25,'Natal'] ].forEach(([m,d,n])=>add(m,d,n,'holiday'));
+    if(y>=1980)add(9,12,'Nossa Senhora Aparecida','holiday');
+    if(y>=2024)add(10,20,'Dia da Consciência Negra','holiday');
+    const eas=easter(y);const relative=(n,label,type)=>{const dt=new Date(eas);dt.setDate(dt.getDate()+n);add(dt.getMonth(),dt.getDate(),label,type)};
+    relative(-2,'Paixão de Cristo','holiday');
+    if(document.getElementById('showOpt').checked){relative(-48,'Carnaval (segunda)','optional');relative(-47,'Carnaval (terça)','optional');relative(-46,'Quarta-feira de Cinzas','optional');relative(60,'Corpus Christi','optional');if(y>=1990)add(9,28,'Dia do Servidor Público','optional')}
+    if(document.getElementById('showDF').checked){if(y>=1990)add(3,21,'Aniversário de Brasília','df');if(y>=1995)add(10,30,'Dia do Evangélico (DF)','df');if(y>=1990)relative(60,'Corpus Christi (DF)','df')}
+    return map;
+  }
+  function offsetMonth(y,m,n){const d=new Date(y,m+n,1,12);return [d.getFullYear(),d.getMonth()]}
+  function renderMonth(y,m){const map=holidays(y),section=document.createElement('article');section.className='month';
+    const h=document.createElement('h2');h.textContent=names[m]+' de '+y;section.append(h);
+    const grid=document.createElement('div');grid.className='grid';section.append(grid);
+    weekdays.forEach(w=>{const div=document.createElement('div');div.className='week';div.textContent=w;grid.append(div)});
+    const start=new Date(y,m,1,12).getDay();
+    for(let i=0;i<42;i++){
+      const dt=new Date(y,m,1-start+i,12),inMonth=dt.getMonth()===m,dayEvents=inMonth?(map.get(key(m,dt.getDate()))||[]):[];
+      const id=dateKey(dt),selectionEnabled=document.getElementById('enableSelection').checked;
+      const adjacentVisible=document.getElementById('showAdjacent').checked;
+      const cell=document.createElement('button');cell.type='button';cell.dataset.date=id;
+      const isHoliday=dayEvents.some(e=>e.type==='holiday'),isDf=dayEvents.some(e=>e.type==='df'),isOpt=dayEvents.some(e=>e.type==='optional');
+      cell.className='day'+(!inMonth?' out':'')+([0,6].includes(dt.getDay())?' weekend':'')+(isHoliday?' holiday':isDf?' df':isOpt?' optional':'')+(dt.toDateString()===now.toDateString()?' current':'')+(selectedDates.has(id)?' selected':'')+calcColorFor(id)+(selectionEnabled?' selectable':'')+(!inMonth&&!adjacentVisible?' hidden-other':'');
+      cell.disabled=!selectionEnabled||(!inMonth&&!adjacentVisible);
+      cell.setAttribute('aria-pressed',String(selectedDates.has(id)));
+      const isOriginal=dayCalculation&&dayCalculation.mode==='extended'&&dayCalculation.original!==dayCalculation.end&&id===dayCalculation.original;
+      cell.setAttribute('aria-label',`${dt.getDate()} de ${names[dt.getMonth()]} de ${dt.getFullYear()}`+(isOriginal?' — Encerramento original do Prazo, antes da prorrogação':'')+(dayEvents.length?': '+dayEvents.map(e=>e.name).join(', '):''));
+      if(isOriginal)cell.title='Encerramento original do Prazo: '+formatPt(id)+' — prorrogado para '+formatPt(dayCalculation.end);
+      cell.addEventListener('click',()=>toggleDate(id));
+      const n=document.createElement('span');n.className='num';n.textContent=dt.getDate();cell.append(n);
+      if(dayEvents.length){cell.title=(cell.title?cell.title+'\n':'')+dayEvents.map(e=>e.name+(e.type==='optional'?' · ponto facultativo':e.type==='df'?' · DF':' · feriado')).join('\n');const ev=document.createElement('span');ev.className='event';ev.textContent=dayEvents.map(e=>e.name).join(' · ');cell.append(ev)}
+      grid.append(cell);
+    }
+    const list=document.createElement('div');list.className='events';section.append(list);let count=0;
+    for(let d=1;d<=new Date(y,m+1,0).getDate();d++)for(const e of (map.get(key(m,d))||[])){const item=document.createElement('div');item.className='ev '+e.type;const date=document.createElement('span');date.className='date';date.textContent=String(d).padStart(2,'0')+'/'+String(m+1).padStart(2,'0');const what=document.createElement('span');what.className='what';what.textContent=e.name+(e.type==='optional'?' (facultativo)':e.type==='df'&&!e.name.includes('(DF)')?' (DF)':'');item.append(date,what);list.append(item);count++}
+    if(!count){const p=document.createElement('p');p.className='noevents';p.textContent='Sem feriados cadastrados neste mês.';list.append(p)}
+    return section;
+  }
+  function render(){
+    const twoMonths=document.getElementById('twoMonths').checked;
+    monthSelect.value=String(displayMonth);
+    yearInput.value=String(displayYear);
+    root.classList.toggle('single',!twoMonths);
+    const months=[renderMonth(displayYear,displayMonth)];
+    if(twoMonths)months.push(renderMonth(...offsetMonth(displayYear,displayMonth,1)));
+    root.replaceChildren(...months);
+  }
+  function navigate(n){const [y,m]=offsetMonth(displayYear,displayMonth,n);if(y<1900||y>2100)return;displayYear=y;displayMonth=m;render()}
+  document.getElementById('prev').addEventListener('click',()=>navigate(-1));document.getElementById('next').addEventListener('click',()=>navigate(1));document.getElementById('today').addEventListener('click',()=>{displayYear=now.getFullYear();displayMonth=now.getMonth();render()});
+  monthSelect.addEventListener('change',()=>{displayMonth=Number(monthSelect.value);render()});
+  yearInput.addEventListener('change',()=>{const y=Number(yearInput.value);if(Number.isInteger(y)&&y>=1900&&y<=2100){displayYear=y}render()});
+  document.getElementById('twoMonths').addEventListener('change',render);
+  document.getElementById('showOpt').addEventListener('change',()=>{businessHolidayCache.clear();render()});document.getElementById('showDF').addEventListener('change',refreshBusinessCalculations);
+  document.getElementById('enableSelection').addEventListener('change',render);
+  document.getElementById('showAdjacent').addEventListener('change',render);
+  document.getElementById('clearSelection').addEventListener('click',()=>{
+    selectedDates.clear();
+    root.querySelectorAll('.day.selected').forEach(cell=>{cell.classList.remove('selected');cell.setAttribute('aria-pressed','false')});
+    updateClearButton();
+  });
+  for(const mode of modes){
+    el('add-'+mode).addEventListener('click',()=>runDayCalculation(mode,1));
+    if(mode!=='extended')el('subtract-'+mode).addEventListener('click',()=>runDayCalculation(mode,-1));
+    el('clear-'+mode).addEventListener('click',()=>clearDayCalculation(mode));
+    el('result-'+mode).addEventListener('click',()=>calculations[mode]&&jumpToKey(calculations[mode].end));
+    el('amount-'+mode).addEventListener('keydown',event=>{if(event.key==='Enter')runDayCalculation(mode,1)});
+    el(toolCheck[mode]).addEventListener('change',()=>toggleCalculator(mode));
+  }
+  toggleCalculator('calendar');
+})();
+</script>
+</body>
+</html>
