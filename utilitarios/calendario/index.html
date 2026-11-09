@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Calendário - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png" />
-  <!-- Versão: calendario_interativo_v_13 -->
+  <!-- Versão: calendario_interativo_v_14 -->
   <style>
     :root {
       --cor-primaria: #1f6f54;
@@ -675,6 +675,20 @@
 }
 @media (max-width:510px){#calendario-escopo .day.calc-original::after{font-size:7px;line-height:1.1;}}
 
+/* Aviso do encerramento prorrogado: mesmo padrão visual do aviso original,
+   exibido somente quando a calculadora com prorrogação de prazo efetivamente prorroga a data. */
+#calendario-escopo .day.calc-extended-end::after{
+  content:"Encerramento da prorrogação do prazo";
+  position:static;display:block;box-sizing:border-box;
+  width:100%;margin-top:2px;border-radius:4px;padding:3px;
+  background:#f8dbaa;color:#8d4b08;
+  font-size:clamp(7px,.78vw,9px);line-height:1.1;font-weight:800;
+  letter-spacing:0;overflow-wrap:anywhere;white-space:normal;text-align:left;
+}
+@media (max-width:510px){
+  #calendario-escopo .day.calc-extended-end::after{font-size:7px;line-height:1.1;}
+}
+
     main.conteudo-calendario {
       display:block;
       flex:1 1 auto;
@@ -832,7 +846,7 @@
     const originalFlag=postponed&&id===dayCalculation.original?' calc-original':'';
     if(id===dayCalculation.base&&id===dayCalculation.end)return ' calc-same'+originalFlag;
     if(id===dayCalculation.base)return ' calc-start'+originalFlag;
-    if(id===dayCalculation.end)return ' calc-end'+originalFlag;
+    if(id===dayCalculation.end)return ' calc-end'+originalFlag+(postponed?' calc-extended-end':'');
     if(id>dayCalculation.min&&id<dayCalculation.max)return ' calc-between'+originalFlag;
     return originalFlag;
   }
@@ -1000,8 +1014,10 @@
       cell.disabled=!selectionEnabled||(!inMonth&&!adjacentVisible);
       cell.setAttribute('aria-pressed',String(selectedDates.has(id)));
       const isOriginal=dayCalculation&&dayCalculation.mode==='extended'&&dayCalculation.original!==dayCalculation.end&&id===dayCalculation.original;
-      cell.setAttribute('aria-label',`${dt.getDate()} de ${names[dt.getMonth()]} de ${dt.getFullYear()}`+(isOriginal?' — Encerramento original do Prazo, antes da prorrogação':'')+(dayEvents.length?': '+dayEvents.map(e=>e.name).join(', '):''));
+      const isExtendedEnd=dayCalculation&&dayCalculation.mode==='extended'&&dayCalculation.original!==dayCalculation.end&&id===dayCalculation.end;
+      cell.setAttribute('aria-label',`${dt.getDate()} de ${names[dt.getMonth()]} de ${dt.getFullYear()}`+(isOriginal?' — Encerramento original do Prazo, antes da prorrogação':'')+(isExtendedEnd?' — Encerramento da prorrogação do prazo':'')+(dayEvents.length?': '+dayEvents.map(e=>e.name).join(', '):''));
       if(isOriginal)cell.title='Encerramento original do Prazo: '+formatPt(id)+' — prorrogado para '+formatPt(dayCalculation.end);
+      if(isExtendedEnd)cell.title='Encerramento da prorrogação do prazo: '+formatPt(id);
       cell.addEventListener('click',()=>toggleDate(id));
       const n=document.createElement('span');n.className='num';n.textContent=dt.getDate();cell.append(n);
       if(dayEvents.length){cell.title=(cell.title?cell.title+'\n':'')+dayEvents.map(e=>e.name+(e.type==='optional'?' · ponto facultativo':e.type==='df'?' · DF':' · feriado')).join('\n');const ev=document.createElement('span');ev.className='event';ev.textContent=dayEvents.map(e=>e.name).join(' · ');cell.append(ev)}
