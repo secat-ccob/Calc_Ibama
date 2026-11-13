@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_70 -->
+  <!-- Versão: simulador_consolidacao_debito_v_72 -->
 
   <style>
     :root {
@@ -777,6 +777,10 @@
 
     .tabela-atualizacao td.percentual.percentual-periodo {
       text-align: left;
+    }
+
+    .tabela-atualizacao td.percentual.percentual-periodo.percentual-periodo-centralizado {
+      text-align: center;
     }
 
     .tabela-atualizacao td.percentual:not(.percentual-periodo) {
@@ -2816,6 +2820,7 @@
       atualizarEstadoPercentuaisComposicaoAcumulado();
       atualizarIndicadorModoAutomaticoPrincipal();
       if (!dadosTcfaAcumulado._preservarValoresCarregados) atualizarConsolidacaoAcumulado();
+      atualizarEstadoBotaoPagamento();
     }
 
     function montarHtmlConsolidacaoAcumulado() {
@@ -2852,8 +2857,11 @@
           const idx = Number(input.dataset.idx);
           const campo = input.dataset.campo;
           if (dadosTcfaAcumulado?.rows?.[idx] && campo) {
+            const valorInformado = parseNumeroFlexivel(input.value);
+            const valorAnterior = Number(dadosTcfaAcumulado.rows[idx][campo] || 0);
+            if (valorInformado === valorAnterior) return; // foco/saída sem edição não altera a memória
             dadosTcfaAcumulado._preservarValoresCarregados = false;
-            dadosTcfaAcumulado.rows[idx][campo] = parseNumeroFlexivel(input.value);
+            dadosTcfaAcumulado.rows[idx][campo] = valorInformado;
             if (campo === 'multaPct' && modoComposicaoAcumulado('multa') === 'manual') {
               dadosTcfaAcumulado.rows[idx].multaPctManual = dadosTcfaAcumulado.rows[idx][campo];
             }
@@ -2879,16 +2887,21 @@
       document.querySelectorAll('.campo-moeda-acum').forEach(input => {
         if (input.dataset.moneyBound === '1') return;
         input.dataset.moneyBound = '1';
-        input.addEventListener('focus', () => setTimeout(() => input.select(), 0));
+        input.addEventListener('focus', () => {
+          input.dataset.valorNoFoco = String(moedaParaNumero(input.value));
+          setTimeout(() => input.select(), 0);
+        });
         input.addEventListener('input', () => {
           const digits = input.value.replace(/\D/g, '');
           input.value = digits ? formatMoneyDigitsString(digits) : '';
+          if (String(moedaParaNumero(input.value)) === input.dataset.valorNoFoco) return;
           if (input.id === 'acumSomatorioSapiens') modoSomatorioSapiensDividaAcumulado = 'valor';
           atualizarConsolidacaoAcumulado();
         });
         input.addEventListener('blur', () => {
           const digits = input.value.replace(/\D/g, '');
           input.value = digits ? formatMoneyDigitsString(digits) : '0,00';
+          if (String(moedaParaNumero(input.value)) === input.dataset.valorNoFoco) return;
           if (input.id === 'acumSomatorioSapiens') modoSomatorioSapiensDividaAcumulado = 'valor';
           atualizarConsolidacaoAcumulado();
         });
@@ -2896,14 +2909,19 @@
       document.querySelectorAll('.campo-percentual-acum').forEach(input => {
         if (input.dataset.percentBound === '1') return;
         input.dataset.percentBound = '1';
-        input.addEventListener('focus', () => setTimeout(() => input.select(), 0));
+        input.addEventListener('focus', () => {
+          input.dataset.valorNoFoco = String(parseNumeroFlexivel(input.value));
+          setTimeout(() => input.select(), 0);
+        });
         input.addEventListener('input', () => {
           input.value = input.value.replace(/[^0-9,.%]/g, '');
+          if (String(parseNumeroFlexivel(input.value)) === input.dataset.valorNoFoco) return;
           if (input.id === 'acumPercentualSapiens') modoSomatorioSapiensDividaAcumulado = 'percentual';
           atualizarConsolidacaoAcumulado();
         });
         input.addEventListener('blur', () => {
           input.value = numeroParaPercentual(parseNumeroFlexivel(input.value));
+          if (String(parseNumeroFlexivel(input.value)) === input.dataset.valorNoFoco) return;
           if (input.id === 'acumPercentualSapiens') modoSomatorioSapiensDividaAcumulado = 'percentual';
           atualizarConsolidacaoAcumulado();
         });
@@ -3084,6 +3102,7 @@
         }
         setUploadMemoriaOk(true);
         registrarReferenciaMemoriaCarregada();
+        atualizarEstadoBotaoPagamento();
         atualizarProgressoPDF(100, 'Memória de cálculo carregada com sucesso.');
         setTimeout(fecharProgressoPDF, 350);
         showToast('Memória de cálculo carregada com sucesso.', 'success');
@@ -3537,19 +3556,21 @@
         // Nos campos-base manuais, o recálculo é aplicado apenas ao sair do campo
         // ou ao avançar com Enter/Tab. Isso evita que o próprio cálculo sobrescreva
         // o valor enquanto o usuário ainda está digitando ou apagando.
-        if (!ehCampoBaseManual(input)) {
+        if (!ehCampoBaseManual(input) && String(moedaParaNumero(input.value)) !== input.dataset.valorNoFoco) {
           registrarEdicaoCampo(input);
           atualizarCalculos();
         }
       };
 
       input.addEventListener('focus', () => {
+        input.dataset.valorNoFoco = String(moedaParaNumero(input.value));
         setTimeout(() => input.select(), 0);
       });
       input.addEventListener('input', apply);
       input.addEventListener('blur', () => {
         const digits = input.value.replace(/\D/g, '');
         input.value = digits ? formatMoneyDigitsString(digits) : '0,00';
+        if (String(moedaParaNumero(input.value)) === input.dataset.valorNoFoco) return;
         registrarEdicaoCampo(input);
         atualizarCalculos();
       });
@@ -3588,11 +3609,13 @@
       input.dataset.percentBound = '1';
 
       input.addEventListener('focus', () => {
+        input.dataset.valorNoFoco = String(parseNumeroFlexivel(input.value));
         setTimeout(() => input.select(), 0);
       });
 
       input.addEventListener('input', () => {
         input.value = input.value.replace(/[^0-9,.%]/g, '');
+        if (String(parseNumeroFlexivel(input.value)) === input.dataset.valorNoFoco) return;
         registrarEdicaoCampo(input);
         atualizarCalculos();
       });
@@ -3600,6 +3623,7 @@
       input.addEventListener('blur', () => {
         const valor = parseNumeroFlexivel(input.value);
         input.value = numeroParaPercentual(valor);
+        if (String(valor) === input.dataset.valorNoFoco) return;
         registrarEdicaoCampo(input);
         atualizarCalculos();
       });
@@ -4356,6 +4380,10 @@
       if (!ensureInputDate(input)) return;
       const campos = dadosSimplesParaCampos(dados);
       const valor = input.value.trim();
+      const valorAnterior = tipo === 'multa'
+        ? (campoData === 'inicio' ? campos.dataInicioMulta : campos.dataFimMulta)
+        : (campoData === 'inicio' ? campos.dataInicioSelic : campos.dataFimSelic);
+      if (valor === String(valorAnterior || '')) return;
       if (tipo === 'multa') {
         if (campoData === 'inicio') campos.dataInicioMulta = valor;
         if (campoData === 'fim') campos.dataFimMulta = valor;
@@ -4389,6 +4417,7 @@
       if (!dados || dados.tipoDebito === 'TCFA_ACUMULADO' || input.readOnly) return;
       const campos = dadosSimplesParaCampos(dados);
       const pct = parseNumeroFlexivel(input.value);
+      if (pct === Number(tipo === 'multa' ? campos.percentualMulta : campos.percentualSelic)) return;
       if (tipo === 'multa') {
         campos.percentualMulta = pct;
         substituirAtualizacaoSimplesRecalculada(indice, campos, { modoMulta: 'manual' });
@@ -4668,10 +4697,19 @@
           if (!(consolidadoLinha > 0) || !(restante > 0)) continue;
           const parcela = Math.min(restante, consolidadoLinha);
           const fracao = parcela / consolidadoLinha;
-          const saldoBase = roundMoneyValue(Number(row.saldo || 0) - Number(row.compensacaoRegular || 0) - Number(row.compensacaoManual || 0));
-          const saldoResidual = Math.max(0, roundMoneyValue(saldoBase * (1 - fracao)));
-          row.saldo = roundMoneyValue(saldoResidual + Number(row.compensacaoRegular || 0) + Number(row.compensacaoManual || 0));
-          recalcularLinhaComposicao(row); // conserva percentuais de cada débito
+          // A imputação usa o Saldo Atualizado do débito na data do pagamento,
+          // assim como no Simulador de amortização. Não se amortiza primeiro
+          // o principal para depois reaplicar o percentual de correção.
+          const saldoAtualizadoOriginal = roundMoneyValue(Number(row.saldoAtualizado || 0));
+          const saldoAtualizadoResidual = Math.max(0, roundMoneyValue(saldoAtualizadoOriginal * (1 - fracao)));
+          const compensacaoLinha = roundMoneyValue(Number(row.compensacaoRegular || 0) + Number(row.compensacaoManual || 0));
+          const fatorCorrecao = 1 + Number(row.correcaoPct || 0) / 100;
+          if (!(fatorCorrecao > 0)) throw new Error('Percentual de correção inválido para amortização do débito.');
+          // Reconstituir a base do débito a partir do saldo já amortizado permite
+          // manter a composição (saldo + IPCA) consistente com o valor alvo.
+          const saldoBaseResidual = roundMoneyValue(saldoAtualizadoResidual / fatorCorrecao);
+          row.saldo = roundMoneyValue(saldoBaseResidual + compensacaoLinha);
+          recalcularLinhaComposicao(row); // mantém os percentuais da consolidação anterior
           restante = Math.max(0, roundMoneyValue(restante - parcela));
         }
         if (restante > 0.01) throw new Error('O valor do pagamento supera a soma dos débitos disponíveis para amortização.');
@@ -5102,7 +5140,7 @@
             </tr>`;
         }
         const percentualPeriodo = /^De:/i.test(String(l.percentual || ''));
-        const classePercentual = l.percentual === '-' ? 'percentual-vazio' : (percentualPeriodo ? 'percentual-periodo' : 'percentual-texto');
+        const classePercentual = l.percentual === '-' ? 'percentual-vazio' : (percentualPeriodo ? `percentual-periodo${dados.consolidacaoPG ? ' percentual-periodo-centralizado' : ''}` : 'percentual-texto');
         const edicaoPercentual = indiceAtualizacao !== null ? campoEdicaoConsolidacaoAtualizacao(dados, l.descricao, 'percentual') : null;
         const edicaoValor = indiceAtualizacao !== null ? campoEdicaoConsolidacaoAtualizacao(dados, l.descricao, 'valor') : null;
         const htmlPercentual = edicaoPercentual ? inputEdicaoConsolidacaoAtualizacao(indiceAtualizacao, edicaoPercentual, l.percentual) : escapeHtml(l.percentual);
@@ -5460,7 +5498,9 @@
       const dados = simulacoesAdicionais[indiceAtualizacao];
       if (!dados || dados.tipoDebito !== 'TCFA_ACUMULADO' || !dados.composicao?.[idx] || !campo) return;
       const row = dados.composicao[idx];
-      row[campo] = parseNumeroFlexivel(input.value);
+      const valorInformado = parseNumeroFlexivel(input.value);
+      if (valorInformado === Number(row[campo] || 0)) return;
+      row[campo] = valorInformado;
       if (campo === 'multaPct' && modoComposicaoAtualizacao(dados, 'multa') === 'manual') row.multaPctManual = row[campo];
       if (campo === 'selicPct' && modoComposicaoAtualizacao(dados, 'selic') === 'manual') row.selicPctManual = row[campo];
       recalcularLinhaComposicao(row);
@@ -5567,6 +5607,7 @@
         input.value = digits ? formatMoneyDigitsString(digits) : '0,00';
       }
       const valor = tipo === 'percentual' ? parseNumeroFlexivel(input.value) : moedaParaNumero(input.value);
+      if (String(valor) === input.dataset.valorNoFoco) return;
       const novo = aplicarAlteracaoConsolidacaoAtualizacao(simulacoesAdicionais[indice], campo, valor);
       salvarAtualizacaoAlterada(indice, novo, true);
       renderizarAtualizacoes();
@@ -5794,7 +5835,11 @@
         });
       });
       container.querySelectorAll('[data-campo-consolidacao-atualizacao]').forEach(input => {
-        input.addEventListener('focus', () => input.select());
+        input.addEventListener('focus', () => {
+          input.dataset.valorNoFoco = String(input.dataset.tipo === 'percentual'
+            ? parseNumeroFlexivel(input.value) : moedaParaNumero(input.value));
+          input.select();
+        });
         input.addEventListener('input', () => {
           if (input.dataset.tipo === 'percentual') {
             input.value = input.value.replace(/[^0-9,.%]/g, '');
