@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_73 -->
+  <!-- Versão: simulador_consolidacao_debito_v_74 -->
 
   <style>
     :root {
@@ -766,6 +766,40 @@
       font-size: 13px;
     }
 
+    /* Recolhimento individual das consolidações, como nos depósitos do Simulador de amortização. */
+    .botao-consolidacao-retratil {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      width: 100%;
+      border: none;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .botao-consolidacao-retratil .seta-consolidacao {
+      justify-self: end;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .botao-consolidacao-retratil:focus-visible {
+      outline: 2px solid #4CAF50;
+      outline-offset: -2px;
+    }
+
+    .botao-consolidacao-retratil[aria-expanded="false"] {
+      margin-bottom: 0;
+    }
+
+    .corpo-consolidacao-retratil[hidden] {
+      display: none !important;
+    }
+
+    .bloco-atualizacao.recolhido {
+      padding-bottom: 0;
+    }
+
     .tabela-atualizacao td,
     .tabela-atualizacao th {
       font-size: 12px;
@@ -1434,6 +1468,10 @@
       </div>
       <div id="toastContainer"></div>
       <div class="conteudo-ferramenta" id="areaTabelaSimples" style="display:none;">
+        <button type="button" class="subtitulo-atualizacao botao-consolidacao-retratil" data-cabecalho-consolidacao="principal-simples" aria-controls="corpoConsolidacaoPrincipalSimples" aria-expanded="true">
+          <span aria-hidden="true"></span><span>Consolidação 01</span><span class="seta-consolidacao" aria-hidden="true">▼</span>
+        </button>
+        <div id="corpoConsolidacaoPrincipalSimples" class="corpo-consolidacao-retratil">
         <table class="tabela-consolidacao" aria-label="Tabela de consolidação do débito">
           <colgroup>
             <col class="col-descricao" />
@@ -1587,6 +1625,7 @@
         <div class="acoes-pdf no-print acoes-pdf-individual">
           <button type="button" class="btn btn-primary" id="btnGerarPdf">Gerar PDF</button>
         </div>
+        </div>
 
         <div id="areaAtualizacoesSimples" class="area-atualizacoes"></div>
 
@@ -1604,6 +1643,10 @@
       <div class="conteudo-ferramenta" id="areaTcfaAcumulado" style="display:none;">
         <div id="mensagemTcfaAcumulado" class="mensagem-acumulado">Carregue a memória de cálculo para o preenchimento automático.</div>
         <div id="conteudoTcfaAcumulado" style="display:none;">
+          <button type="button" class="subtitulo-atualizacao botao-consolidacao-retratil" data-cabecalho-consolidacao="principal-acumulado" aria-controls="corpoConsolidacaoPrincipalAcumulado" aria-expanded="true">
+            <span aria-hidden="true"></span><span>Consolidação 01</span><span class="seta-consolidacao" aria-hidden="true">▼</span>
+          </button>
+          <div id="corpoConsolidacaoPrincipalAcumulado" class="corpo-consolidacao-retratil">
           <div class="subtitulo-tabela">Composição do débito</div>
           <div class="tabela-wrapper">
             <table class="tabela-composicao-acumulado" aria-label="Composição do débito acumulado">
@@ -1688,6 +1731,7 @@
           <div class="acoes-pdf no-print acoes-pdf-individual">
             <button type="button" class="btn btn-primary" id="btnGerarPdfTcfaAcumulado">Gerar PDF</button>
           </div>
+          </div>
 
           <div id="areaAtualizacoesAcumulado" class="area-atualizacoes"></div>
 
@@ -1729,6 +1773,7 @@
     let assinaturaMemoriaCorrigida = '';
     let verificacaoStatusMemoriaPendente = false;
     let simulacoesAdicionais = [];
+    const consolidacoesRecolhidas = new Set();
     let uploadAtualizacaoPendente = false;
     let indiceAtualizacaoUploadPendente = null;
     let resolverModalModoAtualizacao = null;
@@ -2065,6 +2110,8 @@
       limparTabelaSimples();
       limparTcfaAcumulado();
       simulacoesAdicionais = [];
+      consolidacoesRecolhidas.clear();
+      sincronizarConsolidacoesRetrateis();
       renderizarAtualizacoes();
       uploadAtualizacaoPendente = false;
       setUploadMemoriaOk(false);
@@ -5217,6 +5264,7 @@
         showToast('Não há atualização para remover.', 'error');
         return;
       }
+      consolidacoesRecolhidas.delete(`atualizacao-${simulacoesAdicionais.length - 1}`);
       simulacoesAdicionais.pop();
       renderizarAtualizacoes();
       showToast('Última atualização removida.', 'success');
@@ -5989,6 +6037,26 @@
       }
     }
 
+    function sincronizarConsolidacoesRetrateis() {
+      document.querySelectorAll('[data-cabecalho-consolidacao]').forEach(botao => {
+        const chave = botao.dataset.cabecalhoConsolidacao;
+        const recolhido = consolidacoesRecolhidas.has(chave);
+        const corpo = document.getElementById(botao.getAttribute('aria-controls'));
+        botao.setAttribute('aria-expanded', String(!recolhido));
+        botao.querySelector('.seta-consolidacao').textContent = recolhido ? '▲' : '▼';
+        if (corpo) corpo.hidden = recolhido;
+        botao.closest('.bloco-atualizacao')?.classList.toggle('recolhido', recolhido);
+      });
+    }
+
+    function alternarConsolidacaoRetratil(botao) {
+      const chave = botao?.dataset?.cabecalhoConsolidacao;
+      if (!chave) return;
+      if (consolidacoesRecolhidas.has(chave)) consolidacoesRecolhidas.delete(chave);
+      else consolidacoesRecolhidas.add(chave);
+      sincronizarConsolidacoesRetrateis();
+    }
+
     function renderizarAtualizacoes() {
       const tipo = getTipoDebitoSelecionado();
       const containerSimples = document.getElementById('areaAtualizacoesSimples');
@@ -5999,7 +6067,10 @@
       if (!container) return;
       container.innerHTML = simulacoesAdicionais.map((dados, idx) => `
         <div class="bloco-atualizacao" data-atualizacao="${idx}">
-          <div class="subtitulo-atualizacao">${escapeHtml(dados.tituloSecao || `Consolidação ${String(idx + 2).padStart(2, '0')}`)}</div>
+          <button type="button" class="subtitulo-atualizacao botao-consolidacao-retratil" data-cabecalho-consolidacao="atualizacao-${idx}" aria-controls="corpoConsolidacaoAtualizacao${idx}" aria-expanded="true">
+            <span aria-hidden="true"></span><span>${escapeHtml(dados.tituloSecao || `Consolidação ${String(idx + 2).padStart(2, '0')}`)}</span><span class="seta-consolidacao" aria-hidden="true">▼</span>
+          </button>
+          <div id="corpoConsolidacaoAtualizacao${idx}" class="corpo-consolidacao-retratil">
           <div class="painel-upload-memoria painel-upload-atualizacao no-print">
             <div class="btnbar">
               <button type="button" class="btn" data-carregar-atualizacao="${idx}">Carregar memória de cálculo para preenchimento automático (PDF)</button>
@@ -6012,7 +6083,9 @@
           ${htmlTabelaConsolidacaoDados(dados, dados.consolidacaoPG ? null : idx)}
           <button type="button" class="btn btn-primary btn-pdf-atualizacao" data-pdf-atualizacao="${idx}">Gerar PDF</button>
           <div class="limpar-flutuacao"></div>
+          </div>
         </div>`).join('');
+      sincronizarConsolidacoesRetrateis();
       container.querySelectorAll('[data-carregar-atualizacao]').forEach(btn => {
         btn.addEventListener('click', () => selecionarMemoriaAtualizacaoPDF(Number(btn.dataset.carregarAtualizacao)));
       });
@@ -6742,6 +6815,10 @@
 
 
     document.addEventListener('DOMContentLoaded', () => {
+      document.addEventListener('click', event => {
+        const botao = event.target?.closest?.('[data-cabecalho-consolidacao]');
+        if (botao) alternarConsolidacaoRetratil(botao);
+      });
       document.querySelectorAll('.campo-moeda').forEach(bindRealtimeMoneyInput);
       document.querySelectorAll('.campo-percentual').forEach(bindPercentInput);
       bindEnterComoTabPercentualEncargoPrincipal('percentualMulta');
