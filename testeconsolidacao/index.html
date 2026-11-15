@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_74 -->
+  <!-- Versão: simulador_consolidacao_debito_v_75 -->
 
   <style>
     :root {
@@ -4899,6 +4899,7 @@
         simulacoesAdicionais.push(dados);
         fecharModalLancamentoPagamento();
         renderizarAtualizacoes();
+        rolarParaConsolidacaoCriada(simulacoesAdicionais.length - 1);
         showToast('Pagamento lançado e nova consolidação criada com sucesso.', 'success');
       } catch (erro) {
         erroCampo.textContent = normalizarMensagemErro(erro, 'Não foi possível lançar o pagamento.');
@@ -5029,6 +5030,7 @@
         dados.statusMemoria = dados.statusMemoria || 'vazio';
         simulacoesAdicionais.push(dados);
         renderizarAtualizacoes();
+        rolarParaConsolidacaoCriada(simulacoesAdicionais.length - 1);
         showToast('Atualização adicionada com sucesso.', 'success');
       } catch (erro) {
         showToast(normalizarMensagemErro(erro, 'Não foi possível adicionar a atualização.'), 'error');
@@ -5238,6 +5240,7 @@
         }
         dados.statusMemoria = 'carregado';
         registrarReferenciaMemoriaAtualizacao(dados);
+        const criandoNovaConsolidacao = indiceDestino === null || !simulacoesAdicionais[indiceDestino];
         if (indiceDestino !== null && simulacoesAdicionais[indiceDestino]) {
           dados.tituloSecao = simulacoesAdicionais[indiceDestino].tituloSecao || `Consolidação ${String(indiceDestino + 2).padStart(2, '0')}`;
           simulacoesAdicionais[indiceDestino] = dados;
@@ -5248,7 +5251,10 @@
         }
         renderizarAtualizacoes();
         atualizarProgressoPDF(100, 'Memória de cálculo carregada com sucesso.');
-        setTimeout(fecharProgressoPDF, 350);
+        setTimeout(() => {
+          fecharProgressoPDF();
+          if (criandoNovaConsolidacao) rolarParaConsolidacaoCriada(simulacoesAdicionais.length - 1);
+        }, 350);
         showToast('Atualização adicionada com sucesso.', 'success');
       } catch (erro) {
         console.error(erro);
@@ -6055,6 +6061,24 @@
       if (consolidacoesRecolhidas.has(chave)) consolidacoesRecolhidas.delete(chave);
       else consolidacoesRecolhidas.add(chave);
       sincronizarConsolidacoesRetrateis();
+    }
+
+    // Após criar uma consolidação, posiciona a área rolável na linha divisória
+    // imediatamente anterior a ela (abaixo do botão "Gerar PDF" da etapa anterior).
+    // Não é chamado ao editar, recalcular, recolher ou reprocessar consolidações.
+    function rolarParaConsolidacaoCriada(indice) {
+      requestAnimationFrame(() => {
+        const main = document.querySelector('main');
+        const tipo = getTipoDebitoSelecionado();
+        const area = document.getElementById(tipo === 'TCFA_ACUMULADO'
+          ? 'areaAtualizacoesAcumulado' : 'areaAtualizacoesSimples');
+        const bloco = area?.querySelector(`.bloco-atualizacao[data-atualizacao="${indice}"]`);
+        if (!main || !bloco) return;
+        // Deixa visível a divisória e um pequeno respiro acima do cabeçalho azul.
+        const destino = main.scrollTop + bloco.getBoundingClientRect().top
+          - main.getBoundingClientRect().top - 10;
+        main.scrollTo({ top: Math.max(0, destino), behavior: 'smooth' });
+      });
     }
 
     function renderizarAtualizacoes() {
