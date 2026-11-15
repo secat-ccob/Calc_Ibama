@@ -6,7 +6,7 @@
   <title>Simulador de amortização</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_amortizacao_portal_v_12 -->
+  <!-- Versão: simulador_amortizacao_portal_v_13 -->
 
   <style>
     :root {
@@ -2110,15 +2110,27 @@ function _parseTcfaAcumuladoRowFromLineText(lineText) {
     return n === null || n === undefined ? fallback : n;
   };
 
+  // Manter os valores monetários efetivamente registrados no SICAFI.
+  // Percentuais exibidos no PDF podem estar arredondados e não reproduzir esses centavos.
+  const indicesMonetarios = [9, 11, 13, 15, 17, tokens.length - 1];
+  const valoresOriginaisValidos = tokens.length >= 19 && indicesMonetarios.every(idx =>
+    idx >= 0 && idx < tokens.length && parsePtBrNumberAny(tokens[idx]) !== null
+  );
+
   return {
     debito: String(tokens[0] || '').trim(),
     trimestreAno: String(tokens[1] || '').trim(),
     saldoAtualizado: pickNumber(9, 0),
     multaPct: pickNumber(10, 0),
+    multaVal: pickNumber(11, 0),
     jurosPct: pickNumber(12, 0),
+    jurosVal: pickNumber(13, 0),
     selicPct: pickNumber(14, 0),
+    selicVal: pickNumber(15, 0),
     encargosPct: pickNumber(16, 0),
+    encargosVal: pickNumber(17, 0),
     consolidado: pickNumber(tokens.length - 1, 0),
+    valoresOriginaisValidos,
   };
 }
 
@@ -3199,6 +3211,11 @@ function buildTcfaAcumuladoRowsFromArquivo01(sim) {
       saldoAtualizado: Number(r.saldoAtualizado || 0),
       consolidado: Number(r.consolidado || 0),
       trimestreAno: String(r.trimestreAno || '').trim(),
+      multaPct: Number(r.multaPct || 0), multaVal: Number(r.multaVal || 0),
+      jurosPct: Number(r.jurosPct || 0), jurosVal: Number(r.jurosVal || 0),
+      selicPct: Number(r.selicPct || 0), selicVal: Number(r.selicVal || 0),
+      encargosPct: Number(r.encargosPct || 0), encargosVal: Number(r.encargosVal || 0),
+      valoresOriginaisValidos: r.valoresOriginaisValidos === true,
     })).filter(r => r.debito);
   }
 
@@ -3237,6 +3254,11 @@ function buildTcfaAcumuladoRowsFromPreviousResult(prevSim) {
       trimestreAno: String(r.trimestreAno ?? '').trim(),
       saldoAtualizado: Number(r.saldoAtualizado || 0),
       consolidado: Number(r.consolidado || 0),
+      multaPct: Number(r.multaPct || 0), multaVal: Number(r.multaVal || 0),
+      jurosPct: Number(r.jurosPct || 0), jurosVal: Number(r.jurosVal || 0),
+      selicPct: Number(r.selicPct || 0), selicVal: Number(r.selicVal || 0),
+      encargosPct: Number(r.encargosPct || 0), encargosVal: Number(r.encargosVal || 0),
+      valoresOriginaisValidos: true,
       situacao: String(r.situacao || ''),
     }))
     .filter(r => r.debito);
@@ -3256,6 +3278,10 @@ function applyTcfaAcumuladoParte01FromRows(sim, sourceRows) {
   if (!Array.isArray(sourceRows) || !sourceRows.length) {
     throw new Error('Não foi possível localizar os débitos base para o cálculo do TCFA acumulado.');
   }
+
+  // Referência monetária anterior à amortização, para débitos não afetados
+  // quando a consolidação ocorrer na mesma data do depósito/pagamento.
+  sim._tcfaParte01SourceRows = sourceRows.map(r => ({ ...r }));
 
   sim.valorquefaltou = roundMoneyValue((sim.valorconsolidadonadatadeposito || 0) - (sim.valordodeposito || 0));
 
@@ -3329,7 +3355,10 @@ function computeSimpleConsolidadoByRates(baseSaldo, pctMulta, pctJuros, pctSelic
   return computeRoundedRateComponents(baseSaldo, pctMulta, pctJuros, pctSelic, pctEncargos).consolidado;
 }
 
-function buildTcfaAcumuladoRowsFromUploadedDepositMemory(prevSim, parsedRows) {
+function buildTcfaAcumuladoRowsFromUploadedDepositMemory(prevSim, parsedRows, dataMemoriaDeposito = '') {
+  const dataAnterior = normalizeDateDdMmYyyy(prevSim?.datadeconsolidacao || '');
+  const dataAtual = normalizeDateDdMmYyyy(dataMemoriaDeposito);
+  const mesmaDataAnterior = !!(dataAnterior && dataAtual && dataAnterior === dataAtual);
   const prevRows = buildTcfaAcumuladoRowsFromPreviousResult(prevSim)
     .filter(r => isTcfaAcumuladoPreviousRowActive(r));
 
@@ -3345,18 +3374,24 @@ function buildTcfaAcumuladoRowsFromUploadedDepositMemory(prevSim, parsedRows) {
     }
 
     const base = roundMoneyValue(prevRow.saldoAtualizado || 0);
-    const pctMulta = Number(up.multaPct || 0) / 100;
-    const pctJuros = Number(up.jurosPct || 0) / 100;
-    const pctSelic = Number(up.selicPct || 0) / 100;
-    const pctEnc = Number(up.encargosPct || 0) / 100;
-    const consolidado = computeSimpleConsolidadoByRates(base, pctMulta, pctJuros, pctSelic, pctEnc);
+    const preservarAnterior = mesmaDataAnterior && prevRow.valoresOriginaisValidos === true;
+    const pctM = preservarAnterior ? Number(prevRow.multaPct || 0) : Number(up.multaPct || 0);
+    const pctJ = preservarAnterior ? Number(prevRow.jurosPct || 0) : Number(up.jurosPct || 0);
+    const pctS = preservarAnterior ? Number(prevRow.selicPct || 0) : Number(up.selicPct || 0);
+    const pctE = preservarAnterior ? Number(prevRow.encargosPct || 0) : Number(up.encargosPct || 0);
+    const calc = preservarAnterior ? null : computeRoundedRateComponents(base, pctM / 100, pctJ / 100, pctS / 100, pctE / 100);
 
     recomposed.push({
       row: Number(prevRow.row || (recomposed.length + 1)),
       debito: key,
       trimestreAno: String(prevRow.trimestreAno || up.trimestreAno || '').trim(),
       saldoAtualizado: base,
-      consolidado,
+      multaPct: pctM, multaVal: preservarAnterior ? prevRow.multaVal : calc.multa,
+      jurosPct: pctJ, jurosVal: preservarAnterior ? prevRow.jurosVal : calc.juros,
+      selicPct: pctS, selicVal: preservarAnterior ? prevRow.selicVal : calc.selic,
+      encargosPct: pctE, encargosVal: preservarAnterior ? prevRow.encargosVal : calc.encargos,
+      consolidado: preservarAnterior ? Number(prevRow.consolidado || 0) : calc.consolidado,
+      valoresOriginaisValidos: true,
       situacao: String(prevRow.situacao || ''),
     });
   }
@@ -3400,7 +3435,7 @@ function applyUploadedDepositMemoryOverride(simId) {
 
   if (sim.tipododebito === 'TCFA_ACUMULADO') {
     const prevSim = state.simulations[simId - 2];
-    const sourceRows = buildTcfaAcumuladoRowsFromUploadedDepositMemory(prevSim, parsed.rows || []);
+    const sourceRows = buildTcfaAcumuladoRowsFromUploadedDepositMemory(prevSim, parsed.rows || [], parsed.dataConsolidacao);
     sim._rowsArquivo01TabelaOverride = sourceRows;
     const totalConsolidado = sourceRows.reduce((acc, r) => sumMoneyValues(acc, r.consolidado || 0), 0);
     sim.valorconsolidadonadatadeposito = totalConsolidado;
@@ -3490,6 +3525,10 @@ function calcularParte02(sim) {
   } else {
     // TCFA acumulado: recompor apenas o débito parcial e copiar os demais não quitados inalterados do Arquivo02
     const rows = sim._rowsArquivo02Tabela || [];
+    const dataDeposito = normalizeDateDdMmYyyy(sim.datadodeposito || '');
+    const dataConsolidacao = normalizeDateDdMmYyyy(sim.datadeconsolidacao || '');
+    const mesmaData = !!(dataDeposito && dataConsolidacao && dataDeposito === dataConsolidacao);
+    const origemPorDebito = new Map((sim._tcfaParte01SourceRows || []).map(r => [String(r.debito || '').trim(), r]));
     const debitoParcial = String(sim.numerodebitox || '').trim();
     if (!debitoParcial) throw new Error('TCFA acumulado: número do débito parcial não identificado.');
 
@@ -3554,30 +3593,26 @@ function calcularParte02(sim) {
       situacao: 'Quitado parcialmente'
     });
 
-    // Demais não quitados -> permanecem inalterados em relação ao pagamento,
-// porém devem ser exibidos com seus percentuais e valores na data final.
-// Regra: base = saldo atualizado (Arquivo02) e recomposição por percentuais do próprio débito.
+    // Débitos não afetados: na mesma data, conservar exatamente os valores da
+    // referência anterior à amortização; em datas distintas, manter a recomposição.
 for (let i = idxParcial + 1; i < rows.length; i++) {
   const r = rows[i];
-  const baseNQ = Number(r.saldoAtualizado || 0);
+  const origem = origemPorDebito.get(String(r.debito || '').trim());
+  const preservar = mesmaData && origem && origem.valoresOriginaisValidos === true;
+  const baseNQ = preservar ? Number(origem.saldoAtualizado || 0) : Number(r.saldoAtualizado || 0);
 
-  const pctM = Number(r.multaPct || 0);
-  const pctJ = Number(r.jurosPct || 0);
-  const pctS = Number(r.selicPct || 0);
-  const pctE = Number(r.encargosPct || 0);
+  const pctM = Number((preservar ? origem : r).multaPct || 0);
+  const pctJ = Number((preservar ? origem : r).jurosPct || 0);
+  const pctS = Number((preservar ? origem : r).selicPct || 0);
+  const pctE = Number((preservar ? origem : r).encargosPct || 0);
 
-  const pM = pctM / 100;
-  const pJ = pctJ / 100;
-  const pS = pctS / 100;
-  const pE = pctE / 100;
-
-  const calcNQ = computeRoundedRateComponents(baseNQ, pM, pJ, pS, pE);
-  const baseNQFinal = calcNQ.base;
-  const multaNQ = calcNQ.multa;
-  const jurosNQ = calcNQ.juros;
-  const selicNQ = calcNQ.selic;
-  const encargosNQ = calcNQ.encargos;
-  const consolidadoNQ = calcNQ.consolidado;
+  const calcNQ = preservar ? null : computeRoundedRateComponents(baseNQ, pctM / 100, pctJ / 100, pctS / 100, pctE / 100);
+  const baseNQFinal = preservar ? baseNQ : calcNQ.base;
+  const multaNQ = preservar ? Number(origem.multaVal || 0) : calcNQ.multa;
+  const jurosNQ = preservar ? Number(origem.jurosVal || 0) : calcNQ.juros;
+  const selicNQ = preservar ? Number(origem.selicVal || 0) : calcNQ.selic;
+  const encargosNQ = preservar ? Number(origem.encargosVal || 0) : calcNQ.encargos;
+  const consolidadoNQ = preservar ? Number(origem.consolidado || 0) : calcNQ.consolidado;
 
   // guardar consolidado no próprio objeto para somatórios
   r.consolidado = consolidadoNQ;
