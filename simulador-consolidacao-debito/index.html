@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_69 -->
+  <!-- Versão: simulador_consolidacao_debito_v_77 -->
 
   <style>
     :root {
@@ -759,11 +759,45 @@
     .subtitulo-atualizacao {
       margin: 0 0 10px;
       padding: 8px 10px;
-      background: #1f4e79;
+      background: var(--cor-primaria);
       color: #ffffff;
       font-weight: bold;
       text-align: center;
       font-size: 13px;
+    }
+
+    /* Recolhimento individual das consolidações, como nos depósitos do Simulador de amortização. */
+    .botao-consolidacao-retratil {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      width: 100%;
+      border: none;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .botao-consolidacao-retratil .seta-consolidacao {
+      justify-self: end;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .botao-consolidacao-retratil:focus-visible {
+      outline: 2px solid #4CAF50;
+      outline-offset: -2px;
+    }
+
+    .botao-consolidacao-retratil[aria-expanded="false"] {
+      margin-bottom: 0;
+    }
+
+    .corpo-consolidacao-retratil[hidden] {
+      display: none !important;
+    }
+
+    .bloco-atualizacao.recolhido {
+      padding-bottom: 0;
     }
 
     .tabela-atualizacao td,
@@ -777,6 +811,10 @@
 
     .tabela-atualizacao td.percentual.percentual-periodo {
       text-align: left;
+    }
+
+    .tabela-atualizacao td.percentual.percentual-periodo.percentual-periodo-centralizado {
+      text-align: center;
     }
 
     .tabela-atualizacao td.percentual:not(.percentual-periodo) {
@@ -796,6 +834,12 @@
       padding: 2px 3px;
       text-align: right;
       font-weight: inherit;
+    }
+
+    /* Dados de identificação das consolidações seguintes: alinhados como na Consolidação 01. */
+    .tabela-atualizacao .linha-topo .campo-simulado-nao-editavel.campo-numero,
+    .tabela-atualizacao .linha-topo .campo-simulado-nao-editavel.campo-data {
+      text-align: left;
     }
 
     .campo-atualizacao-editavel {
@@ -960,6 +1004,38 @@
     }
 
 
+
+    /* Lançamento de pagamentos: janela modal bloqueante e centrada. */
+    .btn-lancar-pagamento { white-space: nowrap; }
+    .modal-lancamento-pagamento {
+      position: fixed; inset: 0; z-index: 100000;
+      display: none; align-items: center; justify-content: center;
+      background: rgba(0, 0, 0, 0.48); padding: 22px;
+    }
+    .modal-lancamento-pagamento.ativo { display: flex; }
+    .caixa-lancamento-pagamento {
+      width: min(450px, 95vw); position: relative;
+      padding: 23px 24px 20px;
+      background: white; border: 1px solid #c9d2d0; border-radius: 8px;
+      box-shadow: 0 12px 32px rgba(0,0,0,.27); color: #1f2933;
+    }
+    .titulo-lancamento-pagamento {
+      margin: 0 28px 19px 0; font-size: 16px; font-weight: bold;
+      color: #1f4e79; text-align: center;
+    }
+    .fechar-lancamento-pagamento {
+      position: absolute; right: 10px; top: 9px; width: 28px; height: 28px;
+      border: 1px solid #bcc7c2; border-radius: 4px;
+      background: #fff; font-size: 19px; cursor: pointer;
+    }
+    .rotulo-valor-pagamento { display: block; font-size: 13px; font-weight: bold; margin-bottom: 8px; }
+    .campo-valor-pagamento {
+      width: 100%; font-size: 16px; padding: 9px 10px;
+      border: 1px solid #a9b9b0; border-radius: 4px; text-align: right;
+    }
+    .campo-valor-pagamento:focus { outline: 2px solid #4caf50; }
+    .erro-lancamento-pagamento { min-height: 17px; margin-top: 8px; color: #a11919; font-size: 12px; }
+    .acoes-lancamento-pagamento { display: flex; justify-content: center; gap: 10px; margin-top: 14px; }
 
     .modal-progresso-pdf {
       position: fixed;
@@ -1383,8 +1459,25 @@
           </div>
         </div>
       </div>
+      <div id="modalLancamentoPagamento" class="modal-lancamento-pagamento" aria-hidden="true">
+        <div class="caixa-lancamento-pagamento" role="dialog" aria-modal="true" aria-labelledby="tituloLancamentoPagamento">
+          <button type="button" id="btnFecharLancamentoPagamento" class="fechar-lancamento-pagamento" aria-label="Fechar janela">×</button>
+          <div id="tituloLancamentoPagamento" class="titulo-lancamento-pagamento">Lançamento de pagamento em 00/00/0000</div>
+          <label id="rotuloValorPagamento" class="rotulo-valor-pagamento" for="campoValorLancamentoPagamento">Valor do pagamento em 00/00/0000</label>
+          <input id="campoValorLancamentoPagamento" class="campo-valor-pagamento" type="text" inputmode="numeric" autocomplete="off" placeholder="0,00" />
+          <div id="erroLancamentoPagamento" class="erro-lancamento-pagamento" role="alert" aria-live="polite"></div>
+          <div class="acoes-lancamento-pagamento">
+            <button type="button" class="btn btn-primary" id="btnConfirmarLancamentoPagamento">Lançar</button>
+            <button type="button" class="btn" id="btnCancelarLancamentoPagamento">Cancelar</button>
+          </div>
+        </div>
+      </div>
       <div id="toastContainer"></div>
       <div class="conteudo-ferramenta" id="areaTabelaSimples" style="display:none;">
+        <button type="button" class="subtitulo-atualizacao botao-consolidacao-retratil" data-cabecalho-consolidacao="principal-simples" aria-controls="corpoConsolidacaoPrincipalSimples" aria-expanded="true">
+          <span aria-hidden="true"></span><span>Consolidação 01</span><span class="seta-consolidacao" aria-hidden="true">▼</span>
+        </button>
+        <div id="corpoConsolidacaoPrincipalSimples" class="corpo-consolidacao-retratil">
         <table class="tabela-consolidacao" aria-label="Tabela de consolidação do débito">
           <colgroup>
             <col class="col-descricao" />
@@ -1538,10 +1631,12 @@
         <div class="acoes-pdf no-print acoes-pdf-individual">
           <button type="button" class="btn btn-primary" id="btnGerarPdf">Gerar PDF</button>
         </div>
+        </div>
 
         <div id="areaAtualizacoesSimples" class="area-atualizacoes"></div>
 
         <div class="acoes-atualizacao no-print" id="acoesAtualizacaoSimples">
+          <button type="button" class="btn btn-lancar-pagamento" id="btnLancarPagamentoSimples">Lançar pagamento em 00/00/0000</button>
           <button type="button" class="btn" id="btnAdicionarAtualizacaoSimples">Adicionar atualização</button>
           <button type="button" class="btn" id="btnRemoverAtualizacaoSimples">Remover atualização</button>
           <button type="button" class="btn btn-primary" id="btnGerarPdfConsolidadoSimples">Gerar PDF consolidado (todas as simulações)</button>
@@ -1554,6 +1649,10 @@
       <div class="conteudo-ferramenta" id="areaTcfaAcumulado" style="display:none;">
         <div id="mensagemTcfaAcumulado" class="mensagem-acumulado">Carregue a memória de cálculo para o preenchimento automático.</div>
         <div id="conteudoTcfaAcumulado" style="display:none;">
+          <button type="button" class="subtitulo-atualizacao botao-consolidacao-retratil" data-cabecalho-consolidacao="principal-acumulado" aria-controls="corpoConsolidacaoPrincipalAcumulado" aria-expanded="true">
+            <span aria-hidden="true"></span><span>Consolidação 01</span><span class="seta-consolidacao" aria-hidden="true">▼</span>
+          </button>
+          <div id="corpoConsolidacaoPrincipalAcumulado" class="corpo-consolidacao-retratil">
           <div class="subtitulo-tabela">Composição do débito</div>
           <div class="tabela-wrapper">
             <table class="tabela-composicao-acumulado" aria-label="Composição do débito acumulado">
@@ -1638,11 +1737,13 @@
           <div class="acoes-pdf no-print acoes-pdf-individual">
             <button type="button" class="btn btn-primary" id="btnGerarPdfTcfaAcumulado">Gerar PDF</button>
           </div>
+          </div>
 
           <div id="areaAtualizacoesAcumulado" class="area-atualizacoes"></div>
 
           <div class="acoes-atualizacao no-print" id="acoesAtualizacaoAcumulado">
-            <button type="button" class="btn" id="btnAdicionarAtualizacaoAcumulado">Adicionar atualização</button>
+            <button type="button" class="btn btn-lancar-pagamento" id="btnLancarPagamentoAcumulado">Lançar pagamento em 00/00/0000</button>
+          <button type="button" class="btn" id="btnAdicionarAtualizacaoAcumulado">Adicionar atualização</button>
             <button type="button" class="btn" id="btnRemoverAtualizacaoAcumulado">Remover atualização</button>
             <button type="button" class="btn btn-primary" id="btnGerarPdfConsolidadoAcumulado">Gerar PDF consolidado (todas as simulações)</button>
           </div>
@@ -1678,6 +1779,7 @@
     let assinaturaMemoriaCorrigida = '';
     let verificacaoStatusMemoriaPendente = false;
     let simulacoesAdicionais = [];
+    const consolidacoesRecolhidas = new Set();
     let uploadAtualizacaoPendente = false;
     let indiceAtualizacaoUploadPendente = null;
     let resolverModalModoAtualizacao = null;
@@ -2014,6 +2116,8 @@
       limparTabelaSimples();
       limparTcfaAcumulado();
       simulacoesAdicionais = [];
+      consolidacoesRecolhidas.clear();
+      sincronizarConsolidacoesRetrateis();
       renderizarAtualizacoes();
       uploadAtualizacaoPendente = false;
       setUploadMemoriaOk(false);
@@ -2769,6 +2873,7 @@
       atualizarEstadoPercentuaisComposicaoAcumulado();
       atualizarIndicadorModoAutomaticoPrincipal();
       if (!dadosTcfaAcumulado._preservarValoresCarregados) atualizarConsolidacaoAcumulado();
+      atualizarEstadoBotaoPagamento();
     }
 
     function montarHtmlConsolidacaoAcumulado() {
@@ -2805,8 +2910,11 @@
           const idx = Number(input.dataset.idx);
           const campo = input.dataset.campo;
           if (dadosTcfaAcumulado?.rows?.[idx] && campo) {
+            const valorInformado = parseNumeroFlexivel(input.value);
+            const valorAnterior = Number(dadosTcfaAcumulado.rows[idx][campo] || 0);
+            if (valorInformado === valorAnterior) return; // foco/saída sem edição não altera a memória
             dadosTcfaAcumulado._preservarValoresCarregados = false;
-            dadosTcfaAcumulado.rows[idx][campo] = parseNumeroFlexivel(input.value);
+            dadosTcfaAcumulado.rows[idx][campo] = valorInformado;
             if (campo === 'multaPct' && modoComposicaoAcumulado('multa') === 'manual') {
               dadosTcfaAcumulado.rows[idx].multaPctManual = dadosTcfaAcumulado.rows[idx][campo];
             }
@@ -2832,16 +2940,21 @@
       document.querySelectorAll('.campo-moeda-acum').forEach(input => {
         if (input.dataset.moneyBound === '1') return;
         input.dataset.moneyBound = '1';
-        input.addEventListener('focus', () => setTimeout(() => input.select(), 0));
+        input.addEventListener('focus', () => {
+          input.dataset.valorNoFoco = String(moedaParaNumero(input.value));
+          setTimeout(() => input.select(), 0);
+        });
         input.addEventListener('input', () => {
           const digits = input.value.replace(/\D/g, '');
           input.value = digits ? formatMoneyDigitsString(digits) : '';
+          if (String(moedaParaNumero(input.value)) === input.dataset.valorNoFoco) return;
           if (input.id === 'acumSomatorioSapiens') modoSomatorioSapiensDividaAcumulado = 'valor';
           atualizarConsolidacaoAcumulado();
         });
         input.addEventListener('blur', () => {
           const digits = input.value.replace(/\D/g, '');
           input.value = digits ? formatMoneyDigitsString(digits) : '0,00';
+          if (String(moedaParaNumero(input.value)) === input.dataset.valorNoFoco) return;
           if (input.id === 'acumSomatorioSapiens') modoSomatorioSapiensDividaAcumulado = 'valor';
           atualizarConsolidacaoAcumulado();
         });
@@ -2849,14 +2962,19 @@
       document.querySelectorAll('.campo-percentual-acum').forEach(input => {
         if (input.dataset.percentBound === '1') return;
         input.dataset.percentBound = '1';
-        input.addEventListener('focus', () => setTimeout(() => input.select(), 0));
+        input.addEventListener('focus', () => {
+          input.dataset.valorNoFoco = String(parseNumeroFlexivel(input.value));
+          setTimeout(() => input.select(), 0);
+        });
         input.addEventListener('input', () => {
           input.value = input.value.replace(/[^0-9,.%]/g, '');
+          if (String(parseNumeroFlexivel(input.value)) === input.dataset.valorNoFoco) return;
           if (input.id === 'acumPercentualSapiens') modoSomatorioSapiensDividaAcumulado = 'percentual';
           atualizarConsolidacaoAcumulado();
         });
         input.addEventListener('blur', () => {
           input.value = numeroParaPercentual(parseNumeroFlexivel(input.value));
+          if (String(parseNumeroFlexivel(input.value)) === input.dataset.valorNoFoco) return;
           if (input.id === 'acumPercentualSapiens') modoSomatorioSapiensDividaAcumulado = 'percentual';
           atualizarConsolidacaoAcumulado();
         });
@@ -3037,6 +3155,7 @@
         }
         setUploadMemoriaOk(true);
         registrarReferenciaMemoriaCarregada();
+        atualizarEstadoBotaoPagamento();
         atualizarProgressoPDF(100, 'Memória de cálculo carregada com sucesso.');
         setTimeout(fecharProgressoPDF, 350);
         showToast('Memória de cálculo carregada com sucesso.', 'success');
@@ -3490,19 +3609,21 @@
         // Nos campos-base manuais, o recálculo é aplicado apenas ao sair do campo
         // ou ao avançar com Enter/Tab. Isso evita que o próprio cálculo sobrescreva
         // o valor enquanto o usuário ainda está digitando ou apagando.
-        if (!ehCampoBaseManual(input)) {
+        if (!ehCampoBaseManual(input) && String(moedaParaNumero(input.value)) !== input.dataset.valorNoFoco) {
           registrarEdicaoCampo(input);
           atualizarCalculos();
         }
       };
 
       input.addEventListener('focus', () => {
+        input.dataset.valorNoFoco = String(moedaParaNumero(input.value));
         setTimeout(() => input.select(), 0);
       });
       input.addEventListener('input', apply);
       input.addEventListener('blur', () => {
         const digits = input.value.replace(/\D/g, '');
         input.value = digits ? formatMoneyDigitsString(digits) : '0,00';
+        if (String(moedaParaNumero(input.value)) === input.dataset.valorNoFoco) return;
         registrarEdicaoCampo(input);
         atualizarCalculos();
       });
@@ -3541,11 +3662,13 @@
       input.dataset.percentBound = '1';
 
       input.addEventListener('focus', () => {
+        input.dataset.valorNoFoco = String(parseNumeroFlexivel(input.value));
         setTimeout(() => input.select(), 0);
       });
 
       input.addEventListener('input', () => {
         input.value = input.value.replace(/[^0-9,.%]/g, '');
+        if (String(parseNumeroFlexivel(input.value)) === input.dataset.valorNoFoco) return;
         registrarEdicaoCampo(input);
         atualizarCalculos();
       });
@@ -3553,6 +3676,7 @@
       input.addEventListener('blur', () => {
         const valor = parseNumeroFlexivel(input.value);
         input.value = numeroParaPercentual(valor);
+        if (String(valor) === input.dataset.valorNoFoco) return;
         registrarEdicaoCampo(input);
         atualizarCalculos();
       });
@@ -4309,6 +4433,10 @@
       if (!ensureInputDate(input)) return;
       const campos = dadosSimplesParaCampos(dados);
       const valor = input.value.trim();
+      const valorAnterior = tipo === 'multa'
+        ? (campoData === 'inicio' ? campos.dataInicioMulta : campos.dataFimMulta)
+        : (campoData === 'inicio' ? campos.dataInicioSelic : campos.dataFimSelic);
+      if (valor === String(valorAnterior || '')) return;
       if (tipo === 'multa') {
         if (campoData === 'inicio') campos.dataInicioMulta = valor;
         if (campoData === 'fim') campos.dataFimMulta = valor;
@@ -4342,6 +4470,7 @@
       if (!dados || dados.tipoDebito === 'TCFA_ACUMULADO' || input.readOnly) return;
       const campos = dadosSimplesParaCampos(dados);
       const pct = parseNumeroFlexivel(input.value);
+      if (pct === Number(tipo === 'multa' ? campos.percentualMulta : campos.percentualSelic)) return;
       if (tipo === 'multa') {
         campos.percentualMulta = pct;
         substituirAtualizacaoSimplesRecalculada(indice, campos, { modoMulta: 'manual' });
@@ -4564,6 +4693,226 @@
       };
     }
 
+    // Pagamento na mesma data: usar a fração do ingresso sobre o valor consolidado,
+    // conforme o cálculo proporcional do Simulador de amortização.
+    function obterConsolidacaoVigenteParaPagamento(indiceDestino = null) {
+      if (Number.isInteger(indiceDestino)) {
+        return indiceDestino > 0 ? simulacoesAdicionais[indiceDestino - 1] : coletarDadosPdf();
+      }
+      return simulacoesAdicionais.length ? simulacoesAdicionais[simulacoesAdicionais.length - 1] : coletarDadosPdf();
+    }
+
+    function textoDataConsolidacaoComPagamento(dados) {
+      const data = String(dados?.dataConsolidacao || '');
+      if (!dados?.consolidacaoPG || !dados?.pagamento) return data;
+      return `${data}, após o ingresso no valor de R$ ${numeroParaMoeda(Number(dados.pagamento.valor || 0))}`;
+    }
+
+    function registrarMetadadosPagamento(dados, data, valor, consolidadoAnterior, amortizadoReal) {
+      dados.consolidacaoPG = true;
+      dados.pagamento = {
+        data, valor: roundMoneyValue(valor),
+        consolidadoAnterior: roundMoneyValue(consolidadoAnterior),
+        fatorImputacao: consolidadoAnterior ? (valor / consolidadoAnterior) : 0,
+        valorAmortizado: roundMoneyValue(amortizadoReal)
+      };
+      dados.dataConsolidacao = data;
+      dados.tituloSecao = `Consolidação ${String((dados._indicePG || 0) + 2).padStart(2, '0')}`;
+      delete dados._indicePG;
+      dados.statusMemoria = 'vazio';
+      dados.reprocessamentoPendente = false;
+      dados.reprocessamentoOrigemIndice = null;
+      return dados;
+    }
+
+    function criarConsolidacaoPagamento(valorPagamento, dataPagamento, indiceDestino = null) {
+      const origem = obterConsolidacaoVigenteParaPagamento(indiceDestino);
+      if (!origem) throw new Error('Não foi possível localizar a consolidação anterior.');
+      if (origem.consolidacaoPG) throw new Error('Adicione uma atualização antes de lançar outro pagamento.');
+      if (!parseDataPtBr(dataPagamento) || dataPagamento !== String(origem.dataConsolidacao || '')) {
+        throw new Error('O pagamento deve utilizar a data da consolidação vigente.');
+      }
+      const valor = roundMoneyValue(valorPagamento);
+      const consolidado = valorNumeroLinha(origem, '(=)Valor Consolidado');
+      if (!(consolidado > 0) || !(valor > 0) || valor > consolidado) {
+        throw new Error('Informe um pagamento maior que zero e não superior ao valor consolidado.');
+      }
+      const fator = valor / consolidado;
+      const indicePG = Number.isInteger(indiceDestino) ? indiceDestino : simulacoesAdicionais.length;
+
+      if (origem.tipoDebito === 'TCFA_ACUMULADO') {
+        const rows = clonarRowsComposicao(origem.composicao || []);
+        if (!rows.length) throw new Error('A memória do TCFA acumulado não possui composição para amortização.');
+        let restante = valor;
+        // Mesma ordem do Simulador de amortização: quitar os mais antigos primeiro.
+        for (const row of rows) {
+          const consolidadoLinha = roundMoneyValue(Number(row.valorConsolidado || 0));
+          if (!(consolidadoLinha > 0) || !(restante > 0)) continue;
+          const parcela = Math.min(restante, consolidadoLinha);
+          const fracao = parcela / consolidadoLinha;
+          // A imputação usa o Saldo Atualizado do débito na data do pagamento,
+          // assim como no Simulador de amortização. Não se amortiza primeiro
+          // o principal para depois reaplicar o percentual de correção.
+          const saldoAtualizadoOriginal = roundMoneyValue(Number(row.saldoAtualizado || 0));
+          const saldoAtualizadoResidual = Math.max(0, roundMoneyValue(saldoAtualizadoOriginal * (1 - fracao)));
+          const compensacaoLinha = roundMoneyValue(Number(row.compensacaoRegular || 0) + Number(row.compensacaoManual || 0));
+          const fatorCorrecao = 1 + Number(row.correcaoPct || 0) / 100;
+          if (!(fatorCorrecao > 0)) throw new Error('Percentual de correção inválido para amortização do débito.');
+          // Reconstituir a base do débito a partir do saldo já amortizado permite
+          // manter a composição (saldo + IPCA) consistente com o valor alvo.
+          const saldoBaseResidual = roundMoneyValue(saldoAtualizadoResidual / fatorCorrecao);
+          row.saldo = roundMoneyValue(saldoBaseResidual + compensacaoLinha);
+          recalcularLinhaComposicao(row); // mantém os percentuais da consolidação anterior
+          restante = Math.max(0, roundMoneyValue(restante - parcela));
+        }
+        if (restante > 0.01) throw new Error('O valor do pagamento supera a soma dos débitos disponíveis para amortização.');
+
+        const total = somarRowsComposicao(rows, false);
+        const principal = valorNumeroLinha(origem, 'Valor Principal');
+        const pctDesc = percentualNumeroLinha(origem, 'Desconto');
+        const pctSapiens = percentualNumeroLinha(origem, 'Amortização sobre o Saldo Parcial');
+        const compens = valorNumeroLinha(origem, 'Compensação Estadual');
+        const corre = total.correcaoValor;
+        // O valor pós-amortização é a variável de ajuste. Preserva os percentuais
+        // da consolidação anterior, enquanto a composição discrimina o pagamento
+        // por débito em ordem cronológica, como no Simulador de amortização.
+        const fatorSapiens = 1 - pctSapiens / 100;
+        const fatorDesconto = 1 - pctDesc / 100;
+        if (fatorSapiens <= 0 || fatorDesconto <= 0) {
+          throw new Error('Não é possível calcular o pagamento com desconto ou amortização de 100% ou mais.');
+        }
+        const saldoParcialAlvo = (total.saldoAtualizado - corre) / fatorSapiens;
+        const posAmortAlvo = (saldoParcialAlvo + compens) / fatorDesconto;
+        const somaAmort = roundMoneyValue(principal - posAmortAlvo);
+        const aposAmort = roundMoneyValue(principal - somaAmort);
+        const desconto = roundMoneyValue(aposAmort * pctDesc / 100);
+        const saldoParcial = roundMoneyValue(aposAmort - desconto - compens);
+        const amortSaldo = roundMoneyValue(saldoParcial * pctSapiens / 100);
+        const saldoAtualizado = roundMoneyValue(saldoParcial - amortSaldo + corre);
+        const totalParcial = roundMoneyValue(saldoAtualizado + total.multaValor + total.jurosValor + total.selicValor);
+        const pctEncargos = percentualNumeroLinha(origem, 'Encargos Legais');
+        const encargos = total.encargosValor;
+        const saida = dadosPdfAcumuladoDeEstado({
+          numeroDebito: origem.numeroDebito || '', dataConsolidacao: dataPagamento,
+          rows, totalComposicao: total,
+          valorPrincipal: principal, somatorioAmortizacao: somaAmort,
+          valorPosAmortizacao: aposAmort, percentualDesconto: pctDesc, valorDesconto: desconto,
+          compensacaoEstadual: compens, saldoParcial,
+          percentualSapiens: pctSapiens,
+          somatorioSapiens: amortSaldo, correcaoMonetaria: corre,
+          saldoAtualizado,
+          valorMulta: total.multaValor, valorJuros: total.jurosValor,
+          valorSelic: total.selicValor, totalParcial,
+          percentualEncargos: pctEncargos, valorEncargos: encargos,
+          valorConsolidado: total.valorConsolidado
+        });
+        saida.modoMultaAcumulado = origem.modoMultaAcumulado || modoComposicaoAcumulado('multa');
+        saida.modoSelicAcumulado = origem.modoSelicAcumulado || modoComposicaoAcumulado('selic');
+        saida.modoSapiensAtualizacao = 'valor';
+        saida._indicePG = indicePG;
+        return registrarMetadadosPagamento(saida, dataPagamento, valor, consolidado,
+          roundMoneyValue(valorNumeroLinha(origem, 'Saldo Atualizado') - total.saldoAtualizado));
+      }
+
+      const campos = calcularCamposSimples(dadosSimplesParaCampos(origem));
+      const saldoPre = valorNumeroLinha(origem, 'Saldo Atualizado');
+      const saldoAtualizado = saldoPre > 0 ? saldoPre : campos.saldoAtualizado;
+      const amortizadoReal = roundMoneyValue(saldoAtualizado * fator);
+      const saldoPosPagamento = roundMoneyValue(saldoAtualizado - amortizadoReal);
+      // Transformar o saldo amortizado (fator de imputação do Simulador de amortização)
+      // em novo Somatório da amortização. O desconto passa a incidir automaticamente
+      // sobre o Valor pós-amortização, sem modificar NENHUM percentual existente.
+      const fatorDesconto = 1 - Number(campos.percentualDesconto || 0) / 100;
+      const fatorSapiensCorrecao = 1 - Number(campos.percentualSapiens || 0) / 100
+        + Number(campos.percentualCorrecaoMonetaria || 0) / 100;
+      if (fatorDesconto <= 0 || fatorSapiensCorrecao <= 0) {
+        throw new Error('Não é possível calcular o pagamento preservando os percentuais atuais de desconto e correção.');
+      }
+      const saldoParcialAlvo = (saldoPosPagamento
+        + Number(campos.amortizacaoCorrecaoMonetariaSapiensDivida || 0)) / fatorSapiensCorrecao;
+      const valorPosAmortizacaoAlvo = (saldoParcialAlvo + Number(campos.compensacaoEstadual || 0)) / fatorDesconto;
+      campos.somatorioAmortizacao = roundMoneyValue(Number(campos.valorPrincipal || 0) - valorPosAmortizacaoAlvo);
+      // Neste novo saldo, a amortização sobre o Saldo Parcial mantém seu percentual.
+      campos.somatorioSapiens = undefined;
+      campos.modoCorrecaoMonetaria = 'percentual';
+      campos.dataConsolidacao = dataPagamento;
+      const saida = dadosPdfDeCamposSimples(campos);
+      // Sem passagem do tempo: taxas e datas copiadas do cálculo de origem.
+      copiarMetadadosAtualizacao(origem, saida);
+      if (!saida.modoMulta) saida.modoMulta = origem.modoMulta || modoEncargoSelecionado('multa');
+      if (!saida.modoSelic) saida.modoSelic = origem.modoSelic || modoEncargoSelecionado('selic');
+      saida._indicePG = indicePG;
+      return registrarMetadadosPagamento(saida, dataPagamento, valor, consolidado, amortizadoReal);
+    }
+
+    function atualizarEstadoBotaoPagamento() {
+      const tipo = getTipoDebitoSelecionado();
+      const vigentePG = !!simulacoesAdicionais[simulacoesAdicionais.length - 1]?.consolidacaoPG;
+      const data = obterDataConsolidacaoAnteriorParaAtualizacao();
+      ['btnLancarPagamentoSimples', 'btnLancarPagamentoAcumulado'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.style.display = vigentePG ? 'none' : '';
+        btn.textContent = `Lançar pagamento em ${parseDataPtBr(data) ? data : '00/00/0000'}`;
+      });
+    }
+
+    let dadosPagamentoModal = null;
+    let focoAnteriorPagamento = null;
+
+    function abrirModalLancamentoPagamento() {
+      const tipo = getTipoDebitoSelecionado();
+      if (!tipo) return;
+      if (tipo === 'TCFA_ACUMULADO' && !dadosTcfaAcumulado) {
+        showToast('Carregue a memória de cálculo do TCFA acumulado antes de lançar um pagamento.', 'error');
+        return;
+      }
+      if (simulacoesAdicionais[simulacoesAdicionais.length - 1]?.consolidacaoPG) return;
+      const data = obterDataConsolidacaoAnteriorParaAtualizacao();
+      if (!parseDataPtBr(data)) {
+        showToast('Informe uma data de consolidação válida antes de lançar o pagamento.', 'error');
+        return;
+      }
+      dadosPagamentoModal = { data };
+      focoAnteriorPagamento = document.activeElement;
+      const modal = document.getElementById('modalLancamentoPagamento');
+      const valor = document.getElementById('campoValorLancamentoPagamento');
+      document.getElementById('tituloLancamentoPagamento').textContent = `Lançamento de pagamento em ${data}`;
+      document.getElementById('rotuloValorPagamento').textContent = `Valor do pagamento em ${data}`;
+      document.getElementById('erroLancamentoPagamento').textContent = '';
+      valor.value = '';
+      modal.classList.add('ativo');
+      modal.setAttribute('aria-hidden', 'false');
+      valor.focus();
+    }
+
+    function fecharModalLancamentoPagamento() {
+      const modal = document.getElementById('modalLancamentoPagamento');
+      modal.classList.remove('ativo');
+      modal.setAttribute('aria-hidden', 'true');
+      dadosPagamentoModal = null;
+      if (focoAnteriorPagamento?.isConnected) focoAnteriorPagamento.focus();
+      focoAnteriorPagamento = null;
+    }
+
+    function confirmarLancamentoPagamento() {
+      if (!dadosPagamentoModal) return;
+      const campo = document.getElementById('campoValorLancamentoPagamento');
+      const erroCampo = document.getElementById('erroLancamentoPagamento');
+      const valor = moedaParaNumero(campo.value);
+      try {
+        const dados = criarConsolidacaoPagamento(valor, dadosPagamentoModal.data);
+        simulacoesAdicionais.push(dados);
+        fecharModalLancamentoPagamento();
+        renderizarAtualizacoes();
+        rolarParaConsolidacaoCriada(simulacoesAdicionais.length - 1);
+        showToast('Pagamento lançado e nova consolidação criada com sucesso.', 'success');
+      } catch (erro) {
+        erroCampo.textContent = normalizarMensagemErro(erro, 'Não foi possível lançar o pagamento.');
+        campo.focus();
+      }
+    }
+
     async function criarAtualizacaoAutomatica(dataNova, indiceDestino = null) {
       const tipo = getTipoDebitoSelecionado();
       const anterior = Number.isInteger(indiceDestino)
@@ -4687,6 +5036,7 @@
         dados.statusMemoria = dados.statusMemoria || 'vazio';
         simulacoesAdicionais.push(dados);
         renderizarAtualizacoes();
+        rolarParaConsolidacaoCriada(simulacoesAdicionais.length - 1);
         showToast('Atualização adicionada com sucesso.', 'success');
       } catch (erro) {
         showToast(normalizarMensagemErro(erro, 'Não foi possível adicionar a atualização.'), 'error');
@@ -4707,6 +5057,170 @@
       input.click();
     }
 
+    // Consolidações 02+: a nova memória informa DATA e PERCENTUAIS.
+    // Todos os valores monetários são derivados da consolidação imediatamente anterior.
+    function existePercentualNaMemoria(linhas, regex) {
+      return (linhas || []).some(l => regex.test(String(l.text || '')) && /\(?\s*[\d.,]+\s*%\s*\)?/.test(String(l.text || '')));
+    }
+
+    function criarAtualizacaoProgressivaMemoriaSimples(memoria, linhasMemoria, anterior, tipo) {
+      if (memoria.numeroDebito && anterior.numeroDebito &&
+          onlyDigits(memoria.numeroDebito) !== onlyDigits(anterior.numeroDebito)) {
+        throw new Error('O número do débito da nova memória difere da consolidação anterior.');
+      }
+      const campos = dadosSimplesParaCampos(anterior);
+      campos.tipoDebito = tipo;
+      campos.numeroDebito = anterior.numeroDebito || memoria.numeroDebito || '';
+      campos.dataConsolidacao = memoria.dataConsolidacao;
+
+      // Valores (principal, amortizações, compensações, etc.) vêm SEMPRE da consolidação anterior.
+      // As porcentagens são substituídas somente quando estão de fato presentes no novo PDF.
+      const percentuais = [
+        ['percentualDesconto', /\(-\)\s*Desconto/i],
+        ['percentualCorrecaoMonetaria', /\(\+\)\s*Correção Monetária/i],
+        ['percentualMulta', /\(\+\)\s*Multa/i],
+        ['percentualJuros', /\(\+\)\s*Juros/i],
+        ['percentualSelic', /\(\+\)\s*SELIC/i],
+        ['percentualEncargos', /\(\+\)\s*Encargos Legais/i]
+      ];
+      percentuais.forEach(([campo, regex]) => {
+        if (existePercentualNaMemoria(linhasMemoria, regex)) campos[campo] = Number(memoria[campo] || 0);
+      });
+      campos.dataInicioMulta = memoria.dataInicioMulta || campos.dataInicioMulta;
+      campos.dataFimMulta = memoria.dataFimMulta || campos.dataFimMulta;
+      campos.dataInicioSelic = memoria.dataInicioSelic || campos.dataInicioSelic;
+      campos.dataFimSelic = memoria.dataFimSelic || campos.dataFimSelic;
+      // Correção e encargos são recalculados, nunca copiados monetariamente do PDF novo.
+      campos.modoCorrecaoMonetaria = 'percentual';
+      return dadosPdfDeCamposSimples(campos);
+    }
+
+    function criarAtualizacaoProgressivaMemoriaAcumulado(memoria, linhasMemoria, anterior) {
+      if (memoria.numeroDebito && anterior.numeroDebito &&
+          onlyDigits(memoria.numeroDebito) !== onlyDigits(anterior.numeroDebito)) {
+        throw new Error('O número do débito acumulado da nova memória difere da consolidação anterior.');
+      }
+      const anteriores = clonarRowsComposicao(anterior.composicao || []);
+      if (!anteriores.length) throw new Error('Não foi encontrada composição do TCFA acumulado na consolidação anterior.');
+      const porDebito = new Map();
+      (memoria.rows || []).forEach(row => {
+        const chave = String(row.debito || '').trim();
+        if (!chave || porDebito.has(chave)) throw new Error('A memória contém débitos ausentes ou duplicados na composição.');
+        porDebito.set(chave, row);
+      });
+      const numerosAnteriores = new Set(anteriores.map(row => String(row.debito || '').trim()));
+      for (const chave of porDebito.keys()) {
+        if (!numerosAnteriores.has(chave)) {
+          throw new Error(`O débito ${chave} não consta na consolidação anterior. Confira se as memórias correspondem à mesma composição.`);
+        }
+      }
+
+      anteriores.forEach(row => {
+        const chave = String(row.debito || '').trim();
+        const percentuaisNovos = porDebito.get(chave);
+        const ativo = Number(row.saldoAtualizado || 0) > 0 || Number(row.valorConsolidado || 0) > 0;
+        if (!percentuaisNovos && ativo) {
+          throw new Error(`Não foi possível localizar na nova memória os percentuais do débito ${chave}.`);
+        }
+        if (!percentuaisNovos) return; // débito já quitado, não afetado pela memória
+
+        const saldoAnterior = roundMoneyValue(Number(row.saldoAtualizado || 0));
+        const correcaoAnterior = roundMoneyValue(Number(row.correcaoValor || 0));
+        const baseEfetiva = roundMoneyValue(saldoAnterior - correcaoAnterior);
+        const taxaCorrecaoAnterior = Number(row.correcaoPct || 0);
+        const taxaCorrecaoNova = Number(percentuaisNovos.correcaoPct || 0);
+        // Carregar apenas a diferença entre os percentuais da correção.
+        // Preserva o SALDO ATUALIZADO real da etapa anterior, inclusive
+        // o arredondamento do débito parcialmente quitado na consolidaçãoPG.
+        const diferencaCorrecao = roundMoneyValue(
+          roundMoneyValue(baseEfetiva * taxaCorrecaoNova / 100) -
+          roundMoneyValue(baseEfetiva * taxaCorrecaoAnterior / 100)
+        );
+        row.correcaoPct = taxaCorrecaoNova;
+        row.correcaoValor = roundMoneyValue(correcaoAnterior + diferencaCorrecao);
+        row.saldoAtualizado = roundMoneyValue(saldoAnterior + diferencaCorrecao);
+        // Principal, amortização e compensações continuam exatamente como
+        // vieram da consolidação anterior. Só as taxas são atualizadas.
+        row.multaPct = Number(percentuaisNovos.multaPct || 0);
+        row.multaPctSicafi = row.multaPct;
+        row.multaPctManual = row.multaPct;
+        row.jurosPct = Number(percentuaisNovos.jurosPct || 0);
+        row.selicPct = Number(percentuaisNovos.selicPct || 0);
+        row.selicPctSicafi = row.selicPct;
+        row.selicPctManual = row.selicPct;
+        row.encargosPct = Number(percentuaisNovos.encargosPct || 0);
+        row.multaValor = roundMoneyValue(row.saldoAtualizado * row.multaPct / 100);
+        row.jurosValor = roundMoneyValue(row.saldoAtualizado * row.jurosPct / 100);
+        row.selicValor = roundMoneyValue(row.saldoAtualizado * row.selicPct / 100);
+        const totalParcialLinha = roundMoneyValue(row.saldoAtualizado + row.multaValor + row.jurosValor + row.selicValor);
+        row.encargosValor = roundMoneyValue(totalParcialLinha * row.encargosPct / 100);
+        row.valorConsolidado = roundMoneyValue(totalParcialLinha + row.encargosValor);
+      });
+
+      const totais = somarRowsComposicao(anteriores, false);
+      const principal = valorNumeroLinha(anterior, 'Valor Principal');
+      const somatorio = valorNumeroLinha(anterior, 'Somatório da amortização');
+      const pctDesconto = existePercentualNaMemoria(linhasMemoria, /\(-\)\s*Desconto/i)
+        ? Number(memoria.percentualDesconto || 0) : percentualNumeroLinha(anterior, 'Desconto');
+      const pctEncargos = existePercentualNaMemoria(linhasMemoria, /\(\+\)\s*Encargos Legais/i)
+        ? Number(memoria.percentualEncargos || 0) : percentualNumeroLinha(anterior, 'Encargos Legais');
+      const valorPosAmortizacao = roundMoneyValue(principal - somatorio);
+      const desconto = roundMoneyValue(valorPosAmortizacao * pctDesconto / 100);
+      const compensacao = valorNumeroLinha(anterior, 'Compensação Estadual');
+      const saldoParcial = roundMoneyValue(valorPosAmortizacao - desconto - compensacao);
+      const pctSapiens = typeof memoria.percentualSapiens === 'number'
+        ? memoria.percentualSapiens : percentualNumeroLinha(anterior, 'Amortização sobre o Saldo Parcial');
+      const modoSapiens = memoria.modoSapiensAtualizacao || anterior.modoSapiensAtualizacao || 'valor';
+      const amortizacaoSapiens = modoSapiens === 'percentual'
+        ? roundMoneyValue(saldoParcial * pctSapiens / 100)
+        : valorNumeroLinha(anterior, 'Amortização sobre o Saldo Parcial');
+      const saldoAtualizado = roundMoneyValue(saldoParcial - amortizacaoSapiens + totais.correcaoValor);
+      const totalParcial = roundMoneyValue(saldoAtualizado + totais.multaValor + totais.jurosValor + totais.selicValor);
+      // Os encargos individuais são calculados pelos percentuais de cada débito.
+      const encargos = totais.encargosValor;
+      const dados = dadosPdfAcumuladoDeEstado({
+        numeroDebito: anterior.numeroDebito || memoria.numeroDebito || '',
+        dataConsolidacao: memoria.dataConsolidacao,
+        rows: anteriores,
+        totalComposicao: totais,
+        valorPrincipal: principal,
+        somatorioAmortizacao: somatorio,
+        valorPosAmortizacao,
+        percentualDesconto: pctDesconto,
+        valorDesconto: desconto,
+        compensacaoEstadual: compensacao,
+        saldoParcial,
+        percentualSapiens: pctSapiens,
+        somatorioSapiens: amortizacaoSapiens,
+        correcaoMonetaria: totais.correcaoValor,
+        saldoAtualizado,
+        valorMulta: totais.multaValor,
+        valorJuros: totais.jurosValor,
+        valorSelic: totais.selicValor,
+        totalParcial,
+        percentualEncargos: pctEncargos,
+        valorEncargos: encargos,
+        valorConsolidado: roundMoneyValue(totalParcial + encargos)
+      });
+      dados.modoMultaAcumulado = 'sicafi';
+      dados.modoSelicAcumulado = 'sicafi';
+      dados.modoSapiensAtualizacao = modoSapiens;
+      return dados;
+    }
+
+    function criarAtualizacaoProgressivaDaMemoria(modelo, tipo, indiceDestino = null) {
+      const anterior = obterConsolidacaoVigenteParaPagamento(indiceDestino);
+      if (!anterior || anterior.tipoDebito !== tipo) {
+        throw new Error('Não foi possível obter a consolidação anterior para atualizar os valores.');
+      }
+      if (tipo === 'TCFA_ACUMULADO') {
+        const memoria = parseMemoriaTcfaAcumulado(modelo);
+        return criarAtualizacaoProgressivaMemoriaAcumulado(memoria, modelo.linhas, anterior);
+      }
+      const memoria = parseMemoriaSimples(modelo, tipo);
+      return criarAtualizacaoProgressivaMemoriaSimples(memoria, modelo.linhas, anterior, tipo);
+    }
+
     async function arquivoMemoriaAtualizacaoSelecionado(input) {
       const file = input?.files?.[0];
       const indiceDestino = Number.isInteger(indiceAtualizacaoUploadPendente) ? indiceAtualizacaoUploadPendente : null;
@@ -4718,13 +5232,9 @@
       try {
         const modelo = await extrairModeloPDF(file, atualizarProgressoPDF);
         atualizarProgressoPDF(92, 'Aplicando dados extraídos...');
-        let dados;
-        if (tipo === 'TCFA_ACUMULADO') {
-          const estado = parseMemoriaTcfaAcumulado(modelo);
-          dados = dadosPdfAcumuladoDeEstado(estado);
-        } else {
-          dados = dadosPdfDeMemoriaSimples(parseMemoriaSimples(modelo, tipo), tipo);
-        }
+        // A partir da Consolidação 02, o PDF novo fornece apenas data e percentuais;
+        // a origem dos valores monetários é a consolidação imediatamente anterior.
+        const dados = criarAtualizacaoProgressivaDaMemoria(modelo, tipo, indiceDestino);
         if (dados.tipoDebito !== 'TCFA_ACUMULADO') {
           inicializarMetadadosEncargoAtualizacaoSimples(dados, 'manual');
         } else {
@@ -4736,6 +5246,7 @@
         }
         dados.statusMemoria = 'carregado';
         registrarReferenciaMemoriaAtualizacao(dados);
+        const criandoNovaConsolidacao = indiceDestino === null || !simulacoesAdicionais[indiceDestino];
         if (indiceDestino !== null && simulacoesAdicionais[indiceDestino]) {
           dados.tituloSecao = simulacoesAdicionais[indiceDestino].tituloSecao || `Consolidação ${String(indiceDestino + 2).padStart(2, '0')}`;
           simulacoesAdicionais[indiceDestino] = dados;
@@ -4746,7 +5257,10 @@
         }
         renderizarAtualizacoes();
         atualizarProgressoPDF(100, 'Memória de cálculo carregada com sucesso.');
-        setTimeout(fecharProgressoPDF, 350);
+        setTimeout(() => {
+          fecharProgressoPDF();
+          if (criandoNovaConsolidacao) rolarParaConsolidacaoCriada(simulacoesAdicionais.length - 1);
+        }, 350);
         showToast('Atualização adicionada com sucesso.', 'success');
       } catch (erro) {
         console.error(erro);
@@ -4762,6 +5276,7 @@
         showToast('Não há atualização para remover.', 'error');
         return;
       }
+      consolidacoesRecolhidas.delete(`atualizacao-${simulacoesAdicionais.length - 1}`);
       simulacoesAdicionais.pop();
       renderizarAtualizacoes();
       showToast('Última atualização removida.', 'success');
@@ -4770,7 +5285,7 @@
     function campoEdicaoConsolidacaoAtualizacao(dados, descricao, coluna) {
       const desc = normalizarTextoBusca(descricao || '');
       const acumulado = dados?.tipoDebito === 'TCFA_ACUMULADO';
-      if (desc.includes('SOMATORIO DA AMORTIZACAO SAPIENS DIVIDA')) {
+      if (desc.includes('AMORTIZACAO SOBRE O SALDO PARCIAL')) {
         if (coluna === 'percentual') return { campo: 'percentualSapiens', tipo: 'percentual' };
         if (coluna === 'valor') return { campo: 'somatorioSapiens', tipo: 'moeda' };
       }
@@ -4783,7 +5298,7 @@
       if (desc.includes('COMPENSACAO ESTADUAL')) {
         if (coluna === 'valor') return { campo: 'compensacaoEstadual', tipo: 'moeda' };
       }
-      if (desc.includes('AMORTIZACAO DA CORRECAO MONETARIA SAPIENS DIVIDA')) {
+      if (desc.includes('AMORTIZACAO DA CORRECAO MONETARIA')) {
         if (!acumulado && coluna === 'valor') return { campo: 'amortizacaoCorrecaoMonetariaSapiensDivida', tipo: 'moeda' };
       }
       if (desc.includes('CORRECAO MONETARIA')) {
@@ -4812,14 +5327,14 @@
           <colgroup><col class="col-descricao" /><col class="col-percentual" /><col class="col-valores" /></colgroup>
           <tbody>
             ${dados.numeroDebito ? `<tr class="linha-topo"><th>Nº do débito:</th><td class="valor" colspan="2"><input class="campo-simulado-nao-editavel campo-numero" value="${escapeHtml(dados.numeroDebito)}" readonly></td></tr>` : ''}
-            <tr class="linha-topo"><th>Consolidação do débito em (data):</th><td class="valor" colspan="2"><input class="campo-simulado-nao-editavel campo-data" value="${escapeHtml(dados.dataConsolidacao || '')}" readonly></td></tr>
+            <tr class="linha-topo"><th>Consolidação do débito em (data):</th><td class="valor" colspan="2"><input class="campo-simulado-nao-editavel campo-data" style="width:100%;" value="${escapeHtml(textoDataConsolidacaoComPagamento(dados))}" readonly></td></tr>
             <tr><th class="rotulo">Descrição</th><th class="percentual">Percentual</th><th class="valor">Valores</th></tr>`;
       const linhasDados = dados.linhas || [];
       const corpo = linhasDados.map((l, idx) => {
         const descricaoNormalizada = normalizarTextoBusca(l.descricao || '');
-        if (dados.tipoDebito !== 'TCFA_ACUMULADO' && (descricaoNormalizada.includes('AMORTIZACAO DA CORRECAO MONETARIA SAPIENS DIVIDA') || descricaoNormalizada.includes('SALDO DA AMORTIZACAO'))) return '';
+        if (dados.tipoDebito !== 'TCFA_ACUMULADO' && (descricaoNormalizada.includes('AMORTIZACAO DA CORRECAO MONETARIA') || descricaoNormalizada.includes('SALDO DA AMORTIZACAO'))) return '';
         if (dados.tipoDebito !== 'TCFA_ACUMULADO' && descricaoNormalizada === normalizarTextoBusca('(+)Correção Monetária')) {
-          const sub = linhasDados.find(item => normalizarTextoBusca(item.descricao || '').includes('AMORTIZACAO DA CORRECAO MONETARIA SAPIENS DIVIDA'));
+          const sub = linhasDados.find(item => normalizarTextoBusca(item.descricao || '').includes('AMORTIZACAO DA CORRECAO MONETARIA'));
           const saldo = linhasDados.find(item => normalizarTextoBusca(item.descricao || '').includes('SALDO DA AMORTIZACAO'));
           const edicaoPct = indiceAtualizacao !== null ? campoEdicaoConsolidacaoAtualizacao(dados, l.descricao, 'percentual') : null;
           const edicaoValor = indiceAtualizacao !== null ? campoEdicaoConsolidacaoAtualizacao(dados, l.descricao, 'valor') : null;
@@ -4845,7 +5360,7 @@
             </tr>`;
         }
         const percentualPeriodo = /^De:/i.test(String(l.percentual || ''));
-        const classePercentual = l.percentual === '-' ? 'percentual-vazio' : (percentualPeriodo ? 'percentual-periodo' : 'percentual-texto');
+        const classePercentual = l.percentual === '-' ? 'percentual-vazio' : (percentualPeriodo ? `percentual-periodo${dados.consolidacaoPG ? ' percentual-periodo-centralizado' : ''}` : 'percentual-texto');
         const edicaoPercentual = indiceAtualizacao !== null ? campoEdicaoConsolidacaoAtualizacao(dados, l.descricao, 'percentual') : null;
         const edicaoValor = indiceAtualizacao !== null ? campoEdicaoConsolidacaoAtualizacao(dados, l.descricao, 'valor') : null;
         const htmlPercentual = edicaoPercentual ? inputEdicaoConsolidacaoAtualizacao(indiceAtualizacao, edicaoPercentual, l.percentual) : escapeHtml(l.percentual);
@@ -5203,7 +5718,9 @@
       const dados = simulacoesAdicionais[indiceAtualizacao];
       if (!dados || dados.tipoDebito !== 'TCFA_ACUMULADO' || !dados.composicao?.[idx] || !campo) return;
       const row = dados.composicao[idx];
-      row[campo] = parseNumeroFlexivel(input.value);
+      const valorInformado = parseNumeroFlexivel(input.value);
+      if (valorInformado === Number(row[campo] || 0)) return;
+      row[campo] = valorInformado;
       if (campo === 'multaPct' && modoComposicaoAtualizacao(dados, 'multa') === 'manual') row.multaPctManual = row[campo];
       if (campo === 'selicPct' && modoComposicaoAtualizacao(dados, 'selic') === 'manual') row.selicPctManual = row[campo];
       recalcularLinhaComposicao(row);
@@ -5310,13 +5827,87 @@
         input.value = digits ? formatMoneyDigitsString(digits) : '0,00';
       }
       const valor = tipo === 'percentual' ? parseNumeroFlexivel(input.value) : moedaParaNumero(input.value);
+      if (String(valor) === input.dataset.valorNoFoco) return;
       const novo = aplicarAlteracaoConsolidacaoAtualizacao(simulacoesAdicionais[indice], campo, valor);
       salvarAtualizacaoAlterada(indice, novo, true);
       renderizarAtualizacoes();
     }
 
+    // Reprocessar uma consolidação baseada em PDF não deve reaproveitar os VALORES
+    // que a memória possuía quando foi carregada; somente suas taxas, eventualmente
+    // ajustadas manualmente, são mantidas sobre a nova base monetária anterior.
+    async function reprocessarAtualizacaoProgressivaDeMemoria(dadosAtuais, indice) {
+      const anterior = obterConsolidacaoVigenteParaPagamento(indice);
+      if (!anterior) throw new Error('Não foi possível localizar a consolidação anterior para o reprocessamento.');
+      const data = String(dadosAtuais.dataConsolidacao || '').trim();
+      if (dadosAtuais.tipoDebito === 'TCFA_ACUMULADO') {
+        const novasTaxas = clonarRowsComposicao(dadosAtuais.composicao || []);
+        const modoMulta = modoComposicaoAtualizacao(dadosAtuais, 'multa');
+        const modoSelic = modoComposicaoAtualizacao(dadosAtuais, 'selic');
+        if (modoSelic === 'automatico') await carregarBaseSelicRfb();
+        novasTaxas.forEach(row => {
+          if (modoMulta === 'automatico') row.multaPct = calcularPercentualMultaAutomatica(row.vencimento, data);
+          if (modoSelic === 'automatico') row.selicPct = calcularTaxaSelicSicalcPorCompetencia(
+            competenciaMesAnoDeData(row.vencimento), competenciaMesAnoDeData(data));
+        });
+        const percentualDesconto = percentualNumeroLinha(dadosAtuais, 'Desconto');
+        const percentualEncargos = percentualNumeroLinha(dadosAtuais, 'Encargos Legais');
+        const linhasPercentuais = [
+          { text: `(-)Desconto (${numeroParaPercentual(percentualDesconto)})` },
+          { text: `(+)Encargos Legais (${numeroParaPercentual(percentualEncargos)})` }
+        ];
+        const novo = criarAtualizacaoProgressivaMemoriaAcumulado({
+          dataConsolidacao: data, numeroDebito: dadosAtuais.numeroDebito,
+          rows: novasTaxas, percentualDesconto, percentualEncargos,
+          percentualSapiens: percentualNumeroLinha(dadosAtuais, 'Amortização sobre o Saldo Parcial'),
+          modoSapiensAtualizacao: dadosAtuais.modoSapiensAtualizacao || 'valor'
+        }, linhasPercentuais, anterior);
+        copiarMetadadosAtualizacao(dadosAtuais, novo);
+        // Os modos de cálculo selecionados permanecem como estavam antes do reprocessamento.
+        novo.modoMultaAcumulado = modoMulta;
+        novo.modoSelicAcumulado = modoSelic;
+        return novo;
+      }
+
+      const campos = dadosSimplesParaCampos(anterior);
+      const taxas = dadosSimplesParaCampos(dadosAtuais);
+      campos.dataConsolidacao = data;
+      campos.percentualDesconto = taxas.percentualDesconto;
+      campos.percentualCorrecaoMonetaria = taxas.percentualCorrecaoMonetaria;
+      campos.percentualMulta = taxas.percentualMulta;
+      campos.percentualJuros = taxas.percentualJuros;
+      campos.percentualSelic = taxas.percentualSelic;
+      campos.percentualEncargos = taxas.percentualEncargos;
+      if (taxas.percentualSapiens !== campos.percentualSapiens) {
+        campos.percentualSapiens = taxas.percentualSapiens;
+        campos.somatorioSapiens = undefined;
+      }
+      campos.dataInicioMulta = taxas.dataInicioMulta || campos.dataInicioMulta;
+      campos.dataFimMulta = taxas.dataFimMulta || data;
+      campos.dataInicioSelic = taxas.dataInicioSelic || campos.dataInicioSelic;
+      campos.dataFimSelic = taxas.dataFimSelic || data;
+      campos.modoCorrecaoMonetaria = 'percentual';
+      if (modoEncargoAtualizacao(dadosAtuais, 'multa') === 'automatica') {
+        campos.percentualMulta = calcularPercentualMultaAutomatica(campos.dataInicioMulta, campos.dataFimMulta);
+      }
+      if (modoEncargoAtualizacao(dadosAtuais, 'selic') === 'sicalc') {
+        campos.percentualSelic = await calcularPercentualSelicSicalc(campos.dataInicioSelic, campos.dataFimSelic);
+      }
+      const novo = dadosPdfDeCamposSimples(campos);
+      copiarMetadadosAtualizacao(dadosAtuais, novo);
+      inicializarMetadadosEncargoAtualizacaoSimples(novo, 'manual');
+      return novo;
+    }
+
     async function criarAtualizacaoReprocessadaConformeModo(dadosAtuais, indice) {
       if (!dadosAtuais) return null;
+      if (dadosAtuais.consolidacaoPG && dadosAtuais.pagamento) {
+        return criarConsolidacaoPagamento(Number(dadosAtuais.pagamento.valor || 0),
+          String(dadosAtuais.pagamento.data || dadosAtuais.dataConsolidacao), indice);
+      }
+      if ((dadosAtuais.statusMemoria || 'vazio') !== 'vazio') {
+        return reprocessarAtualizacaoProgressivaDeMemoria(dadosAtuais, indice);
+      }
       const dataFinal = String(dadosAtuais.dataConsolidacao || '').trim();
 
       if (dadosAtuais.tipoDebito === 'TCFA_ACUMULADO') {
@@ -5458,6 +6049,44 @@
       }
     }
 
+    function sincronizarConsolidacoesRetrateis() {
+      document.querySelectorAll('[data-cabecalho-consolidacao]').forEach(botao => {
+        const chave = botao.dataset.cabecalhoConsolidacao;
+        const recolhido = consolidacoesRecolhidas.has(chave);
+        const corpo = document.getElementById(botao.getAttribute('aria-controls'));
+        botao.setAttribute('aria-expanded', String(!recolhido));
+        botao.querySelector('.seta-consolidacao').textContent = recolhido ? '▲' : '▼';
+        if (corpo) corpo.hidden = recolhido;
+        botao.closest('.bloco-atualizacao')?.classList.toggle('recolhido', recolhido);
+      });
+    }
+
+    function alternarConsolidacaoRetratil(botao) {
+      const chave = botao?.dataset?.cabecalhoConsolidacao;
+      if (!chave) return;
+      if (consolidacoesRecolhidas.has(chave)) consolidacoesRecolhidas.delete(chave);
+      else consolidacoesRecolhidas.add(chave);
+      sincronizarConsolidacoesRetrateis();
+    }
+
+    // Após criar uma consolidação, posiciona a área rolável na linha divisória
+    // imediatamente anterior a ela (abaixo do botão "Gerar PDF" da etapa anterior).
+    // Não é chamado ao editar, recalcular, recolher ou reprocessar consolidações.
+    function rolarParaConsolidacaoCriada(indice) {
+      requestAnimationFrame(() => {
+        const main = document.querySelector('main');
+        const tipo = getTipoDebitoSelecionado();
+        const area = document.getElementById(tipo === 'TCFA_ACUMULADO'
+          ? 'areaAtualizacoesAcumulado' : 'areaAtualizacoesSimples');
+        const bloco = area?.querySelector(`.bloco-atualizacao[data-atualizacao="${indice}"]`);
+        if (!main || !bloco) return;
+        // Deixa visível a divisória e um pequeno respiro acima do cabeçalho azul.
+        const destino = main.scrollTop + bloco.getBoundingClientRect().top
+          - main.getBoundingClientRect().top - 10;
+        main.scrollTo({ top: Math.max(0, destino), behavior: 'smooth' });
+      });
+    }
+
     function renderizarAtualizacoes() {
       const tipo = getTipoDebitoSelecionado();
       const containerSimples = document.getElementById('areaAtualizacoesSimples');
@@ -5468,7 +6097,10 @@
       if (!container) return;
       container.innerHTML = simulacoesAdicionais.map((dados, idx) => `
         <div class="bloco-atualizacao" data-atualizacao="${idx}">
-          <div class="subtitulo-atualizacao">${escapeHtml(dados.tituloSecao || `Consolidação ${String(idx + 2).padStart(2, '0')}`)}</div>
+          <button type="button" class="subtitulo-atualizacao botao-consolidacao-retratil" data-cabecalho-consolidacao="atualizacao-${idx}" aria-controls="corpoConsolidacaoAtualizacao${idx}" aria-expanded="true">
+            <span aria-hidden="true"></span><span>${escapeHtml(dados.tituloSecao || `Consolidação ${String(idx + 2).padStart(2, '0')}`)}</span><span class="seta-consolidacao" aria-hidden="true">▼</span>
+          </button>
+          <div id="corpoConsolidacaoAtualizacao${idx}" class="corpo-consolidacao-retratil">
           <div class="painel-upload-memoria painel-upload-atualizacao no-print">
             <div class="btnbar">
               <button type="button" class="btn" data-carregar-atualizacao="${idx}">Carregar memória de cálculo para preenchimento automático (PDF)</button>
@@ -5476,12 +6108,14 @@
               <button type="button" class="btn btn-reprocessar ${atualizacaoTemReprocessamentoPendente(dados, idx) ? 'pendente-reprocessamento' : ''}" data-reprocessar-atualizacao="${idx}">Reprocessar Cálculos 🔁</button>
             </div>
           </div>
-          ${dados.tipoDebito === 'TCFA_ACUMULADO' ? htmlTabelaComposicaoDados(dados, idx) : ''}
+          ${dados.tipoDebito === 'TCFA_ACUMULADO' ? htmlTabelaComposicaoDados(dados, dados.consolidacaoPG ? null : idx) : ''}
           ${dados.tipoDebito === 'TCFA_ACUMULADO' ? '<div class="subtitulo-tabela">Consolidação do débito</div>' : ''}
-          ${htmlTabelaConsolidacaoDados(dados, idx)}
+          ${htmlTabelaConsolidacaoDados(dados, dados.consolidacaoPG ? null : idx)}
           <button type="button" class="btn btn-primary btn-pdf-atualizacao" data-pdf-atualizacao="${idx}">Gerar PDF</button>
           <div class="limpar-flutuacao"></div>
+          </div>
         </div>`).join('');
+      sincronizarConsolidacoesRetrateis();
       container.querySelectorAll('[data-carregar-atualizacao]').forEach(btn => {
         btn.addEventListener('click', () => selecionarMemoriaAtualizacaoPDF(Number(btn.dataset.carregarAtualizacao)));
       });
@@ -5533,7 +6167,11 @@
         });
       });
       container.querySelectorAll('[data-campo-consolidacao-atualizacao]').forEach(input => {
-        input.addEventListener('focus', () => input.select());
+        input.addEventListener('focus', () => {
+          input.dataset.valorNoFoco = String(input.dataset.tipo === 'percentual'
+            ? parseNumeroFlexivel(input.value) : moedaParaNumero(input.value));
+          input.select();
+        });
         input.addEventListener('input', () => {
           if (input.dataset.tipo === 'percentual') {
             input.value = input.value.replace(/[^0-9,.%]/g, '');
@@ -5550,6 +6188,7 @@
         });
       });
       atualizarVisualBotoesReprocessamentoPendente();
+      atualizarEstadoBotaoPagamento();
     }
 
     async function gerarPdfDados(dados, nomeBase = 'consolidacao_debito') {
@@ -5852,7 +6491,14 @@
         if (mostrarTituloSecao || dadosItem._mostrarTituloSecao) {
           const tituloSecao = dadosItem.tituloSecao || (indiceSimulacao === 0 ? 'Consolidação 01' : `Consolidação ${String(indiceSimulacao + 1).padStart(2, '0')}`);
           garantirEspaco(alturaLinha + 8);
-          celula(x0, y, tabelaLargura, alturaLinha, '0.85', tituloSecao, { negrito: true, alinhamento: 'center', tamanho: 9 });
+          // Barra de cada Consolidação no mesmo verde do item ativo do menu (#1F6F54).
+          // Preserva o azul do cabeçalho institucional e os demais tons das tabelas.
+          const yBaseTitulo = y - alturaLinha;
+          cmd(`q 0.12157 0.43529 0.32941 rg ${x0.toFixed(2)} ${yBaseTitulo.toFixed(2)} ${tabelaLargura.toFixed(2)} ${alturaLinha.toFixed(2)} re f\n`);
+          cmd('1 1 1 rg\n');
+          addText(tituloSecao, x0 + 5, yBaseTitulo + ((alturaLinha - 9) / 2) + 2.4, 9, 'center', tabelaLargura - 10, true);
+          cmd('Q\n');
+          contornarRetangulo(x0, yBaseTitulo, tabelaLargura, alturaLinha);
           y -= alturaLinha + 8;
         }
 
@@ -5969,7 +6615,7 @@
         garantirEspaco(alturaLinha);
         const labelData = dadosItem.dataConsolidacao ? 'Consolidação do débito em:' : 'Consolidação do débito:';
         celula(x0, y, colunas[0], alturaLinha, '0.88', labelData, { negrito: true });
-        celula(x0 + colunas[0], y, colunas[1] + colunas[2], alturaLinha, '0.97', dadosItem.dataConsolidacao || '', { alinhamento: 'left' });
+        celula(x0 + colunas[0], y, colunas[1] + colunas[2], alturaLinha, '0.97', textoDataConsolidacaoComPagamento(dadosItem), { alinhamento: 'left', tamanho: 8 });
         y -= alturaLinha;
 
         garantirEspaco(alturaLinha);
@@ -6206,6 +6852,10 @@
 
 
     document.addEventListener('DOMContentLoaded', () => {
+      document.addEventListener('click', event => {
+        const botao = event.target?.closest?.('[data-cabecalho-consolidacao]');
+        if (botao) alternarConsolidacaoRetratil(botao);
+      });
       document.querySelectorAll('.campo-moeda').forEach(bindRealtimeMoneyInput);
       document.querySelectorAll('.campo-percentual').forEach(bindPercentInput);
       bindEnterComoTabPercentualEncargoPrincipal('percentualMulta');
@@ -6234,6 +6884,7 @@
       });
 
       document.querySelectorAll('input:not([readonly])').forEach((input) => {
+        if (input.id === 'campoValorLancamentoPagamento') return;
         input.addEventListener('keydown', (ev) => {
           if (ev.key === 'Enter') {
             ev.preventDefault();
@@ -6271,6 +6922,42 @@
         btnReprocessarCalculos.addEventListener('click', reprocessarCalculos);
       }
 
+      ['btnLancarPagamentoSimples', 'btnLancarPagamentoAcumulado'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.addEventListener('click', abrirModalLancamentoPagamento);
+      });
+      document.getElementById('btnConfirmarLancamentoPagamento')?.addEventListener('click', confirmarLancamentoPagamento);
+      ['btnCancelarLancamentoPagamento', 'btnFecharLancamentoPagamento'].forEach(id => {
+        document.getElementById(id)?.addEventListener('click', fecharModalLancamentoPagamento);
+      });
+      const valorPg = document.getElementById('campoValorLancamentoPagamento');
+      if (valorPg) {
+        valorPg.addEventListener('input', () => {
+          const digitos = valorPg.value.replace(/\D/g, '');
+          valorPg.value = digitos ? formatMoneyDigitsString(digitos) : '';
+          document.getElementById('erroLancamentoPagamento').textContent = '';
+        });
+        valorPg.addEventListener('keydown', ev => {
+          if (ev.key === 'Enter') { ev.preventDefault(); confirmarLancamentoPagamento(); }
+        });
+      }
+      // Não permitir que a navegação pelo teclado saia da janela de lançamento.
+      document.getElementById('modalLancamentoPagamento')?.addEventListener('keydown', ev => {
+        if (ev.key === 'Escape') { ev.preventDefault(); fecharModalLancamentoPagamento(); return; }
+        if (ev.key !== 'Tab') return;
+        const elementos = Array.from(document.querySelectorAll('#modalLancamentoPagamento button, #modalLancamentoPagamento input'));
+        const primeiro = elementos[0], ultimo = elementos[elementos.length - 1];
+        if (ev.shiftKey && document.activeElement === primeiro) { ev.preventDefault(); ultimo.focus(); }
+        else if (!ev.shiftKey && document.activeElement === ultimo) { ev.preventDefault(); primeiro.focus(); }
+      });
+      document.addEventListener('input', ev => {
+        if (ev.target?.id === 'dataConsolidacao') atualizarEstadoBotaoPagamento();
+      });
+      document.addEventListener('change', ev => {
+        if (ev.target?.name === 'modoDataConsolidacao' || ev.target?.id === 'dataConsolidacao') {
+          setTimeout(atualizarEstadoBotaoPagamento, 0);
+        }
+      });
       ['btnAdicionarAtualizacaoSimples', 'btnAdicionarAtualizacaoAcumulado'].forEach(id => {
         const btn = document.getElementById(id);
         if (btn) btn.addEventListener('click', adicionarAtualizacao);
