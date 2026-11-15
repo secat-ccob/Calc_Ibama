@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_72 -->
+  <!-- Versão: simulador_consolidacao_debito_v_73 -->
 
   <style>
     :root {
@@ -5002,6 +5002,170 @@
       input.click();
     }
 
+    // Consolidações 02+: a nova memória informa DATA e PERCENTUAIS.
+    // Todos os valores monetários são derivados da consolidação imediatamente anterior.
+    function existePercentualNaMemoria(linhas, regex) {
+      return (linhas || []).some(l => regex.test(String(l.text || '')) && /\(?\s*[\d.,]+\s*%\s*\)?/.test(String(l.text || '')));
+    }
+
+    function criarAtualizacaoProgressivaMemoriaSimples(memoria, linhasMemoria, anterior, tipo) {
+      if (memoria.numeroDebito && anterior.numeroDebito &&
+          onlyDigits(memoria.numeroDebito) !== onlyDigits(anterior.numeroDebito)) {
+        throw new Error('O número do débito da nova memória difere da consolidação anterior.');
+      }
+      const campos = dadosSimplesParaCampos(anterior);
+      campos.tipoDebito = tipo;
+      campos.numeroDebito = anterior.numeroDebito || memoria.numeroDebito || '';
+      campos.dataConsolidacao = memoria.dataConsolidacao;
+
+      // Valores (principal, amortizações, compensações, etc.) vêm SEMPRE da consolidação anterior.
+      // As porcentagens são substituídas somente quando estão de fato presentes no novo PDF.
+      const percentuais = [
+        ['percentualDesconto', /\(-\)\s*Desconto/i],
+        ['percentualCorrecaoMonetaria', /\(\+\)\s*Correção Monetária/i],
+        ['percentualMulta', /\(\+\)\s*Multa/i],
+        ['percentualJuros', /\(\+\)\s*Juros/i],
+        ['percentualSelic', /\(\+\)\s*SELIC/i],
+        ['percentualEncargos', /\(\+\)\s*Encargos Legais/i]
+      ];
+      percentuais.forEach(([campo, regex]) => {
+        if (existePercentualNaMemoria(linhasMemoria, regex)) campos[campo] = Number(memoria[campo] || 0);
+      });
+      campos.dataInicioMulta = memoria.dataInicioMulta || campos.dataInicioMulta;
+      campos.dataFimMulta = memoria.dataFimMulta || campos.dataFimMulta;
+      campos.dataInicioSelic = memoria.dataInicioSelic || campos.dataInicioSelic;
+      campos.dataFimSelic = memoria.dataFimSelic || campos.dataFimSelic;
+      // Correção e encargos são recalculados, nunca copiados monetariamente do PDF novo.
+      campos.modoCorrecaoMonetaria = 'percentual';
+      return dadosPdfDeCamposSimples(campos);
+    }
+
+    function criarAtualizacaoProgressivaMemoriaAcumulado(memoria, linhasMemoria, anterior) {
+      if (memoria.numeroDebito && anterior.numeroDebito &&
+          onlyDigits(memoria.numeroDebito) !== onlyDigits(anterior.numeroDebito)) {
+        throw new Error('O número do débito acumulado da nova memória difere da consolidação anterior.');
+      }
+      const anteriores = clonarRowsComposicao(anterior.composicao || []);
+      if (!anteriores.length) throw new Error('Não foi encontrada composição do TCFA acumulado na consolidação anterior.');
+      const porDebito = new Map();
+      (memoria.rows || []).forEach(row => {
+        const chave = String(row.debito || '').trim();
+        if (!chave || porDebito.has(chave)) throw new Error('A memória contém débitos ausentes ou duplicados na composição.');
+        porDebito.set(chave, row);
+      });
+      const numerosAnteriores = new Set(anteriores.map(row => String(row.debito || '').trim()));
+      for (const chave of porDebito.keys()) {
+        if (!numerosAnteriores.has(chave)) {
+          throw new Error(`O débito ${chave} não consta na consolidação anterior. Confira se as memórias correspondem à mesma composição.`);
+        }
+      }
+
+      anteriores.forEach(row => {
+        const chave = String(row.debito || '').trim();
+        const percentuaisNovos = porDebito.get(chave);
+        const ativo = Number(row.saldoAtualizado || 0) > 0 || Number(row.valorConsolidado || 0) > 0;
+        if (!percentuaisNovos && ativo) {
+          throw new Error(`Não foi possível localizar na nova memória os percentuais do débito ${chave}.`);
+        }
+        if (!percentuaisNovos) return; // débito já quitado, não afetado pela memória
+
+        const saldoAnterior = roundMoneyValue(Number(row.saldoAtualizado || 0));
+        const correcaoAnterior = roundMoneyValue(Number(row.correcaoValor || 0));
+        const baseEfetiva = roundMoneyValue(saldoAnterior - correcaoAnterior);
+        const taxaCorrecaoAnterior = Number(row.correcaoPct || 0);
+        const taxaCorrecaoNova = Number(percentuaisNovos.correcaoPct || 0);
+        // Carregar apenas a diferença entre os percentuais da correção.
+        // Preserva o SALDO ATUALIZADO real da etapa anterior, inclusive
+        // o arredondamento do débito parcialmente quitado na consolidaçãoPG.
+        const diferencaCorrecao = roundMoneyValue(
+          roundMoneyValue(baseEfetiva * taxaCorrecaoNova / 100) -
+          roundMoneyValue(baseEfetiva * taxaCorrecaoAnterior / 100)
+        );
+        row.correcaoPct = taxaCorrecaoNova;
+        row.correcaoValor = roundMoneyValue(correcaoAnterior + diferencaCorrecao);
+        row.saldoAtualizado = roundMoneyValue(saldoAnterior + diferencaCorrecao);
+        // Principal, amortização e compensações continuam exatamente como
+        // vieram da consolidação anterior. Só as taxas são atualizadas.
+        row.multaPct = Number(percentuaisNovos.multaPct || 0);
+        row.multaPctSicafi = row.multaPct;
+        row.multaPctManual = row.multaPct;
+        row.jurosPct = Number(percentuaisNovos.jurosPct || 0);
+        row.selicPct = Number(percentuaisNovos.selicPct || 0);
+        row.selicPctSicafi = row.selicPct;
+        row.selicPctManual = row.selicPct;
+        row.encargosPct = Number(percentuaisNovos.encargosPct || 0);
+        row.multaValor = roundMoneyValue(row.saldoAtualizado * row.multaPct / 100);
+        row.jurosValor = roundMoneyValue(row.saldoAtualizado * row.jurosPct / 100);
+        row.selicValor = roundMoneyValue(row.saldoAtualizado * row.selicPct / 100);
+        const totalParcialLinha = roundMoneyValue(row.saldoAtualizado + row.multaValor + row.jurosValor + row.selicValor);
+        row.encargosValor = roundMoneyValue(totalParcialLinha * row.encargosPct / 100);
+        row.valorConsolidado = roundMoneyValue(totalParcialLinha + row.encargosValor);
+      });
+
+      const totais = somarRowsComposicao(anteriores, false);
+      const principal = valorNumeroLinha(anterior, 'Valor Principal');
+      const somatorio = valorNumeroLinha(anterior, 'Somatório da amortização');
+      const pctDesconto = existePercentualNaMemoria(linhasMemoria, /\(-\)\s*Desconto/i)
+        ? Number(memoria.percentualDesconto || 0) : percentualNumeroLinha(anterior, 'Desconto');
+      const pctEncargos = existePercentualNaMemoria(linhasMemoria, /\(\+\)\s*Encargos Legais/i)
+        ? Number(memoria.percentualEncargos || 0) : percentualNumeroLinha(anterior, 'Encargos Legais');
+      const valorPosAmortizacao = roundMoneyValue(principal - somatorio);
+      const desconto = roundMoneyValue(valorPosAmortizacao * pctDesconto / 100);
+      const compensacao = valorNumeroLinha(anterior, 'Compensação Estadual');
+      const saldoParcial = roundMoneyValue(valorPosAmortizacao - desconto - compensacao);
+      const pctSapiens = typeof memoria.percentualSapiens === 'number'
+        ? memoria.percentualSapiens : percentualNumeroLinha(anterior, 'Amortização sobre o Saldo Parcial');
+      const modoSapiens = memoria.modoSapiensAtualizacao || anterior.modoSapiensAtualizacao || 'valor';
+      const amortizacaoSapiens = modoSapiens === 'percentual'
+        ? roundMoneyValue(saldoParcial * pctSapiens / 100)
+        : valorNumeroLinha(anterior, 'Amortização sobre o Saldo Parcial');
+      const saldoAtualizado = roundMoneyValue(saldoParcial - amortizacaoSapiens + totais.correcaoValor);
+      const totalParcial = roundMoneyValue(saldoAtualizado + totais.multaValor + totais.jurosValor + totais.selicValor);
+      // Os encargos individuais são calculados pelos percentuais de cada débito.
+      const encargos = totais.encargosValor;
+      const dados = dadosPdfAcumuladoDeEstado({
+        numeroDebito: anterior.numeroDebito || memoria.numeroDebito || '',
+        dataConsolidacao: memoria.dataConsolidacao,
+        rows: anteriores,
+        totalComposicao: totais,
+        valorPrincipal: principal,
+        somatorioAmortizacao: somatorio,
+        valorPosAmortizacao,
+        percentualDesconto: pctDesconto,
+        valorDesconto: desconto,
+        compensacaoEstadual: compensacao,
+        saldoParcial,
+        percentualSapiens: pctSapiens,
+        somatorioSapiens: amortizacaoSapiens,
+        correcaoMonetaria: totais.correcaoValor,
+        saldoAtualizado,
+        valorMulta: totais.multaValor,
+        valorJuros: totais.jurosValor,
+        valorSelic: totais.selicValor,
+        totalParcial,
+        percentualEncargos: pctEncargos,
+        valorEncargos: encargos,
+        valorConsolidado: roundMoneyValue(totalParcial + encargos)
+      });
+      dados.modoMultaAcumulado = 'sicafi';
+      dados.modoSelicAcumulado = 'sicafi';
+      dados.modoSapiensAtualizacao = modoSapiens;
+      return dados;
+    }
+
+    function criarAtualizacaoProgressivaDaMemoria(modelo, tipo, indiceDestino = null) {
+      const anterior = obterConsolidacaoVigenteParaPagamento(indiceDestino);
+      if (!anterior || anterior.tipoDebito !== tipo) {
+        throw new Error('Não foi possível obter a consolidação anterior para atualizar os valores.');
+      }
+      if (tipo === 'TCFA_ACUMULADO') {
+        const memoria = parseMemoriaTcfaAcumulado(modelo);
+        return criarAtualizacaoProgressivaMemoriaAcumulado(memoria, modelo.linhas, anterior);
+      }
+      const memoria = parseMemoriaSimples(modelo, tipo);
+      return criarAtualizacaoProgressivaMemoriaSimples(memoria, modelo.linhas, anterior, tipo);
+    }
+
     async function arquivoMemoriaAtualizacaoSelecionado(input) {
       const file = input?.files?.[0];
       const indiceDestino = Number.isInteger(indiceAtualizacaoUploadPendente) ? indiceAtualizacaoUploadPendente : null;
@@ -5013,13 +5177,9 @@
       try {
         const modelo = await extrairModeloPDF(file, atualizarProgressoPDF);
         atualizarProgressoPDF(92, 'Aplicando dados extraídos...');
-        let dados;
-        if (tipo === 'TCFA_ACUMULADO') {
-          const estado = parseMemoriaTcfaAcumulado(modelo);
-          dados = dadosPdfAcumuladoDeEstado(estado);
-        } else {
-          dados = dadosPdfDeMemoriaSimples(parseMemoriaSimples(modelo, tipo), tipo);
-        }
+        // A partir da Consolidação 02, o PDF novo fornece apenas data e percentuais;
+        // a origem dos valores monetários é a consolidação imediatamente anterior.
+        const dados = criarAtualizacaoProgressivaDaMemoria(modelo, tipo, indiceDestino);
         if (dados.tipoDebito !== 'TCFA_ACUMULADO') {
           inicializarMetadadosEncargoAtualizacaoSimples(dados, 'manual');
         } else {
@@ -5613,11 +5773,80 @@
       renderizarAtualizacoes();
     }
 
+    // Reprocessar uma consolidação baseada em PDF não deve reaproveitar os VALORES
+    // que a memória possuía quando foi carregada; somente suas taxas, eventualmente
+    // ajustadas manualmente, são mantidas sobre a nova base monetária anterior.
+    async function reprocessarAtualizacaoProgressivaDeMemoria(dadosAtuais, indice) {
+      const anterior = obterConsolidacaoVigenteParaPagamento(indice);
+      if (!anterior) throw new Error('Não foi possível localizar a consolidação anterior para o reprocessamento.');
+      const data = String(dadosAtuais.dataConsolidacao || '').trim();
+      if (dadosAtuais.tipoDebito === 'TCFA_ACUMULADO') {
+        const novasTaxas = clonarRowsComposicao(dadosAtuais.composicao || []);
+        const modoMulta = modoComposicaoAtualizacao(dadosAtuais, 'multa');
+        const modoSelic = modoComposicaoAtualizacao(dadosAtuais, 'selic');
+        if (modoSelic === 'automatico') await carregarBaseSelicRfb();
+        novasTaxas.forEach(row => {
+          if (modoMulta === 'automatico') row.multaPct = calcularPercentualMultaAutomatica(row.vencimento, data);
+          if (modoSelic === 'automatico') row.selicPct = calcularTaxaSelicSicalcPorCompetencia(
+            competenciaMesAnoDeData(row.vencimento), competenciaMesAnoDeData(data));
+        });
+        const percentualDesconto = percentualNumeroLinha(dadosAtuais, 'Desconto');
+        const percentualEncargos = percentualNumeroLinha(dadosAtuais, 'Encargos Legais');
+        const linhasPercentuais = [
+          { text: `(-)Desconto (${numeroParaPercentual(percentualDesconto)})` },
+          { text: `(+)Encargos Legais (${numeroParaPercentual(percentualEncargos)})` }
+        ];
+        const novo = criarAtualizacaoProgressivaMemoriaAcumulado({
+          dataConsolidacao: data, numeroDebito: dadosAtuais.numeroDebito,
+          rows: novasTaxas, percentualDesconto, percentualEncargos,
+          percentualSapiens: percentualNumeroLinha(dadosAtuais, 'Amortização sobre o Saldo Parcial'),
+          modoSapiensAtualizacao: dadosAtuais.modoSapiensAtualizacao || 'valor'
+        }, linhasPercentuais, anterior);
+        copiarMetadadosAtualizacao(dadosAtuais, novo);
+        // Os modos de cálculo selecionados permanecem como estavam antes do reprocessamento.
+        novo.modoMultaAcumulado = modoMulta;
+        novo.modoSelicAcumulado = modoSelic;
+        return novo;
+      }
+
+      const campos = dadosSimplesParaCampos(anterior);
+      const taxas = dadosSimplesParaCampos(dadosAtuais);
+      campos.dataConsolidacao = data;
+      campos.percentualDesconto = taxas.percentualDesconto;
+      campos.percentualCorrecaoMonetaria = taxas.percentualCorrecaoMonetaria;
+      campos.percentualMulta = taxas.percentualMulta;
+      campos.percentualJuros = taxas.percentualJuros;
+      campos.percentualSelic = taxas.percentualSelic;
+      campos.percentualEncargos = taxas.percentualEncargos;
+      if (taxas.percentualSapiens !== campos.percentualSapiens) {
+        campos.percentualSapiens = taxas.percentualSapiens;
+        campos.somatorioSapiens = undefined;
+      }
+      campos.dataInicioMulta = taxas.dataInicioMulta || campos.dataInicioMulta;
+      campos.dataFimMulta = taxas.dataFimMulta || data;
+      campos.dataInicioSelic = taxas.dataInicioSelic || campos.dataInicioSelic;
+      campos.dataFimSelic = taxas.dataFimSelic || data;
+      campos.modoCorrecaoMonetaria = 'percentual';
+      if (modoEncargoAtualizacao(dadosAtuais, 'multa') === 'automatica') {
+        campos.percentualMulta = calcularPercentualMultaAutomatica(campos.dataInicioMulta, campos.dataFimMulta);
+      }
+      if (modoEncargoAtualizacao(dadosAtuais, 'selic') === 'sicalc') {
+        campos.percentualSelic = await calcularPercentualSelicSicalc(campos.dataInicioSelic, campos.dataFimSelic);
+      }
+      const novo = dadosPdfDeCamposSimples(campos);
+      copiarMetadadosAtualizacao(dadosAtuais, novo);
+      inicializarMetadadosEncargoAtualizacaoSimples(novo, 'manual');
+      return novo;
+    }
+
     async function criarAtualizacaoReprocessadaConformeModo(dadosAtuais, indice) {
       if (!dadosAtuais) return null;
       if (dadosAtuais.consolidacaoPG && dadosAtuais.pagamento) {
         return criarConsolidacaoPagamento(Number(dadosAtuais.pagamento.valor || 0),
           String(dadosAtuais.pagamento.data || dadosAtuais.dataConsolidacao), indice);
+      }
+      if ((dadosAtuais.statusMemoria || 'vazio') !== 'vazio') {
+        return reprocessarAtualizacaoProgressivaDeMemoria(dadosAtuais, indice);
       }
       const dataFinal = String(dadosAtuais.dataConsolidacao || '').trim();
 
