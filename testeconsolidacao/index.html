@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_75 -->
+  <!-- Versão: simulador_consolidacao_debito_v_76 -->
 
   <style>
     :root {
@@ -759,7 +759,7 @@
     .subtitulo-atualizacao {
       margin: 0 0 10px;
       padding: 8px 10px;
-      background: #1f4e79;
+      background: var(--cor-primaria);
       color: #ffffff;
       font-weight: bold;
       text-align: center;
@@ -6485,7 +6485,14 @@
         if (mostrarTituloSecao || dadosItem._mostrarTituloSecao) {
           const tituloSecao = dadosItem.tituloSecao || (indiceSimulacao === 0 ? 'Consolidação 01' : `Consolidação ${String(indiceSimulacao + 1).padStart(2, '0')}`);
           garantirEspaco(alturaLinha + 8);
-          celula(x0, y, tabelaLargura, alturaLinha, '0.85', tituloSecao, { negrito: true, alinhamento: 'center', tamanho: 9 });
+          // Barra de cada Consolidação no mesmo verde do item ativo do menu (#1F6F54).
+          // Preserva o azul do cabeçalho institucional e os demais tons das tabelas.
+          const yBaseTitulo = y - alturaLinha;
+          cmd(`q 0.12157 0.43529 0.32941 rg ${x0.toFixed(2)} ${yBaseTitulo.toFixed(2)} ${tabelaLargura.toFixed(2)} ${alturaLinha.toFixed(2)} re f\n`);
+          cmd('1 1 1 rg\n');
+          addText(tituloSecao, x0 + 5, yBaseTitulo + ((alturaLinha - 9) / 2) + 2.4, 9, 'center', tabelaLargura - 10, true);
+          cmd('Q\n');
+          contornarRetangulo(x0, yBaseTitulo, tabelaLargura, alturaLinha);
           y -= alturaLinha + 8;
         }
 
