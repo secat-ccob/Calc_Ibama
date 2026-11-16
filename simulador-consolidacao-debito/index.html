@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_86 -->
+  <!-- Versão: simulador_consolidacao_debito_v_87 -->
 
   <style>
     :root {
@@ -4012,61 +4012,145 @@
       });
     }
 
-    function mascaraDataTexto(valor) {
-      const digits = String(valor || '').replace(/[^\d/]/g, '').replace(/\//g, '').slice(0, 8);
-      if (digits.length <= 2) return digits;
-      if (digits.length <= 4) return digits.slice(0, 2) + '/' + digits.slice(2);
-      return digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4);
+    // Máscara segmentada de data: barras fixas nas posições 2 e 5.
+    // O usuário pode substituir dia, mês, ano ou a data inteira sem deslocar
+    // os demais dígitos. Posições apagadas permanecem vagas até o preenchimento.
+    const POSICOES_DIGITOS_DATA = [0, 1, 3, 4, 6, 7, 8, 9];
+    const MASCARA_DATA_VAZIA = '__/__/____';
+
+    function mascaraDataTexto(valor, exibirVazia = false) {
+      const texto = String(valor ?? '');
+      if (/^[\d_]{2}\/[\d_]{2}\/[\d_]{4}$/.test(texto)) return texto;
+      const digitos = texto.replace(/\D/g, '').slice(0, 8);
+      if (!digitos) return exibirVazia ? MASCARA_DATA_VAZIA : '';
+      const preenchidos = digitos.padEnd(8, '_');
+      return `${preenchidos.slice(0, 2)}/${preenchidos.slice(2, 4)}/${preenchidos.slice(4)}`;
     }
 
-    // A máscara deve auxiliar a digitação de uma data nova sem impedir a edição
-    // nativa de um trecho já preenchido (dia, mês ou ano).
+    function aplicarEntradaDataSegmentada(input, tipo, textoInserido = '') {
+      if (!input || input.readOnly || input.disabled) return;
+      const valorAnterior = mascaraDataTexto(input.value, true);
+      const inicio = input.selectionStart ?? valorAnterior.length;
+      const fim = input.selectionEnd ?? inicio;
+      const caracteres = [...valorAnterior];
+      const selecionadas = POSICOES_DIGITOS_DATA.filter(pos => pos >= inicio && pos < fim);
+      const inserir = tipo.startsWith('insert');
+      let cursor = inicio;
+
+      if (fim > inicio) {
+        // Limpa apenas os dígitos da seleção; não altera as barras fixas.
+        selecionadas.forEach(pos => { caracteres[pos] = '_'; });
+        if (selecionadas.length) cursor = selecionadas[0];
+      }
+
+      if (inserir) {
+        const digitos = String(textoInserido || '').replace(/\D/g, '');
+        if (!digitos) {
+          // Permite digitar a barra sem incluí-la ou remover os separadores.
+          if (fim === inicio && String(textoInserido).includes('/')) {
+            cursor = POSICOES_DIGITOS_DATA.find(pos => pos >= inicio) ?? 10;
+          }
+        } else {
+          let indice = POSICOES_DIGITOS_DATA.findIndex(pos => pos >= cursor);
+          if (indice < 0) indice = POSICOES_DIGITOS_DATA.length;
+          for (const digito of digitos) {
+            if (indice >= POSICOES_DIGITOS_DATA.length) break;
+            caracteres[POSICOES_DIGITOS_DATA[indice++]] = digito;
+          }
+          cursor = POSICOES_DIGITOS_DATA[indice] ?? 10;
+        }
+      } else if (tipo === 'deleteContentBackward' || tipo === 'deleteWordBackward') {
+        if (fim === inicio) {
+          const anterior = [...POSICOES_DIGITOS_DATA].reverse().find(pos => pos < inicio);
+          if (anterior !== undefined) {
+            caracteres[anterior] = '_';
+            cursor = anterior;
+          }
+        }
+      } else if (tipo === 'deleteContentForward' || tipo === 'deleteWordForward') {
+        if (fim === inicio) {
+          const seguinte = POSICOES_DIGITOS_DATA.find(pos => pos >= inicio);
+          if (seguinte !== undefined) {
+            caracteres[seguinte] = '_';
+            cursor = seguinte;
+          }
+        }
+      } else if (tipo === 'deleteByCut' || tipo === 'deleteByDrag') {
+        // A seleção já foi apagada; não remover caracteres adjacentes.
+      } else {
+        return;
+      }
+
+      const proximoValor = caracteres.join('');
+      input.value = proximoValor;
+      try { input.setSelectionRange(cursor, cursor); } catch (_) {}
+      // Mantém os eventos de alteração já usados pela página (inclusive o
+      // indicador CARREGADO/ALTERADO e a limpeza de erro do modal).
+      if (proximoValor !== valorAnterior) {
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
+
     function prepararEdicaoParcialData(input) {
       if (!input || input.dataset.edicaoParcialDataBound === '1') return;
       input.dataset.edicaoParcialDataBound = '1';
-      input.addEventListener('beforeinput', () => {
-        if (input.readOnly) return;
-        const valor = input.value;
-        const inicio = input.selectionStart ?? valor.length;
-        const fim = input.selectionEnd ?? inicio;
-        const selecionouTudo = inicio === 0 && fim === valor.length;
-        if (valor.includes('/') && inicio < valor.length && !selecionouTudo) {
-          input.dataset.edicaoParcialData = '1';
-        }
+
+      input.addEventListener('focus', () => {
+        if (input.readOnly || input.disabled || String(input.value || '').trim()) return;
+        // Apenas durante a edição: campos sem informação continuam em branco
+        // ao perderem o foco, como já ocorria nas versões anteriores.
+        input.value = MASCARA_DATA_VAZIA;
+        input.dataset.dataVaziaRecebeuFoco = '1';
+        try { input.setSelectionRange(0, 0); } catch (_) {}
       });
-      input.addEventListener('blur', () => { delete input.dataset.edicaoParcialData; });
+
+      // O clique que provoca o foco pode posicionar o cursor no fim da máscara
+      // recém-inserida. Nesse primeiro clique, a digitação deve começar no dia.
+      input.addEventListener('pointerup', () => {
+        if (input.dataset.dataVaziaRecebeuFoco !== '1') return;
+        delete input.dataset.dataVaziaRecebeuFoco;
+        try { input.setSelectionRange(0, 0); } catch (_) {}
+      });
+
+      input.addEventListener('beforeinput', event => {
+        if (input.readOnly || input.disabled || event.isComposing) return;
+        delete input.dataset.dataVaziaRecebeuFoco;
+        const tipo = event.inputType || '';
+        if (!/^(insertText|insertReplacementText|insertFromPaste|insertFromDrop|deleteContentBackward|deleteContentForward|deleteWordBackward|deleteWordForward|deleteByCut|deleteByDrag)$/.test(tipo)) return;
+        if (tipo.startsWith('insert') && event.data == null) return;
+        event.preventDefault();
+        aplicarEntradaDataSegmentada(input, tipo, event.data || '');
+      });
+
+      input.addEventListener('paste', event => {
+        if (input.readOnly || input.disabled || !event.clipboardData) return;
+        event.preventDefault();
+        aplicarEntradaDataSegmentada(input, 'insertFromPaste', event.clipboardData.getData('text'));
+      });
+
+      input.addEventListener('blur', () => {
+        delete input.dataset.dataVaziaRecebeuFoco;
+        const valor = String(input.value || '');
+        // Não deixar espaços reservados como dados gravados pelo sistema.
+        if (!/\d/.test(valor)) input.value = '';
+        // Preserva a compatibilidade com a entrada dd/mm/aa, que a rotina
+        // ensureInputDate já convertia para dd/mm/20aa nas versões anteriores.
+        else if (/^\d{2}\/\d{2}\/\d{2}__$/.test(valor)) input.value = valor.slice(0, 8);
+      });
     }
 
     function maskDateDdMmYyyyRealtime(input) {
-      if (!input) return;
-      // Ao editar um trecho interno, preservar posição e separadores existentes.
-      // Continuar filtrando caracteres estranhos, como fazia a máscara anterior.
-      if (input.dataset.edicaoParcialData === '1') {
-        const atual = input.value;
-        const limpo = atual.replace(/[^\d/]/g, '');
-        if (limpo !== atual) {
-          const posicao = (atual.slice(0, input.selectionStart ?? atual.length).match(/[\d/]/g) || []).length;
-          input.value = limpo;
-          try { input.setSelectionRange(posicao, posicao); } catch (_) {}
-        }
-        return;
-      }
-      const valor = input.value;
-      const posicaoAnterior = input.selectionStart ?? valor.length;
-      const digitosAntesDoCursor = (valor.slice(0, posicaoAnterior).match(/\d/g) || []).length;
-      const formatado = mascaraDataTexto(valor);
-      if (formatado === valor) return;
+      if (!input || input.readOnly) return;
+      // Fallback para entrada por voz, preenchimento automático ou navegadores
+      // que não disponibilizem beforeinput. A rotina acima cuida da edição nativa.
+      const anterior = String(input.value || '');
+      const formatado = mascaraDataTexto(anterior, document.activeElement === input);
+      if (formatado === anterior) return;
+      const inicio = input.selectionStart ?? anterior.length;
+      const quantosDigitos = (anterior.slice(0, inicio).match(/\d/g) || []).length;
       input.value = formatado;
-      try {
-        let novaPosicao = 0;
-        let digitosContados = 0;
-        while (novaPosicao < formatado.length && digitosContados < digitosAntesDoCursor) {
-          if (/\d/.test(formatado[novaPosicao])) digitosContados++;
-          novaPosicao++;
-        }
-        if (formatado[novaPosicao] === '/') novaPosicao++;
-        input.setSelectionRange(novaPosicao, novaPosicao);
-      } catch (_) {}
+      const posicao = POSICOES_DIGITOS_DATA[quantosDigitos] ?? (formatado ? 10 : 0);
+      try { input.setSelectionRange(posicao, posicao); } catch (_) {}
     }
 
     function ensureInputDate(input) {
