@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_84 -->
+  <!-- Versão: simulador_consolidacao_debito_v_86 -->
 
   <style>
     :root {
@@ -1736,7 +1736,7 @@
             <span aria-hidden="true"></span><span>Consolidação 01</span><span class="seta-consolidacao" aria-hidden="true">▼</span>
           </button>
           <div id="corpoConsolidacaoPrincipalAcumulado" class="corpo-consolidacao-retratil">
-          <div class="subtitulo-tabela">Composição do débito</div>
+          <div class="subtitulo-tabela" id="tituloComposicaoAcumulado">Composição do débito</div>
           <div class="tabela-wrapper">
             <table class="tabela-composicao-acumulado" aria-label="Composição do débito acumulado">
               <colgroup>
@@ -3062,6 +3062,7 @@
       if (modoDataConsolidacaoSelecionado('acumulado') === 'outra' && el && el.value.trim() && !ensureInputDate(el)) return;
       dadosTcfaAcumulado.modoDataConsolidacao = modoDataConsolidacaoSelecionado('acumulado');
       dadosTcfaAcumulado.dataConsolidacao = valorCampo('dataConsolidacaoAcumulado');
+      atualizarTituloComposicaoAcumulado();
       if (modoComposicaoAcumulado('multa') === 'automatico' || modoComposicaoAcumulado('selic') === 'automatico') {
         await atualizarPercentuaisAutomaticosAcumuladoSeNecessario({ mostrarAviso: true });
       }
@@ -3104,8 +3105,16 @@
       return numeroParaPercentual(Number(n || 0));
     }
 
+    function atualizarTituloComposicaoAcumulado() {
+      const titulo = document.getElementById('tituloComposicaoAcumulado');
+      if (!titulo) return;
+      const data = String(dadosTcfaAcumulado?.dataConsolidacao || '').trim();
+      titulo.textContent = data ? `Composição do débito em ${data}` : 'Composição do débito';
+    }
+
     function renderizarTcfaAcumulado() {
       if (!dadosTcfaAcumulado) return;
+      atualizarTituloComposicaoAcumulado();
       normalizarTodasLinhasComposicaoManual();
       selecionarModoComposicaoAcumulado('multa', modoMultaAcumulado);
       selecionarModoComposicaoAcumulado('selic', modoSelicAcumulado);
@@ -4010,12 +4019,53 @@
       return digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4);
     }
 
+    // A máscara deve auxiliar a digitação de uma data nova sem impedir a edição
+    // nativa de um trecho já preenchido (dia, mês ou ano).
+    function prepararEdicaoParcialData(input) {
+      if (!input || input.dataset.edicaoParcialDataBound === '1') return;
+      input.dataset.edicaoParcialDataBound = '1';
+      input.addEventListener('beforeinput', () => {
+        if (input.readOnly) return;
+        const valor = input.value;
+        const inicio = input.selectionStart ?? valor.length;
+        const fim = input.selectionEnd ?? inicio;
+        const selecionouTudo = inicio === 0 && fim === valor.length;
+        if (valor.includes('/') && inicio < valor.length && !selecionouTudo) {
+          input.dataset.edicaoParcialData = '1';
+        }
+      });
+      input.addEventListener('blur', () => { delete input.dataset.edicaoParcialData; });
+    }
+
     function maskDateDdMmYyyyRealtime(input) {
       if (!input) return;
-      input.value = mascaraDataTexto(input.value);
+      // Ao editar um trecho interno, preservar posição e separadores existentes.
+      // Continuar filtrando caracteres estranhos, como fazia a máscara anterior.
+      if (input.dataset.edicaoParcialData === '1') {
+        const atual = input.value;
+        const limpo = atual.replace(/[^\d/]/g, '');
+        if (limpo !== atual) {
+          const posicao = (atual.slice(0, input.selectionStart ?? atual.length).match(/[\d/]/g) || []).length;
+          input.value = limpo;
+          try { input.setSelectionRange(posicao, posicao); } catch (_) {}
+        }
+        return;
+      }
+      const valor = input.value;
+      const posicaoAnterior = input.selectionStart ?? valor.length;
+      const digitosAntesDoCursor = (valor.slice(0, posicaoAnterior).match(/\d/g) || []).length;
+      const formatado = mascaraDataTexto(valor);
+      if (formatado === valor) return;
+      input.value = formatado;
       try {
-        const len = input.value.length;
-        input.setSelectionRange(len, len);
+        let novaPosicao = 0;
+        let digitosContados = 0;
+        while (novaPosicao < formatado.length && digitosContados < digitosAntesDoCursor) {
+          if (/\d/.test(formatado[novaPosicao])) digitosContados++;
+          novaPosicao++;
+        }
+        if (formatado[novaPosicao] === '/') novaPosicao++;
+        input.setSelectionRange(novaPosicao, novaPosicao);
       } catch (_) {}
     }
 
@@ -4078,8 +4128,7 @@
     function bindDateInput(input) {
       if (!input || input.dataset.dateBound === '1') return;
       input.dataset.dateBound = '1';
-      input.addEventListener('focus', () => { setTimeout(() => input.select(), 0); });
-      input.addEventListener('click', () => { setTimeout(() => input.select(), 0); });
+      prepararEdicaoParcialData(input);
       input.addEventListener('input', () => { if (!input.readOnly) maskDateDdMmYyyyRealtime(input); });
       input.addEventListener('blur', () => { if (!input.readOnly) ensureInputDate(input); });
     }
@@ -4245,6 +4294,7 @@
       if (tipo === 'acumulado' && dadosTcfaAcumulado) {
         dadosTcfaAcumulado.modoDataConsolidacao = modo === 'outra' ? 'outra' : 'atual';
         dadosTcfaAcumulado.dataConsolidacao = obterValorDataConsolidacao('acumulado');
+        atualizarTituloComposicaoAcumulado();
       }
     }
 
@@ -5855,8 +5905,9 @@
           <td></td><td>${numeroParaMoeda(total.selicValor)}</td>
           <td></td><td>${numeroParaMoeda(total.encargosValor)}</td><td>${numeroParaMoeda(total.valorConsolidado)}</td>
         </tr>`;
+      const dataComposicao = String(dados.dataConsolidacao || '').trim();
       return `
-        <div class="subtitulo-tabela">Composição do débito</div>
+        <div class="subtitulo-tabela">Composição do débito${dataComposicao ? ` em ${escapeHtml(dataComposicao)}` : ''}</div>
         <div class="tabela-wrapper"><table class="tabela-composicao-acumulado" aria-label="Composição do débito acumulado">
           ${colgroup}
           <thead>
@@ -6555,7 +6606,22 @@
     function prepararAtualizacaoComNovaData(origem, novaData) {
       const dados = JSON.parse(JSON.stringify(origem));
       dados.dataConsolidacao = novaData;
-      if (dados.tipoDebito !== 'TCFA_ACUMULADO') {
+      if (dados.tipoDebito === 'TCFA_ACUMULADO') {
+        // A alteração da data exige atualização automática da composição
+        // inteira: Multa e SELIC passam de SICAFI/Manual para Automático.
+        // Preservamos os percentuais manuais de referência para eventual
+        // retorno explícito ao modo Manual, sem utilizá-los no novo cálculo.
+        (dados.composicao || []).forEach(row => {
+          if (modoComposicaoAtualizacao(origem, 'multa') === 'manual') {
+            row.multaPctManual = Number(row.multaPct || 0);
+          }
+          if (modoComposicaoAtualizacao(origem, 'selic') === 'manual') {
+            row.selicPctManual = Number(row.selicPct || 0);
+          }
+        });
+        dados.modoMultaAcumulado = 'automatico';
+        dados.modoSelicAcumulado = 'automatico';
+      } else {
         for (const descricao of ['(+)Multa', '(+)SELIC']) {
           const linha = obterLinhaPorDescricao(dados, descricao);
           if (!linha) continue;
@@ -6607,7 +6673,20 @@
         const recalculada = await criarAtualizacaoReprocessadaConformeModo(fonte, indice);
         if (!recalculada) throw new Error('Não foi possível recalcular a consolidação com a nova data.');
         recalculada.dataConsolidacao = novaData;
-        if (recalculada.tipoDebito !== 'TCFA_ACUMULADO') {
+        if (recalculada.tipoDebito === 'TCFA_ACUMULADO') {
+          // Os percentuais automáticos calculados para a nova data não podem
+          // substituir as referências SICAFI/Manual armazenadas. Assim, uma
+          // eventual seleção posterior desses modos conserva seus dados.
+          const referencias = new Map((fonte.composicao || [])
+            .map(row => [String(row.debito || ''), row]));
+          (recalculada.composicao || []).forEach(row => {
+            const original = referencias.get(String(row.debito || ''));
+            if (!original) return;
+            for (const campo of ['multaPctSicafi', 'selicPctSicafi', 'multaPctManual', 'selicPctManual']) {
+              if (Number.isFinite(Number(original[campo]))) row[campo] = Number(original[campo]);
+            }
+          });
+        } else {
           // Protege a data final contra metadados antigos copiados durante
           // o recálculo e sincroniza a exibição nos modos SICAFI/automático.
           recalculada.dataFimMultaAuto = novaData;
@@ -6680,7 +6759,7 @@
         </div>`).join('');
       sincronizarConsolidacoesRetrateis();
       container.querySelectorAll('[data-data-consolidacao-atualizacao]').forEach(input => {
-        input.addEventListener('focus', () => input.select());
+        prepararEdicaoParcialData(input);
         input.addEventListener('input', () => maskDateDdMmYyyyRealtime(input));
         input.addEventListener('blur', () => alterarDataConsolidacaoAtualizacao(input));
         input.addEventListener('keydown', event => {
@@ -6706,8 +6785,7 @@
         });
       });
       container.querySelectorAll('[data-data-encargo-atualizacao]').forEach(input => {
-        input.addEventListener('focus', () => { setTimeout(() => input.select(), 0); });
-        input.addEventListener('click', () => { setTimeout(() => input.select(), 0); });
+        prepararEdicaoParcialData(input);
         input.addEventListener('input', () => { if (!input.readOnly) maskDateDdMmYyyyRealtime(input); });
         input.addEventListener('blur', event => {
           const indice = Number(input.dataset.atualizacao), dados = simulacoesAdicionais[indice];
@@ -7137,7 +7215,8 @@
 
           function desenharCabecalhoComposicao() {
             garantirEspaco(alturaCabC + 18);
-            celula(x0, y, tabelaLargura, 18, '0.85', 'Composição do débito', { negrito: true, alinhamento: 'center', tamanho: 8 });
+            const dataComposicaoPdf = String(dadosItem.dataConsolidacao || '').trim();
+            celula(x0, y, tabelaLargura, 18, '0.85', `Composição do débito${dataComposicaoPdf ? ` em ${dataComposicaoPdf}` : ''}`, { negrito: true, alinhamento: 'center', tamanho: 8 });
             y -= 18;
 
             const yTopoCabecalho = y;
@@ -7641,8 +7720,9 @@
       }
       const campoDataAtualizacaoModal = document.getElementById('campoDataAtualizacaoModal');
       if (campoDataAtualizacaoModal) {
+        prepararEdicaoParcialData(campoDataAtualizacaoModal);
         campoDataAtualizacaoModal.addEventListener('input', () => {
-          campoDataAtualizacaoModal.value = mascaraDataTexto(campoDataAtualizacaoModal.value);
+          maskDateDdMmYyyyRealtime(campoDataAtualizacaoModal);
           limparErroModalDataAtualizacao();
         });
         campoDataAtualizacaoModal.addEventListener('keydown', (event) => {
