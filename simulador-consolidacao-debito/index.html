@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_87 -->
+  <!-- Versão: simulador_consolidacao_debito_v_88 -->
 
   <style>
     :root {
@@ -834,6 +834,13 @@
       padding: 2px 3px;
       text-align: right;
       font-weight: inherit;
+    }
+
+    /* TCFA acumulado: a data da Consolidação 01 tem o mesmo destaque das demais. */
+    #areaTcfaAcumulado #dataConsolidacaoAcumulado {
+      text-align: left;
+      font-size: 16px;
+      font-weight: 700;
     }
 
     /* Dados de identificação das consolidações seguintes: alinhados como na Consolidação 01. */
@@ -2148,7 +2155,13 @@
         modal.addEventListener('keydown', teclas);
         modal.classList.add('ativo');
         modal.setAttribute('aria-hidden', 'false');
-        nao.focus();
+        // No blur, o navegador ainda pode estar transferindo o foco para
+        // outro campo. Focar SIM depois dessa transferência evita perdê-lo.
+        setTimeout(() => {
+          if (confirmacaoConsolidacaoAberta && modal.classList.contains('ativo')) {
+            sim.focus({ preventScroll: true });
+          }
+        }, 0);
       });
     }
 
@@ -2235,39 +2248,61 @@
       return true;
     }
 
-    // Somente edições efetivas (não foco/clique) na primeira consolidação
-    // abrem a confirmação. O evento original só segue após SIM.
-    function capturarEdicaoDaPrimeiraConsolidacao(event) {
-      if (!simulacoesAdicionais.length || confirmacaoConsolidacaoAberta) return;
-      const input = event.target;
-      if (!(input instanceof HTMLInputElement) || input.readOnly) return;
-      if (!input.closest('#areaTabelaSimples, #areaTcfaAcumulado') || input.closest('.bloco-atualizacao')) return;
-      if (input.classList.contains('campo-data') || input.classList.contains('campo-data-encargo') || input.classList.contains('campo-composicao-percentual')) return;
-      if (entradasPrincipaisAutorizadas.has(input)) return;
-      const anterior = input.dataset.valorAnteriorProtegido ?? '';
-      const novo = input.value;
-      const comoNumero = input.classList.contains('campo-percentual') || input.classList.contains('campo-percentual-acum')
-        ? v => parseNumeroFlexivel(v) : input.classList.contains('campo-moeda') || input.classList.contains('campo-moeda-acum')
-          ? v => moedaParaNumero(v) : v => String(v);
-      if (comoNumero(anterior) === comoNumero(novo)) return;
-      event.stopImmediatePropagation();
-      input.value = anterior;
-      pedirConfirmacaoConsolidacao(AVISO_ALTERACAO_ANTERIOR).then(async aceito => {
-        if (!aceito || !input.isConnected) return;
-        entradasPrincipaisAutorizadas.add(input);
-        input.value = novo;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-        input.focus({ preventScroll: true });
-        // Recalcula as etapas posteriores quando a edição do campo terminar.
-      });
+    // Com consolidações posteriores, permitir a digitação normalmente. A edição
+    // é efetivada SOMENTE na saída do campo, após o usuário confirmar SIM.
+    // Isso evita a confirmação prematura a cada tecla e o loop de foco/reentrada.
+    function edicaoPrimeiraConsolidacaoAguardandoConfirmacao(input) {
+      return !!simulacoesAdicionais.length &&
+        input instanceof HTMLInputElement && !input.readOnly &&
+        !!input.closest('#areaTabelaSimples, #areaTcfaAcumulado') &&
+        !input.closest('.bloco-atualizacao') &&
+        !input.classList.contains('campo-data') &&
+        !input.classList.contains('campo-data-encargo') &&
+        !input.classList.contains('campo-composicao-percentual') &&
+        !entradasPrincipaisAutorizadas.has(input);
     }
 
-    function observarFimEdicaoPrincipal(event) {
+    function valoresDeEdicaoEquivalentes(input, anterior, novo) {
+      if (input.classList.contains('campo-percentual') || input.classList.contains('campo-percentual-acum')) {
+        return parseNumeroFlexivel(anterior) === parseNumeroFlexivel(novo);
+      }
+      if (input.classList.contains('campo-moeda') || input.classList.contains('campo-moeda-acum')) {
+        return moedaParaNumero(anterior) === moedaParaNumero(novo);
+      }
+      return String(anterior) === String(novo);
+    }
+
+    function confirmarEdicaoAoSairDaPrimeiraConsolidacao(event) {
       const input = event.target;
-      if (!entradasPrincipaisAutorizadas.has(input)) return;
-      entradasPrincipaisAutorizadas.delete(input);
-      // O blur dos campos da página atualiza os cálculos antes da execução agendada.
-      setTimeout(() => { reprocessarFuturasEmSequencia(-1); }, 0);
+      if (confirmacaoConsolidacaoAberta || !edicaoPrimeiraConsolidacaoAguardandoConfirmacao(input)) return;
+      const anterior = String(input.dataset.valorAnteriorProtegido ?? input.value);
+      const novo = String(input.value);
+      if (valoresDeEdicaoEquivalentes(input, anterior, novo)) return;
+
+      // Bloqueia apenas a execução do blur de cálculo desta edição. O usuário
+      // já saiu do campo; o cálculo original será executado ao confirmar SIM.
+      event.stopImmediatePropagation();
+      pedirConfirmacaoConsolidacao(AVISO_ALTERACAO_ANTERIOR).then(async aceito => {
+        if (!input.isConnected) return;
+        if (!aceito) {
+          input.value = anterior;
+          return;
+        }
+        entradasPrincipaisAutorizadas.add(input);
+        try {
+          input.value = novo;
+          // Reutiliza os listeners originais do campo sem acionar outro aviso.
+          input.dispatchEvent(new Event('blur'));
+          if (input.id === 'numeroDebitoAcumulado' && dadosTcfaAcumulado) {
+            dadosTcfaAcumulado.numeroDebito = onlyDigits(input.value);
+          }
+          marcarMemoriaPDFAlterada();
+          await reprocessarFuturasEmSequencia(-1);
+        } finally {
+          entradasPrincipaisAutorizadas.delete(input);
+          input.dataset.valorAnteriorProtegido = input.value;
+        }
+      });
     }
 
     async function processarDataPrincipalAlterada(tipo, campoFinalizado = false) {
@@ -2320,6 +2355,7 @@
       if (!alvo || !alvo.matches || !alvo.matches('input, select, textarea')) return;
       if (alvo.closest('.bloco-atualizacao')) return;
       if (!alvo.closest('#areaTabelaSimples') && !alvo.closest('#areaTcfaAcumulado')) return;
+      if (edicaoPrimeiraConsolidacaoAguardandoConfirmacao(alvo)) return;
       marcarMemoriaPDFAlterada();
       marcarAtualizacoesPosterioresParaReprocessar(null);
     }
@@ -3069,6 +3105,63 @@
       marcarMemoriaPDFAlterada();
     }
 
+    let alterandoDataPrincipalAcumulado = false;
+    async function alterarDataPrimeiraConsolidacaoAcumulado(input) {
+      if (!dadosTcfaAcumulado || alterandoDataPrincipalAcumulado) return;
+      const anterior = String(dadosTcfaAcumulado.dataConsolidacao || '').trim();
+      const restaurar = () => { if (input.isConnected) input.value = anterior; };
+      if (String(input.value || '').trim() === anterior) return;
+      if (!ensureInputDate(input) || !parseDataPtBr(input.value)) {
+        restaurar();
+        return;
+      }
+      const novaData = String(input.value || '').trim();
+      if (novaData === anterior) return;
+      alterandoDataPrincipalAcumulado = true;
+      try {
+        // A Consolidação 01 não tem etapa anterior. Aplicam-se as mesmas
+        // regras cronológicas em relação à próxima, inclusive consolidaçãoPG.
+        const decisao = await avaliarAlteracaoDataConsolidacao(-1, novaData, anterior);
+        if (!decisao.permitido) { restaurar(); return; }
+
+        const copiaAnterior = JSON.parse(JSON.stringify(dadosTcfaAcumulado));
+        const modoAnteriorMulta = modoMultaAcumulado;
+        const modoAnteriorSelic = modoSelicAcumulado;
+        try {
+          dadosTcfaAcumulado.dataConsolidacao = novaData;
+          dadosTcfaAcumulado.modoDataConsolidacao = 'outra';
+          dadosTcfaAcumulado._preservarValoresCarregados = false;
+          (dadosTcfaAcumulado.rows || []).forEach(row => {
+            if (modoAnteriorMulta === 'manual') row.multaPctManual = Number(row.multaPct || 0);
+            if (modoAnteriorSelic === 'manual') row.selicPctManual = Number(row.selicPct || 0);
+          });
+          selecionarModoComposicaoAcumulado('multa', 'automatico');
+          selecionarModoComposicaoAcumulado('selic', 'automatico');
+          const atualizado = await atualizarPercentuaisAutomaticosAcumuladoSeNecessario({ mostrarAviso: false });
+          if (!atualizado) throw new Error('Não foi possível recalcular automaticamente a Multa e a SELIC para a nova data.');
+          renderizarTcfaAcumulado();
+        } catch (erro) {
+          dadosTcfaAcumulado = copiaAnterior;
+          selecionarModoComposicaoAcumulado('multa', modoAnteriorMulta);
+          selecionarModoComposicaoAcumulado('selic', modoAnteriorSelic);
+          renderizarTcfaAcumulado();
+          throw erro;
+        }
+
+        dataPrincipalConfirmada = novaData;
+        modoDataPrincipalConfirmado = 'outra';
+        marcarMemoriaPDFAlterada();
+        if (decisao.remover) removerConsolidacoesPosteriores(-1);
+        else if (existemConsolidacoesPosteriores(-1)) await reprocessarFuturasEmSequencia(-1);
+        atualizarEstadoBotaoPagamento();
+      } catch (erro) {
+        restaurar();
+        showToast(normalizarMensagemErro(erro, 'Não foi possível alterar a data.'), 'error');
+      } finally {
+        alterandoDataPrincipalAcumulado = false;
+      }
+    }
+
     function recalcularLinhaComposicao(row) {
       const baseSaldo = roundMoneyValue((row.saldo || 0) - (row.compensacaoRegular || 0) - (row.compensacaoManual || 0));
       row.correcaoValor = roundMoneyValue(baseSaldo * (row.correcaoPct || 0) / 100);
@@ -3184,7 +3277,7 @@
     function montarHtmlConsolidacaoAcumulado() {
       return `
         <tr class="linha-topo"><th>Nº do débito acumulado:</th><td class="valor" colspan="2"><input id="numeroDebitoAcumulado" class="campo-tabela campo-numero" type="text" inputmode="numeric" placeholder="opcional" autocomplete="off" value="${onlyDigits(dadosTcfaAcumulado?.numeroDebito || '')}"></td></tr>
-        <tr class="linha-topo"><th>Consolidação do débito em (data):</th><td class="valor" colspan="2"><input id="dataConsolidacaoAcumulado" class="campo-tabela campo-data" type="text" inputmode="numeric" value="${escapeHtml(dadosTcfaAcumulado?.dataConsolidacao || '')}" readonly tabindex="-1"></td></tr>
+        <tr class="linha-topo"><th>Consolidação do débito em (data):</th><td class="valor" colspan="2"><input id="dataConsolidacaoAcumulado" class="campo-tabela campo-data" type="text" inputmode="numeric" maxlength="10" autocomplete="off" value="${escapeHtml(dadosTcfaAcumulado?.dataConsolidacao || '')}"></td></tr>
         <tr><th class="rotulo">Descrição</th><th class="percentual">Percentual</th><th class="valor">Valores</th></tr>
         <tr class="linha-destaque"><td class="rotulo">Valor Principal</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input id="acumValorPrincipal" class="campo-tabela" type="text" value="${numeroParaMoeda(dadosTcfaAcumulado?.valorPrincipal || 0)}" readonly tabindex="-1"></td></tr>
         <tr class="linha-comum"><td class="rotulo">(-)Somatório da amortização</td><td class="percentual percentual-vazio">-</td><td class="valor"><input id="acumSomatorioAmortizacao" class="campo-tabela campo-moeda-acum" type="text" inputmode="numeric" value="${numeroParaMoeda(dadosTcfaAcumulado?.somatorioAmortizacao || 0)}"></td></tr>
@@ -3208,7 +3301,7 @@
       document.querySelectorAll('.campo-composicao-percentual').forEach(input => {
         if (input.dataset.bound === '1') return;
         input.dataset.bound = '1';
-        input.addEventListener('focus', () => setTimeout(() => input.select(), 0));
+        input.addEventListener('focus', () => setTimeout(() => { if (!confirmacaoConsolidacaoAberta && document.activeElement === input) input.select(); }, 0));
         input.addEventListener('input', () => { input.value = input.value.replace(/[^0-9,.%]/g, ''); });
         input.addEventListener('blur', async () => {
           if (input.readOnly) return;
@@ -3252,19 +3345,21 @@
         input.dataset.moneyBound = '1';
         input.addEventListener('focus', () => {
           input.dataset.valorNoFoco = String(moedaParaNumero(input.value));
-          setTimeout(() => input.select(), 0);
+          setTimeout(() => { if (!confirmacaoConsolidacaoAberta && document.activeElement === input) input.select(); }, 0);
         });
         input.addEventListener('input', () => {
           const digits = input.value.replace(/\D/g, '');
           input.value = digits ? formatMoneyDigitsString(digits) : '';
-          if (String(moedaParaNumero(input.value)) === input.dataset.valorNoFoco) return;
+          if (String(moedaParaNumero(input.value)) === input.dataset.valorNoFoco ||
+              (document.activeElement === input && edicaoPrimeiraConsolidacaoAguardandoConfirmacao(input))) return;
           if (input.id === 'acumSomatorioSapiens') modoSomatorioSapiensDividaAcumulado = 'valor';
           atualizarConsolidacaoAcumulado();
         });
         input.addEventListener('blur', () => {
           const digits = input.value.replace(/\D/g, '');
           input.value = digits ? formatMoneyDigitsString(digits) : '0,00';
-          if (String(moedaParaNumero(input.value)) === input.dataset.valorNoFoco) return;
+          if (String(moedaParaNumero(input.value)) === input.dataset.valorNoFoco ||
+              (document.activeElement === input && edicaoPrimeiraConsolidacaoAguardandoConfirmacao(input))) return;
           if (input.id === 'acumSomatorioSapiens') modoSomatorioSapiensDividaAcumulado = 'valor';
           atualizarConsolidacaoAcumulado();
         });
@@ -3274,17 +3369,19 @@
         input.dataset.percentBound = '1';
         input.addEventListener('focus', () => {
           input.dataset.valorNoFoco = String(parseNumeroFlexivel(input.value));
-          setTimeout(() => input.select(), 0);
+          setTimeout(() => { if (!confirmacaoConsolidacaoAberta && document.activeElement === input) input.select(); }, 0);
         });
         input.addEventListener('input', () => {
           input.value = input.value.replace(/[^0-9,.%]/g, '');
-          if (String(parseNumeroFlexivel(input.value)) === input.dataset.valorNoFoco) return;
+          if (String(parseNumeroFlexivel(input.value)) === input.dataset.valorNoFoco ||
+              (document.activeElement === input && edicaoPrimeiraConsolidacaoAguardandoConfirmacao(input))) return;
           if (input.id === 'acumPercentualSapiens') modoSomatorioSapiensDividaAcumulado = 'percentual';
           atualizarConsolidacaoAcumulado();
         });
         input.addEventListener('blur', () => {
           input.value = numeroParaPercentual(parseNumeroFlexivel(input.value));
-          if (String(parseNumeroFlexivel(input.value)) === input.dataset.valorNoFoco) return;
+          if (String(parseNumeroFlexivel(input.value)) === input.dataset.valorNoFoco ||
+              (document.activeElement === input && edicaoPrimeiraConsolidacaoAguardandoConfirmacao(input))) return;
           if (input.id === 'acumPercentualSapiens') modoSomatorioSapiensDividaAcumulado = 'percentual';
           atualizarConsolidacaoAcumulado();
         });
@@ -3292,10 +3389,15 @@
       const dataConsolidacaoAcumulado = document.getElementById('dataConsolidacaoAcumulado');
       if (dataConsolidacaoAcumulado && dataConsolidacaoAcumulado.dataset.bound !== '1') {
         dataConsolidacaoAcumulado.dataset.bound = '1';
-        dataConsolidacaoAcumulado.readOnly = true;
-        dataConsolidacaoAcumulado.tabIndex = -1;
-        dataConsolidacaoAcumulado.addEventListener('focus', () => setTimeout(() => dataConsolidacaoAcumulado.select(), 0));
-        dataConsolidacaoAcumulado.addEventListener('click', () => setTimeout(() => dataConsolidacaoAcumulado.select(), 0));
+        prepararEdicaoParcialData(dataConsolidacaoAcumulado);
+        dataConsolidacaoAcumulado.addEventListener('input', () => maskDateDdMmYyyyRealtime(dataConsolidacaoAcumulado));
+        dataConsolidacaoAcumulado.addEventListener('blur', () => alterarDataPrimeiraConsolidacaoAcumulado(dataConsolidacaoAcumulado));
+        dataConsolidacaoAcumulado.addEventListener('keydown', event => {
+          if (event.key !== 'Enter') return;
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          focusNextField(dataConsolidacaoAcumulado);
+        });
       }
       const numero = document.getElementById('numeroDebitoAcumulado');
       if (numero && numero.dataset.bound !== '1') {
@@ -3939,7 +4041,8 @@
         // Nos campos-base manuais, o recálculo é aplicado apenas ao sair do campo
         // ou ao avançar com Enter/Tab. Isso evita que o próprio cálculo sobrescreva
         // o valor enquanto o usuário ainda está digitando ou apagando.
-        if (!ehCampoBaseManual(input) && String(moedaParaNumero(input.value)) !== input.dataset.valorNoFoco) {
+        if (!ehCampoBaseManual(input) && !edicaoPrimeiraConsolidacaoAguardandoConfirmacao(input) &&
+            String(moedaParaNumero(input.value)) !== input.dataset.valorNoFoco) {
           registrarEdicaoCampo(input);
           atualizarCalculos();
         }
@@ -3947,7 +4050,7 @@
 
       input.addEventListener('focus', () => {
         input.dataset.valorNoFoco = String(moedaParaNumero(input.value));
-        setTimeout(() => input.select(), 0);
+        setTimeout(() => { if (!confirmacaoConsolidacaoAberta && document.activeElement === input) input.select(); }, 0);
       });
       input.addEventListener('input', apply);
       input.addEventListener('blur', () => {
@@ -3993,12 +4096,13 @@
 
       input.addEventListener('focus', () => {
         input.dataset.valorNoFoco = String(parseNumeroFlexivel(input.value));
-        setTimeout(() => input.select(), 0);
+        setTimeout(() => { if (!confirmacaoConsolidacaoAberta && document.activeElement === input) input.select(); }, 0);
       });
 
       input.addEventListener('input', () => {
         input.value = input.value.replace(/[^0-9,.%]/g, '');
-        if (String(parseNumeroFlexivel(input.value)) === input.dataset.valorNoFoco) return;
+        if (String(parseNumeroFlexivel(input.value)) === input.dataset.valorNoFoco ||
+            edicaoPrimeiraConsolidacaoAguardandoConfirmacao(input)) return;
         registrarEdicaoCampo(input);
         atualizarCalculos();
       });
@@ -4418,6 +4522,7 @@
           campoOutra.addEventListener('keydown', async (ev) => {
             if (ev.key !== 'Enter') return;
             ev.preventDefault();
+            ev.stopImmediatePropagation();
             if (!campoOutra.readOnly && campoOutra.value.trim() && !ensureInputDate(campoOutra)) return;
             await processarDataPrincipalAlterada(tipo, true);
             focusNextField(campoOutra);
@@ -6847,7 +6952,10 @@
         input.addEventListener('input', () => maskDateDdMmYyyyRealtime(input));
         input.addEventListener('blur', () => alterarDataConsolidacaoAtualizacao(input));
         input.addEventListener('keydown', event => {
-          if (event.key === 'Enter') { event.preventDefault(); input.blur(); }
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            focusNextField(input);
+          }
         });
       });
       container.querySelectorAll('[data-carregar-atualizacao]').forEach(btn => {
@@ -6881,6 +6989,11 @@
           const diferente = String(input.value).trim() !== String(antigo || '').trim();
           executarEdicaoEmConsolidacaoAnterior(indice, diferente,
             () => aoAlterarDataEncargoAtualizacao(event), () => renderizarAtualizacoes());
+        });
+        input.addEventListener('keydown', event => {
+          if (event.key !== 'Enter') return;
+          event.preventDefault();
+          focusNextField(input);
         });
       });
       container.querySelectorAll('[data-percentual-encargo-atualizacao]').forEach(input => {
@@ -7612,19 +7725,22 @@
         ev.preventDefault();
         if (input.readOnly) return;
         input.value = numeroParaPercentual(parseNumeroFlexivel(input.value));
-        registrarEdicaoCampo(input);
-        atualizarCalculos();
+        if (!edicaoPrimeiraConsolidacaoAguardandoConfirmacao(input)) {
+          registrarEdicaoCampo(input);
+          atualizarCalculos();
+        }
         focusNextField(input);
       });
     }
 
 
     function focusNextField(current) {
-      const fields = Array.from(document.querySelectorAll('input:not([readonly]), select:not([disabled]), button:not([disabled])'));
+      const fields = Array.from(document.querySelectorAll(
+        'input:not([readonly]):not([disabled]), select:not([disabled]), textarea:not([readonly]):not([disabled]), button:not([disabled])'
+      )).filter(el => el.getClientRects().length > 0 &&
+        !el.closest('[hidden], [aria-hidden="true"]'));
       const idx = fields.indexOf(current);
-      if (idx >= 0 && idx < fields.length - 1) {
-        fields[idx + 1].focus();
-      }
+      if (idx >= 0 && idx < fields.length - 1) fields[idx + 1].focus();
     }
 
 
@@ -7636,8 +7752,7 @@
           el.dataset.valorAnteriorProtegido = el.value;
         }
       }, true);
-      document.addEventListener('input', capturarEdicaoDaPrimeiraConsolidacao, true);
-      document.addEventListener('blur', observarFimEdicaoPrincipal, true);
+      document.addEventListener('blur', confirmarEdicaoAoSairDaPrimeiraConsolidacao, true);
       document.addEventListener('click', event => {
         const botao = event.target?.closest?.('[data-cabecalho-consolidacao]');
         if (botao) alternarConsolidacaoRetratil(botao);
@@ -7690,6 +7805,20 @@
         numeroDebito.value = onlyDigits(numeroDebito.value);
       });
 
+      // As datas de Multa/SELIC começam readonly no modo SICAFI, mas podem
+      // tornar-se editáveis quando o usuário muda de modo. Associar Enter
+      // desde o início, e testar readonly somente no momento da tecla.
+      ['dataInicioMulta', 'dataFimMulta', 'dataInicioSelic', 'dataFimSelic'].forEach(id => {
+        const campoData = document.getElementById(id);
+        if (!campoData) return;
+        campoData.addEventListener('keydown', ev => {
+          if (ev.key !== 'Enter' || campoData.readOnly) return;
+          ev.preventDefault();
+          if (!ensureInputDate(campoData)) return;
+          focusNextField(campoData);
+        });
+      });
+
       document.querySelectorAll('input:not([readonly])').forEach((input) => {
         if (input.id === 'campoValorLancamentoPagamento') return;
         input.addEventListener('keydown', (ev) => {
@@ -7697,8 +7826,10 @@
             ev.preventDefault();
             if (input.classList.contains('campo-percentual')) {
               input.value = numeroParaPercentual(parseNumeroFlexivel(input.value));
-              registrarEdicaoCampo(input);
-              atualizarCalculos();
+              if (!edicaoPrimeiraConsolidacaoAguardandoConfirmacao(input)) {
+                registrarEdicaoCampo(input);
+                atualizarCalculos();
+              }
             }
             if (input.id === 'dataConsolidacao' || input.classList.contains('campo-data-encargo')) {
               ensureInputDate(input);
