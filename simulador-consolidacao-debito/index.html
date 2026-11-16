@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_83 -->
+  <!-- Versão: simulador_consolidacao_debito_v_84 -->
 
   <style>
     :root {
@@ -1025,6 +1025,23 @@
       background: #ffffff;
     }
 
+    .erro-data-atualizacao {
+      color: #a11919;
+      font-size: 12px;
+      line-height: 1.4;
+      min-height: 0;
+      margin: -4px 0 12px;
+      text-align: center;
+    }
+
+    .erro-data-atualizacao:empty {
+      display: none;
+    }
+
+    .campo-data-atualizacao-modal[aria-invalid="true"] {
+      border-color: #a11919;
+    }
+
     .acoes-data-atualizacao {
       display: flex;
       gap: 10px;
@@ -1507,7 +1524,8 @@
         <div class="caixa-data-atualizacao" role="dialog" aria-modal="true" aria-labelledby="tituloDataAtualizacao">
           <div id="tituloDataAtualizacao" class="titulo-data-atualizacao">Data da atualização</div>
           <label for="campoDataAtualizacaoModal" class="rotulo-data-atualizacao">Informe a data da nova consolidação (dd/mm/aaaa).</label>
-          <input id="campoDataAtualizacaoModal" class="campo-data-atualizacao-modal" type="text" inputmode="numeric" maxlength="10" autocomplete="off" />
+          <input id="campoDataAtualizacaoModal" class="campo-data-atualizacao-modal" type="text" inputmode="numeric" maxlength="10" autocomplete="off" aria-describedby="erroDataAtualizacaoModal" />
+          <div id="erroDataAtualizacaoModal" class="erro-data-atualizacao" role="alert" aria-live="polite"></div>
           <div class="acoes-data-atualizacao">
             <button type="button" class="btn btn-primary" id="btnConfirmarDataAtualizacao">OK</button>
             <button type="button" class="btn" id="btnCancelarDataAtualizacao">Cancelar</button>
@@ -4461,6 +4479,7 @@
         }
         resolverModalDataAtualizacao = resolve;
         campo.value = valorPadrao || '';
+        limparErroModalDataAtualizacao();
         modal.classList.add('ativo');
         modal.setAttribute('aria-hidden', 'false');
         setTimeout(() => {
@@ -4470,7 +4489,39 @@
       });
     }
 
+    function limparErroModalDataAtualizacao() {
+      const erro = document.getElementById('erroDataAtualizacaoModal');
+      const campo = document.getElementById('campoDataAtualizacaoModal');
+      if (erro) erro.textContent = '';
+      if (campo) campo.removeAttribute('aria-invalid');
+    }
+
+    function exibirErroModalDataAtualizacao(mensagem) {
+      const erro = document.getElementById('erroDataAtualizacaoModal');
+      const campo = document.getElementById('campoDataAtualizacaoModal');
+      if (erro) erro.textContent = mensagem;
+      if (campo) {
+        campo.setAttribute('aria-invalid', 'true');
+        campo.focus();
+      }
+    }
+
+    function confirmarModalDataAtualizacao() {
+      const campo = document.getElementById('campoDataAtualizacaoModal');
+      const data = String(campo?.value || '').trim();
+      if (!validarDataAtualizacaoAutomatica(data)) {
+        exibirErroModalDataAtualizacao(`Data inválida. A data deve estar no formato dd/mm/aaaa e ser limitada ao último dia do mês vigente (${textoDataHojeLimiteMesVigente()}).`);
+        return;
+      }
+      if (!validarDataAtualizacaoContraAnterior(data)) {
+        exibirErroModalDataAtualizacao(MENSAGEM_DATA_ATUALIZACAO_INVALIDA);
+        return;
+      }
+      fecharModalDataAtualizacao(data);
+    }
+
     function fecharModalDataAtualizacao(resultado = null) {
+      limparErroModalDataAtualizacao();
       const modal = document.getElementById('modalDataAtualizacao');
       if (modal) {
         modal.classList.remove('ativo');
@@ -7579,9 +7630,7 @@
       }
 
       const btnConfirmarDataAtualizacao = document.getElementById('btnConfirmarDataAtualizacao');
-      if (btnConfirmarDataAtualizacao) btnConfirmarDataAtualizacao.addEventListener('click', () => {
-        fecharModalDataAtualizacao(document.getElementById('campoDataAtualizacaoModal')?.value || '');
-      });
+      if (btnConfirmarDataAtualizacao) btnConfirmarDataAtualizacao.addEventListener('click', confirmarModalDataAtualizacao);
       const btnCancelarDataAtualizacao = document.getElementById('btnCancelarDataAtualizacao');
       if (btnCancelarDataAtualizacao) btnCancelarDataAtualizacao.addEventListener('click', () => fecharModalDataAtualizacao(null));
       const modalDataAtualizacao = document.getElementById('modalDataAtualizacao');
@@ -7594,11 +7643,12 @@
       if (campoDataAtualizacaoModal) {
         campoDataAtualizacaoModal.addEventListener('input', () => {
           campoDataAtualizacaoModal.value = mascaraDataTexto(campoDataAtualizacaoModal.value);
+          limparErroModalDataAtualizacao();
         });
         campoDataAtualizacaoModal.addEventListener('keydown', (event) => {
           if (event.key === 'Enter') {
             event.preventDefault();
-            fecharModalDataAtualizacao(campoDataAtualizacaoModal.value || '');
+            confirmarModalDataAtualizacao();
           }
           if (event.key === 'Escape') {
             event.preventDefault();
