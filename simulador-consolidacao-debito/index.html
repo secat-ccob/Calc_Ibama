@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_82 -->
+  <!-- Versão: simulador_consolidacao_debito_v_83 -->
 
   <style>
     :root {
@@ -843,9 +843,32 @@
     }
 
     /* Destaca a data da Consolidação 02 em diante, sem alterar a Consolidação 01 nem os PDFs. */
-    .tabela-atualizacao .linha-topo .campo-simulado-nao-editavel.campo-data {
+    .tabela-atualizacao .linha-topo .campo-simulado-nao-editavel.campo-data,
+    .tabela-atualizacao .linha-topo .campo-data-consolidacao-editavel {
       font-size: 16px;
       font-weight: 700;
+    }
+
+    /* Campo de data das consolidações comuns: editável, com o mesmo alinhamento. */
+    .tabela-atualizacao .linha-topo .campo-data-consolidacao-editavel {
+      width: 100%;
+      padding: 2px 3px;
+      border: none;
+      background: transparent;
+      color: #000000;
+      text-align: left;
+      box-sizing: border-box;
+    }
+
+    .tabela-atualizacao .linha-topo .campo-data-consolidacao-editavel:focus {
+      background: #ffffff;
+      outline: 2px solid #4CAF50;
+    }
+
+    /* ConsolidaçãoPG: centralizar o percentual dentro do grupo de correção. */
+    .tabela-atualizacao .celula-correcao-agrupada .grupo-correcao-linha.subcampo.percentual-correcao-pg {
+      justify-content: center;
+      text-align: center;
     }
 
     .campo-atualizacao-editavel {
@@ -5675,7 +5698,9 @@
           <colgroup><col class="col-descricao" /><col class="col-percentual" /><col class="col-valores" /></colgroup>
           <tbody>
             ${dados.numeroDebito ? `<tr class="linha-topo"><th>Nº do débito:</th><td class="valor" colspan="2"><input class="campo-simulado-nao-editavel campo-numero" value="${escapeHtml(dados.numeroDebito)}" readonly></td></tr>` : ''}
-            <tr class="linha-topo"><th>Consolidação do débito em (data):</th><td class="valor" colspan="2"><input class="campo-simulado-nao-editavel campo-data" style="width:100%;" value="${escapeHtml(textoDataConsolidacaoComPagamento(dados))}" readonly></td></tr>
+            <tr class="linha-topo"><th>Consolidação do débito em (data):</th><td class="valor" colspan="2">${dados.consolidacaoPG || indiceAtualizacao === null
+              ? `<input class="campo-simulado-nao-editavel campo-data" style="width:100%;" value="${escapeHtml(textoDataConsolidacaoComPagamento(dados))}" readonly>`
+              : `<input class="campo-data-consolidacao-editavel campo-data" type="text" inputmode="numeric" maxlength="10" autocomplete="off" aria-label="Data da consolidação ${indiceAtualizacao + 2}" data-data-consolidacao-atualizacao="1" data-atualizacao="${indiceAtualizacao}" value="${escapeHtml(dados.dataConsolidacao || '')}">`}</td></tr>
             <tr><th class="rotulo">Descrição</th><th class="percentual">Percentual</th><th class="valor">Valores</th></tr>`;
       const linhasDados = dados.linhas || [];
       const corpo = linhasDados.map((l, idx) => {
@@ -5694,7 +5719,7 @@
           return `
             <tr class="${l.destaque ? 'linha-destaque' : 'linha-comum'}">
               <td class="rotulo celula-correcao-agrupada"><div class="grupo-correcao"><div class="grupo-correcao-linha">${escapeHtml(l.descricao)}</div><div class="grupo-correcao-linha subcampo rotulo-subcampo">(+)Valor da Correção Monetária</div><div class="grupo-correcao-linha subcampo rotulo-subcampo">${escapeHtml(sub?.descricao || '(-)Amortização da Correção Monetária')}</div><div class="grupo-correcao-linha saldo-amortizacao"></div></div></td>
-              <td class="percentual celula-correcao-agrupada"><div class="grupo-correcao"><div class="grupo-correcao-linha"></div><div class="grupo-correcao-linha subcampo">${htmlPct}</div><div class="grupo-correcao-linha subcampo percentual-vazio">-</div><div class="grupo-correcao-linha saldo-amortizacao percentual-vazio"></div></div></td>
+              <td class="percentual celula-correcao-agrupada"><div class="grupo-correcao"><div class="grupo-correcao-linha"></div><div class="grupo-correcao-linha subcampo${dados.consolidacaoPG ? ' percentual-correcao-pg' : ''}">${htmlPct}</div><div class="grupo-correcao-linha subcampo percentual-vazio">-</div><div class="grupo-correcao-linha saldo-amortizacao percentual-vazio"></div></div></td>
               <td class="valor celula-correcao-agrupada"><div class="grupo-correcao"><div class="grupo-correcao-linha"></div><div class="grupo-correcao-linha subcampo">${htmlValor}</div><div class="grupo-correcao-linha subcampo">${htmlAmort}</div><div class="grupo-correcao-linha saldo-amortizacao">${htmlSaldo}</div></div></td>
             </tr>`;
         }
@@ -6473,6 +6498,101 @@
       });
     }
 
+    // Consolidação 02+: a data é editável apenas nas atualizações comuns.
+    // Sua mudança também altera a data final de Multa e SELIC, sem modificar
+    // os períodos iniciais nem substituir percentuais próprios da memória.
+    function prepararAtualizacaoComNovaData(origem, novaData) {
+      const dados = JSON.parse(JSON.stringify(origem));
+      dados.dataConsolidacao = novaData;
+      if (dados.tipoDebito !== 'TCFA_ACUMULADO') {
+        for (const descricao of ['(+)Multa', '(+)SELIC']) {
+          const linha = obterLinhaPorDescricao(dados, descricao);
+          if (!linha) continue;
+          const periodo = parsePeriodoPercentualPdf(linha.percentual || '');
+          if (periodo.inicio) {
+            linha.percentual = `De: ${periodo.inicio} até ${novaData}: ${periodo.percentual}`;
+          }
+        }
+        dados.dataFimMultaAuto = novaData;
+        dados.dataFimSelicAuto = novaData;
+        dados.dataFimMultaSicafi = novaData;
+        dados.dataFimSelicSicafi = novaData;
+        dados._datasEncargoHerdadas = {
+          ...(dados._datasEncargoHerdadas || {}),
+          dataFimMulta: false,
+          dataFimSelic: false
+        };
+      }
+      return dados;
+    }
+
+    let alterandoDataAtualizacao = false;
+    async function alterarDataConsolidacaoAtualizacao(input) {
+      const indice = Number(input?.dataset?.atualizacao);
+      const original = simulacoesAdicionais[indice];
+      if (!Number.isInteger(indice) || !original || original.consolidacaoPG || alterandoDataAtualizacao) return;
+      const anterior = String(original.dataConsolidacao || '').trim();
+      const restaurar = () => { if (input.isConnected) input.value = anterior; };
+      if (String(input.value || '').trim() === anterior) return;
+      if (!ensureInputDate(input) || !parseDataPtBr(input.value)) {
+        restaurar();
+        return;
+      }
+      const novaData = String(input.value || '').trim();
+      if (novaData === anterior) return;
+      if (!validarDataAtualizacaoContraAnterior(novaData, indice)) {
+        showToast(MENSAGEM_DATA_ATUALIZACAO_INVALIDA, 'error');
+        restaurar();
+        return;
+      }
+      alterandoDataAtualizacao = true;
+      try {
+        const decisao = await avaliarAlteracaoDataConsolidacao(indice, novaData, anterior);
+        if (!decisao.permitido) { restaurar(); return; }
+
+        // Reprocessa a própria etapa usando o saldo herdado, a nova data e
+        // as taxas/modos de cálculo já definidos para esta consolidação.
+        const fonte = prepararAtualizacaoComNovaData(original, novaData);
+        const recalculada = await criarAtualizacaoReprocessadaConformeModo(fonte, indice);
+        if (!recalculada) throw new Error('Não foi possível recalcular a consolidação com a nova data.');
+        recalculada.dataConsolidacao = novaData;
+        if (recalculada.tipoDebito !== 'TCFA_ACUMULADO') {
+          // Protege a data final contra metadados antigos copiados durante
+          // o recálculo e sincroniza a exibição nos modos SICAFI/automático.
+          recalculada.dataFimMultaAuto = novaData;
+          recalculada.dataFimSelicAuto = novaData;
+          recalculada.dataFimMultaSicafi = novaData;
+          recalculada.dataFimSelicSicafi = novaData;
+          recalculada._datasEncargoHerdadas = {
+            ...(recalculada._datasEncargoHerdadas || {}),
+            dataFimMulta: false, dataFimSelic: false
+          };
+          for (const descricao of ['(+)Multa', '(+)SELIC']) {
+            const linha = obterLinhaPorDescricao(recalculada, descricao);
+            if (!linha) continue;
+            const periodo = parsePeriodoPercentualPdf(linha.percentual || '');
+            const inicio = periodo.inicio || (descricao.includes('Multa')
+              ? recalculada.dataInicioMultaAuto : recalculada.dataInicioSelicAuto) || '';
+            if (inicio) linha.percentual = `De: ${inicio} até ${novaData}: ${periodo.percentual}`;
+          }
+        }
+        recalculada.tituloSecao = original.tituloSecao || `Consolidação ${String(indice + 2).padStart(2, '0')}`;
+        recalculada.reprocessamentoPendente = false;
+        recalculada.reprocessamentoOrigemIndice = null;
+        atualizarStatusMemoriaAtualizacaoConformeDados(recalculada);
+        simulacoesAdicionais[indice] = recalculada;
+        if (decisao.remover) removerConsolidacoesPosteriores(indice);
+        else if (existemConsolidacoesPosteriores(indice)) await reprocessarFuturasEmSequencia(indice);
+        renderizarAtualizacoes();
+      } catch (erro) {
+        // Nenhuma exclusão ocorre antes de a consolidação editada ser calculada.
+        restaurar();
+        showToast(normalizarMensagemErro(erro, 'Não foi possível alterar a data.'), 'error');
+      } finally {
+        alterandoDataAtualizacao = false;
+      }
+    }
+
     function renderizarAtualizacoes() {
       if (simulacoesAdicionais.length && !dataPrincipalConfirmada) {
         dataPrincipalConfirmada = obterDataConsolidacaoAtualTela();
@@ -6508,6 +6628,14 @@
           </div>
         </div>`).join('');
       sincronizarConsolidacoesRetrateis();
+      container.querySelectorAll('[data-data-consolidacao-atualizacao]').forEach(input => {
+        input.addEventListener('focus', () => input.select());
+        input.addEventListener('input', () => maskDateDdMmYyyyRealtime(input));
+        input.addEventListener('blur', () => alterarDataConsolidacaoAtualizacao(input));
+        input.addEventListener('keydown', event => {
+          if (event.key === 'Enter') { event.preventDefault(); input.blur(); }
+        });
+      });
       container.querySelectorAll('[data-carregar-atualizacao]').forEach(btn => {
         btn.addEventListener('click', () => selecionarMemoriaAtualizacaoPDF(Number(btn.dataset.carregarAtualizacao)));
       });
