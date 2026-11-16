@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_81 -->
+  <!-- Versão: simulador_consolidacao_debito_v_82 -->
 
   <style>
     :root {
@@ -2201,7 +2201,7 @@
       const input = event.target;
       if (!(input instanceof HTMLInputElement) || input.readOnly) return;
       if (!input.closest('#areaTabelaSimples, #areaTcfaAcumulado') || input.closest('.bloco-atualizacao')) return;
-      if (input.classList.contains('campo-data') || input.classList.contains('campo-composicao-percentual')) return;
+      if (input.classList.contains('campo-data') || input.classList.contains('campo-data-encargo') || input.classList.contains('campo-composicao-percentual')) return;
       if (entradasPrincipaisAutorizadas.has(input)) return;
       const anterior = input.dataset.valorAnteriorProtegido ?? '';
       const novo = input.value;
@@ -4508,6 +4508,39 @@
       return dados;
     }
 
+    // Início/fim herdados acompanham a consolidação anterior em cada recálculo.
+    // Datas fixadas manualmente ou explicitamente na nova memória não são substituídas.
+    function datasEncargoProgressivas(dadosAtuais, camposAnteriores, camposAtuais, dataFinal) {
+      const herda = campo => dadosAtuais?._datasEncargoHerdadas?.[campo] === true;
+      const inicio = campo => herda(campo)
+        ? (camposAnteriores[campo] || dataFinal || '')
+        : (camposAtuais[campo] || camposAnteriores[campo] || dataFinal || '');
+      const fim = campo => herda(campo)
+        ? (camposAnteriores[campo] || dataFinal || '')
+        : (camposAtuais[campo] || dataFinal || camposAnteriores[campo] || '');
+      return {
+        dataInicioMulta: inicio('dataInicioMulta'),
+        dataFimMulta: fim('dataFimMulta'),
+        dataInicioSelic: inicio('dataInicioSelic'),
+        dataFimSelic: fim('dataFimSelic')
+      };
+    }
+
+    // Os controles das atualizações automáticas guardam cópias próprias dos
+    // períodos. Mantê-las sincronizadas com os campos recalculados evita que
+    // a tela continue exibindo as datas anteriores ao reprocessamento.
+    function sincronizarDatasAutomaticasDaAtualizacao(dados, campos) {
+      if (!dados || !campos) return;
+      if (dados.modoMulta === 'automatica') {
+        dados.dataInicioMultaAuto = campos.dataInicioMulta || '';
+        dados.dataFimMultaAuto = campos.dataFimMulta || '';
+      }
+      if (dados.modoSelic === 'sicalc') {
+        dados.dataInicioSelicAuto = campos.dataInicioSelic || '';
+        dados.dataFimSelicAuto = campos.dataFimSelic || '';
+      }
+    }
+
     function copiarMetadadosAtualizacao(origem, destino) {
       if (!origem || !destino) return destino;
       destino.tituloSecao = origem.tituloSecao || destino.tituloSecao;
@@ -4533,6 +4566,7 @@
       destino.modoSapiensAtualizacao = origem.modoSapiensAtualizacao || destino.modoSapiensAtualizacao;
       destino.modoCorrecaoMonetariaAtualizacao = origem.modoCorrecaoMonetariaAtualizacao || destino.modoCorrecaoMonetariaAtualizacao;
       destino._alteracoesMonetariasLocais = { ...(origem._alteracoesMonetariasLocais || {}) };
+      destino._datasEncargoHerdadas = { ...(origem._datasEncargoHerdadas || {}) };
       return destino;
     }
 
@@ -4718,6 +4752,14 @@
         ? (campoData === 'inicio' ? campos.dataInicioMulta : campos.dataFimMulta)
         : (campoData === 'inicio' ? campos.dataInicioSelic : campos.dataFimSelic);
       if (valor === String(valorAnterior || '')) return;
+      // A partir desta edição, a data passa a ser uma escolha específica
+      // desta consolidação, não uma data herdada da etapa anterior.
+      dados._datasEncargoHerdadas = {
+        ...(dados._datasEncargoHerdadas || {}),
+        [tipo === 'multa'
+          ? (campoData === 'inicio' ? 'dataInicioMulta' : 'dataFimMulta')
+          : (campoData === 'inicio' ? 'dataInicioSelic' : 'dataFimSelic')]: false
+      };
       if (tipo === 'multa') {
         if (campoData === 'inicio') campos.dataInicioMulta = valor;
         if (campoData === 'fim') campos.dataFimMulta = valor;
@@ -5269,7 +5311,11 @@
       if (!campos.dataInicioSelic) campos.dataInicioSelic = dataNova;
       campos.percentualMulta = calcularPercentualMultaAutomatica(campos.dataInicioMulta, dataNova);
       campos.percentualSelic = await calcularPercentualSelicSicalc(campos.dataInicioSelic, dataNova);
-      return dadosPdfDeCamposSimples(campos);
+      const nova = dadosPdfDeCamposSimples(campos);
+      // O início dos encargos na atualização automática é herdado, mesmo
+      // quando a origem estava vazia e foi usada provisoriamente dataNova.
+      nova._datasEncargoHerdadas = { dataInicioMulta: true, dataInicioSelic: true };
+      return nova;
     }
 
     async function adicionarAtualizacao() {
@@ -5373,7 +5419,16 @@
       campos.dataFimSelic = memoria.dataFimSelic || campos.dataFimSelic;
       // Correção e encargos são recalculados, nunca copiados monetariamente do PDF novo.
       campos.modoCorrecaoMonetaria = 'percentual';
-      return dadosPdfDeCamposSimples(campos);
+      const nova = dadosPdfDeCamposSimples(campos);
+      // Períodos ausentes no PDF são herdados; os expressos no próprio PDF
+      // permanecem independentes, até que o usuário os altere.
+      nova._datasEncargoHerdadas = {
+        dataInicioMulta: !memoria.dataInicioMulta,
+        dataFimMulta: !memoria.dataFimMulta,
+        dataInicioSelic: !memoria.dataInicioSelic,
+        dataFimSelic: !memoria.dataFimSelic
+      };
+      return nova;
     }
 
     function criarAtualizacaoProgressivaMemoriaAcumulado(memoria, linhasMemoria, anterior) {
@@ -6189,10 +6244,7 @@
         campos.percentualSapiens = taxas.percentualSapiens;
         campos.somatorioSapiens = undefined;
       }
-      campos.dataInicioMulta = taxas.dataInicioMulta || campos.dataInicioMulta;
-      campos.dataFimMulta = taxas.dataFimMulta || data;
-      campos.dataInicioSelic = taxas.dataInicioSelic || campos.dataInicioSelic;
-      campos.dataFimSelic = taxas.dataFimSelic || data;
+      Object.assign(campos, datasEncargoProgressivas(dadosAtuais, campos, taxas, data));
       campos.somatorioSapiens = dadosAtuais.modoSapiensAtualizacao === 'percentual' ? undefined : campos.somatorioSapiens;
       campos.modoCorrecaoMonetaria = 'percentual';
       for (const [campo, valor] of Object.entries(dadosAtuais._alteracoesMonetariasLocais || {})) {
@@ -6208,6 +6260,7 @@
       const novo = dadosPdfDeCamposSimples(campos);
       copiarMetadadosAtualizacao(dadosAtuais, novo);
       inicializarMetadadosEncargoAtualizacaoSimples(novo, 'manual');
+      sincronizarDatasAutomaticasDaAtualizacao(novo, campos);
       return novo;
     }
 
@@ -6318,10 +6371,7 @@
         modoCorrecaoMonetaria: 'percentual',
         percentualJuros: camposAtuais.percentualJuros,
         percentualEncargos: camposAtuais.percentualEncargos,
-        dataInicioMulta: camposAtuais.dataInicioMulta || camposBase.dataInicioMulta,
-        dataFimMulta: camposAtuais.dataFimMulta || dataFinal || camposBase.dataFimMulta,
-        dataInicioSelic: camposAtuais.dataInicioSelic || camposBase.dataInicioSelic,
-        dataFimSelic: camposAtuais.dataFimSelic || dataFinal || camposBase.dataFimSelic
+        ...datasEncargoProgressivas(dadosAtuais, camposBase, camposAtuais, dataFinal)
       };
       for (const [campo, valor] of Object.entries(dadosAtuais._alteracoesMonetariasLocais || {})) {
         campos[campo] = Number(valor);
@@ -6340,6 +6390,7 @@
       const novo = dadosPdfDeCamposSimples(campos);
       copiarMetadadosAtualizacao(dadosAtuais, novo);
       inicializarMetadadosEncargoAtualizacaoSimples(novo, novo.modoMulta === 'automatica' || novo.modoSelic === 'sicalc' ? 'automatica' : 'manual');
+      sincronizarDatasAutomaticasDaAtualizacao(novo, campos);
       return novo;
     }
 
@@ -7257,7 +7308,12 @@
       ['dataInicioMulta', 'dataFimMulta', 'dataInicioSelic', 'dataFimSelic'].forEach(id => {
         const el = document.getElementById(id);
         bindDateInput(el);
-        if (el) el.addEventListener('blur', aoAlterarDataEncargo);
+        if (el) el.addEventListener('blur', event => {
+          const anterior = String(el.dataset.valorAnteriorProtegido ?? el.value).trim();
+          const diferente = String(el.value || '').trim() !== anterior;
+          executarEdicaoEmConsolidacaoAnterior(-1, diferente,
+            () => aoAlterarDataEncargo(event), () => { el.value = anterior; });
+        });
       });
       document.querySelectorAll('input[name="modoMulta"]').forEach(radio => radio.addEventListener('change', event => {
         const diferente = radio.value !== modoEncargoSelecionado('multa');
