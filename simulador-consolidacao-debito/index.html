@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_78 -->
+  <!-- Versão: simulador_consolidacao_debito_v_81 -->
 
   <style>
     :root {
@@ -1388,6 +1388,32 @@
         width: 20%;
       }
     }
+
+    /* Confirmação de alterações com repercussão nas consolidações posteriores. */
+    .modal-confirmacao-consolidacao {
+      position: fixed; inset: 0; z-index: 100030; display: none;
+      align-items: center; justify-content: center; padding: 20px;
+      background: rgba(0,0,0,.48); box-sizing: border-box;
+    }
+    .modal-confirmacao-consolidacao.ativo { display: flex; }
+    .caixa-confirmacao-consolidacao {
+      width: min(480px, 100%); border-radius: 8px; background: white;
+      border: 1px solid #c9d2d0; box-shadow: 0 10px 32px rgba(0,0,0,.25);
+      overflow: hidden; color: #1f2933;
+    }
+    .titulo-confirmacao-consolidacao {
+      background: #1f4e79; color: white; padding: 13px 18px;
+      font-weight: 700; text-align: center; font-size: 15px;
+    }
+    .mensagem-confirmacao-consolidacao {
+      padding: 20px 22px; text-align: center; line-height: 1.5;
+      font-size: 14px; white-space: pre-wrap;
+    }
+    .acoes-confirmacao-consolidacao {
+      display: flex; gap: 12px; justify-content: center;
+      padding: 0 22px 20px;
+    }
+    .acoes-confirmacao-consolidacao .btn { min-width: 100px; }
   </style>
 </head>
 <body>
@@ -1478,6 +1504,16 @@
           </div>
         </div>
       </div>
+      <div id="modalConfirmacaoConsolidacao" class="modal-confirmacao-consolidacao" aria-hidden="true">
+        <div class="caixa-confirmacao-consolidacao" role="dialog" aria-modal="true" aria-labelledby="tituloConfirmacaoConsolidacao" aria-describedby="mensagemConfirmacaoConsolidacao">
+          <div class="titulo-confirmacao-consolidacao" id="tituloConfirmacaoConsolidacao">Confirmação de alteração</div>
+          <div class="mensagem-confirmacao-consolidacao" id="mensagemConfirmacaoConsolidacao"></div>
+          <div class="acoes-confirmacao-consolidacao">
+            <button type="button" class="btn btn-primary" id="btnSimConfirmacaoConsolidacao">SIM</button>
+            <button type="button" class="btn" id="btnNaoConfirmacaoConsolidacao">NÃO</button>
+          </div>
+        </div>
+      </div>
       <div id="toastContainer"></div>
       <div class="conteudo-ferramenta" id="areaTabelaSimples" style="display:none;">
         <button type="button" class="subtitulo-atualizacao botao-consolidacao-retratil" data-cabecalho-consolidacao="principal-simples" aria-controls="corpoConsolidacaoPrincipalSimples" aria-expanded="true">
@@ -1504,7 +1540,7 @@
                   <label class="opcao-data-consolidacao"><input id="modoDataConsolidacaoAtual" type="radio" name="modoDataConsolidacao" value="atual" autocomplete="off" checked /> Data atual</label>
                   <input id="dataConsolidacaoAtual" class="campo-data-consolidacao" type="text" readonly tabindex="-1" />
                   <label class="opcao-data-consolidacao"><input id="modoDataConsolidacaoOutra" type="radio" name="modoDataConsolidacao" value="outra" autocomplete="off" /> Outra data</label>
-                  <input id="dataConsolidacao" class="campo-data-consolidacao campo-data" type="text" inputmode="numeric" placeholder="opcional" maxlength="10" autocomplete="off" readonly tabindex="-1" />
+                  <input id="dataConsolidacao" class="campo-data-consolidacao campo-data" type="text" inputmode="numeric" maxlength="10" autocomplete="off" readonly tabindex="-1" />
                 </div>
               </td>
             </tr>
@@ -2023,6 +2059,219 @@
         simulacoesAdicionais[i].reprocessamentoOrigemIndice = origem;
       }
       atualizarVisualBotoesReprocessamentoPendente();
+    }
+
+
+    // Alterações progressivas: a etapa imediatamente anterior é sempre a fonte dos valores.
+    const AVISO_ALTERACAO_ANTERIOR = 'Esta alteração atualizará todas as consolidações seguintes. Deseja continuar?';
+    const AVISO_DATA_REMOVE_FUTURAS = 'Ao proceder com essa alteração na data, as atualizações referentes às consolidações seguintes serão removidas. Deseja continuar?';
+    let dataPrincipalConfirmada = '';
+    let modoDataPrincipalConfirmado = 'atual';
+    let filaReprocessamentoProgressivo = Promise.resolve();
+    const entradasPrincipaisAutorizadas = new WeakSet();
+    let confirmacaoConsolidacaoAberta = false;
+
+    function pedirConfirmacaoConsolidacao(mensagem) {
+      return new Promise(resolve => {
+        const modal = document.getElementById('modalConfirmacaoConsolidacao');
+        const msg = document.getElementById('mensagemConfirmacaoConsolidacao');
+        const sim = document.getElementById('btnSimConfirmacaoConsolidacao');
+        const nao = document.getElementById('btnNaoConfirmacaoConsolidacao');
+        if (!modal || !msg || !sim || !nao) { resolve(false); return; }
+        if (confirmacaoConsolidacaoAberta) { resolve(false); return; }
+        confirmacaoConsolidacaoAberta = true;
+        const focoAntes = document.activeElement;
+        msg.textContent = mensagem;
+        const encerrar = aceito => {
+          modal.classList.remove('ativo');
+          modal.setAttribute('aria-hidden', 'true');
+          sim.removeEventListener('click', confirmar);
+          nao.removeEventListener('click', cancelar);
+          modal.removeEventListener('keydown', teclas);
+          confirmacaoConsolidacaoAberta = false;
+          if (focoAntes?.isConnected && focoAntes !== document.body) focoAntes.focus({ preventScroll: true });
+          resolve(aceito);
+        };
+        const confirmar = () => encerrar(true);
+        const cancelar = () => encerrar(false);
+        const teclas = e => {
+          if (e.key === 'Escape') { e.preventDefault(); cancelar(); }
+          if (e.key === 'Tab') {
+            const destino = e.shiftKey ? (document.activeElement === sim ? nao : sim)
+              : (document.activeElement === nao ? sim : nao);
+            e.preventDefault(); destino.focus();
+          }
+        };
+        sim.addEventListener('click', confirmar);
+        nao.addEventListener('click', cancelar);
+        modal.addEventListener('keydown', teclas);
+        modal.classList.add('ativo');
+        modal.setAttribute('aria-hidden', 'false');
+        nao.focus();
+      });
+    }
+
+    function existemConsolidacoesPosteriores(indiceBase) {
+      return simulacoesAdicionais.length > indiceBase + 1;
+    }
+
+    function removerConsolidacoesPosteriores(indiceBase) {
+      simulacoesAdicionais.splice(indiceBase + 1);
+      for (const chave of [...consolidacoesRecolhidas]) {
+        const m = /^atualizacao-(\d+)$/.exec(chave);
+        if (m && Number(m[1]) >= indiceBase + 1) consolidacoesRecolhidas.delete(chave);
+      }
+      renderizarAtualizacoes();
+    }
+
+    async function solicitarAlteracaoDeDadosAnteriores(indiceBase) {
+      return !existemConsolidacoesPosteriores(indiceBase)
+        || await pedirConfirmacaoConsolidacao(AVISO_ALTERACAO_ANTERIOR);
+    }
+
+    async function avaliarAlteracaoDataConsolidacao(indiceBase, dataNova, dataAnterior) {
+      if (dataNova === dataAnterior || !existemConsolidacoesPosteriores(indiceBase)) {
+        return { permitido: true, remover: false };
+      }
+      const seguinte = simulacoesAdicionais[indiceBase + 1];
+      const comparacao = compararDatasPtBr(dataNova, String(seguinte?.dataConsolidacao || ''));
+      if (seguinte?.consolidacaoPG || comparacao === null || comparacao > 0) {
+        return { permitido: await pedirConfirmacaoConsolidacao(AVISO_DATA_REMOVE_FUTURAS), remover: true };
+      }
+      return { permitido: true, remover: false };
+    }
+
+    // Reprocessamento em ordem, sem saltar etapas nem descartar a memória de taxas.
+    async function reprocessarFuturasEmSequencia(indiceBase) {
+      const tarefa = async () => {
+        if (!existemConsolidacoesPosteriores(indiceBase)) return;
+        for (let i = indiceBase + 1; i < simulacoesAdicionais.length; i++) {
+          const antigo = simulacoesAdicionais[i];
+          if (!antigo) break;
+          try {
+            const atualizado = await criarAtualizacaoReprocessadaConformeModo(antigo, i);
+            if (!atualizado) throw new Error('Não foi possível recalcular esta consolidação.');
+            atualizado.tituloSecao = antigo.tituloSecao || `Consolidação ${String(i + 2).padStart(2, '0')}`;
+            atualizado.reprocessamentoPendente = false;
+            atualizado.reprocessamentoOrigemIndice = null;
+            const assinaturaNova = assinaturaAtualizacao(atualizado);
+            if ((antigo.statusMemoria || 'vazio') !== 'vazio' && assinaturaNova !== assinaturaAtualizacao(antigo)) {
+              if (atualizado.assinaturaMemoriaCarregada && assinaturaNova === atualizado.assinaturaMemoriaCarregada) {
+                atualizado.statusMemoria = 'carregado';
+                atualizado.assinaturaMemoriaCorrigida = '';
+              } else {
+                atualizado.statusMemoria = 'corrigido';
+                atualizado.assinaturaMemoriaCorrigida = assinaturaNova;
+              }
+            } else {
+              atualizarStatusMemoriaAtualizacaoConformeDados(atualizado);
+            }
+            simulacoesAdicionais[i] = atualizado;
+          } catch (erro) {
+            marcarAtualizacoesPosterioresParaReprocessar(i - 1);
+            renderizarAtualizacoes();
+            showToast(`Consolidação ${String(i + 2).padStart(2, '0')}: ${normalizarMensagemErro(erro, 'Falha no reprocessamento.')}`, 'error');
+            return;
+          }
+        }
+        renderizarAtualizacoes();
+      };
+      filaReprocessamentoProgressivo = filaReprocessamentoProgressivo.then(tarefa, tarefa);
+      return filaReprocessamentoProgressivo;
+    }
+
+    async function executarEdicaoEmConsolidacaoAnterior(indice, diferente, executar, cancelar) {
+      if (diferente && existemConsolidacoesPosteriores(indice)) {
+        if (!await solicitarAlteracaoDeDadosAnteriores(indice)) {
+          if (typeof cancelar === 'function') cancelar();
+          return false;
+        }
+      }
+      await executar();
+      if (diferente && existemConsolidacoesPosteriores(indice)) {
+        await reprocessarFuturasEmSequencia(indice);
+      }
+      return true;
+    }
+
+    // Somente edições efetivas (não foco/clique) na primeira consolidação
+    // abrem a confirmação. O evento original só segue após SIM.
+    function capturarEdicaoDaPrimeiraConsolidacao(event) {
+      if (!simulacoesAdicionais.length || confirmacaoConsolidacaoAberta) return;
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement) || input.readOnly) return;
+      if (!input.closest('#areaTabelaSimples, #areaTcfaAcumulado') || input.closest('.bloco-atualizacao')) return;
+      if (input.classList.contains('campo-data') || input.classList.contains('campo-composicao-percentual')) return;
+      if (entradasPrincipaisAutorizadas.has(input)) return;
+      const anterior = input.dataset.valorAnteriorProtegido ?? '';
+      const novo = input.value;
+      const comoNumero = input.classList.contains('campo-percentual') || input.classList.contains('campo-percentual-acum')
+        ? v => parseNumeroFlexivel(v) : input.classList.contains('campo-moeda') || input.classList.contains('campo-moeda-acum')
+          ? v => moedaParaNumero(v) : v => String(v);
+      if (comoNumero(anterior) === comoNumero(novo)) return;
+      event.stopImmediatePropagation();
+      input.value = anterior;
+      pedirConfirmacaoConsolidacao(AVISO_ALTERACAO_ANTERIOR).then(async aceito => {
+        if (!aceito || !input.isConnected) return;
+        entradasPrincipaisAutorizadas.add(input);
+        input.value = novo;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.focus({ preventScroll: true });
+        // Recalcula as etapas posteriores quando a edição do campo terminar.
+      });
+    }
+
+    function observarFimEdicaoPrincipal(event) {
+      const input = event.target;
+      if (!entradasPrincipaisAutorizadas.has(input)) return;
+      entradasPrincipaisAutorizadas.delete(input);
+      // O blur dos campos da página atualiza os cálculos antes da execução agendada.
+      setTimeout(() => { reprocessarFuturasEmSequencia(-1); }, 0);
+    }
+
+    async function processarDataPrincipalAlterada(tipo, campoFinalizado = false) {
+      if (!simulacoesAdicionais.length) {
+        if (tipo === 'acumulado') await aoAlterarDataConsolidacaoAcumulado();
+        atualizarEstadoBotaoPagamento();
+        return;
+      }
+      if (!dataPrincipalConfirmada) {
+        dataPrincipalConfirmada = obterDataConsolidacaoAtualTela();
+        modoDataPrincipalConfirmado = modoDataConsolidacaoSelecionado(tipo);
+      }
+      const ids = idsControleDataConsolidacao(tipo);
+      const entrada = document.getElementById(ids.campoOutra);
+      const modo = modoDataConsolidacaoSelecionado(tipo);
+      // Ao escolher "Outra data", aguarda o preenchimento completo antes de validar.
+      if (modo === 'outra' && !String(entrada?.value || '').trim()) {
+        // Não deixar uma sequência já criada apontando para uma data vazia.
+        if (campoFinalizado) definirDataConsolidacao(tipo, dataPrincipalConfirmada, modoDataPrincipalConfirmado);
+        return;
+      }
+      if (modo === 'outra' && !parseDataPtBr(String(entrada?.value || '').trim())) {
+        if (campoFinalizado) definirDataConsolidacao(tipo, dataPrincipalConfirmada, modoDataPrincipalConfirmado);
+        return;
+      }
+      const nova = obterValorDataConsolidacao(tipo);
+      if (!parseDataPtBr(nova)) return;
+      const anterior = dataPrincipalConfirmada;
+      const decisao = await avaliarAlteracaoDataConsolidacao(-1, nova, anterior);
+      if (!decisao.permitido) {
+        definirDataConsolidacao(tipo, anterior, modoDataPrincipalConfirmado);
+        atualizarEstadoBotaoPagamento();
+        return;
+      }
+      dataPrincipalConfirmada = nova;
+      modoDataPrincipalConfirmado = modo;
+      if (tipo === 'acumulado') await aoAlterarDataConsolidacaoAcumulado();
+      else {
+        await atualizarPercentuaisAutomaticosSeNecessario({ mostrarAviso: false });
+        atualizarCalculos();
+        marcarMemoriaPDFAlterada();
+      }
+      if (decisao.remover) removerConsolidacoesPosteriores(-1);
+      else if (nova !== anterior) await reprocessarFuturasEmSequencia(-1);
+      atualizarEstadoBotaoPagamento();
     }
 
     function monitorarAlteracaoDeDadosCarregados(event) {
@@ -2911,7 +3160,7 @@
         input.dataset.bound = '1';
         input.addEventListener('focus', () => setTimeout(() => input.select(), 0));
         input.addEventListener('input', () => { input.value = input.value.replace(/[^0-9,.%]/g, ''); });
-        input.addEventListener('blur', () => {
+        input.addEventListener('blur', async () => {
           if (input.readOnly) return;
           const idx = Number(input.dataset.idx);
           const campo = input.dataset.campo;
@@ -2919,6 +3168,10 @@
             const valorInformado = parseNumeroFlexivel(input.value);
             const valorAnterior = Number(dadosTcfaAcumulado.rows[idx][campo] || 0);
             if (valorInformado === valorAnterior) return; // foco/saída sem edição não altera a memória
+            if (!await solicitarAlteracaoDeDadosAnteriores(-1)) {
+              renderizarTcfaAcumulado();
+              return;
+            }
             dadosTcfaAcumulado._preservarValoresCarregados = false;
             dadosTcfaAcumulado.rows[idx][campo] = valorInformado;
             if (campo === 'multaPct' && modoComposicaoAcumulado('multa') === 'manual') {
@@ -2931,6 +3184,7 @@
           }
           marcarMemoriaPDFAlterada();
           renderizarTcfaAcumulado();
+          await reprocessarFuturasEmSequencia(-1);
         });
         input.addEventListener('keydown', (ev) => {
           if (ev.key === 'Enter') {
@@ -3142,7 +3396,16 @@
         const modelo = await extrairModeloPDF(file, atualizarProgressoPDF);
         atualizarProgressoPDF(92, 'Aplicando dados extraídos...');
         if (tipo === 'TCFA_ACUMULADO') {
-          dadosTcfaAcumulado = parseMemoriaTcfaAcumulado(modelo);
+          const dadosLidos = parseMemoriaTcfaAcumulado(modelo);
+          if (simulacoesAdicionais.length) {
+            const dataNova = String(dadosLidos.dataConsolidacao || '');
+            const decisao = await avaliarAlteracaoDataConsolidacao(-1, dataNova, obterDataConsolidacaoAtualTela());
+            if (!decisao.permitido) { fecharProgressoPDF(); return; }
+            if (dataNova === obterDataConsolidacaoAtualTela()
+                && !await solicitarAlteracaoDeDadosAnteriores(-1)) { fecharProgressoPDF(); return; }
+            if (decisao.remover) removerConsolidacoesPosteriores(-1);
+          }
+          dadosTcfaAcumulado = dadosLidos;
           selecionarModoComposicaoAcumulado('multa', 'sicafi');
           selecionarModoComposicaoAcumulado('selic', 'sicafi');
           normalizarTodasLinhasComposicaoManual();
@@ -3154,6 +3417,14 @@
           renderizarTcfaAcumulado();
         } else {
           const dados = parseMemoriaSimples(modelo, tipo);
+          if (simulacoesAdicionais.length) {
+            const dataNova = String(dados.dataConsolidacao || '');
+            const decisao = await avaliarAlteracaoDataConsolidacao(-1, dataNova, obterDataConsolidacaoAtualTela());
+            if (!decisao.permitido) { fecharProgressoPDF(); return; }
+            if (dataNova === obterDataConsolidacaoAtualTela()
+                && !await solicitarAlteracaoDeDadosAnteriores(-1)) { fecharProgressoPDF(); return; }
+            if (decisao.remover) removerConsolidacoesPosteriores(-1);
+          }
           atualizarProgressoPDF(96, 'Preenchendo tabela de consolidação...');
           aplicarDadosMemoriaSimples(dados);
           const areaSimples = document.getElementById('areaTabelaSimples');
@@ -3161,6 +3432,9 @@
         }
         setUploadMemoriaOk(true);
         registrarReferenciaMemoriaCarregada();
+        dataPrincipalConfirmada = obterDataConsolidacaoAtualTela();
+        modoDataPrincipalConfirmado = modoDataConsolidacaoSelecionado(tipo === 'TCFA_ACUMULADO' ? 'acumulado' : 'principal');
+        if (simulacoesAdicionais.length) await reprocessarFuturasEmSequencia(-1);
         atualizarEstadoBotaoPagamento();
         atualizarProgressoPDF(100, 'Memória de cálculo carregada com sucesso.');
         setTimeout(fecharProgressoPDF, 350);
@@ -3948,7 +4222,7 @@
           <label class="opcao-data-consolidacao"><input id="${idAtual}" type="radio" name="${nome}" value="atual" autocomplete="off" ${atualChecked} /> Data atual</label>
           <input id="${idCampoAtual}" class="campo-data-consolidacao" type="text" value="${escapeHtml(textoDataAtualPtBr())}" readonly tabindex="-1" />
           <label class="opcao-data-consolidacao"><input id="${idOutra}" type="radio" name="${nome}" value="outra" autocomplete="off" ${outraChecked} /> Outra data</label>
-          <input id="${idCampoOutra}" class="campo-data-consolidacao campo-data" type="text" inputmode="numeric" placeholder="opcional" maxlength="10" autocomplete="off" value="${escapeHtml(valorOutra || '')}" ${outraReadOnly} />
+          <input id="${idCampoOutra}" class="campo-data-consolidacao campo-data" type="text" inputmode="numeric" maxlength="10" autocomplete="off" value="${escapeHtml(valorOutra || '')}" ${outraReadOnly} />
         </div>`;
     }
 
@@ -3964,13 +4238,13 @@
           campoOutra.dataset.controleDataConsolidacaoBound = '1';
           campoOutra.addEventListener('blur', async () => {
             if (!campoOutra.readOnly && campoOutra.value.trim() && !ensureInputDate(campoOutra)) return;
-            if (tipo === 'acumulado') await aoAlterarDataConsolidacaoAcumulado();
+            await processarDataPrincipalAlterada(tipo, true);
           });
           campoOutra.addEventListener('keydown', async (ev) => {
             if (ev.key !== 'Enter') return;
             ev.preventDefault();
             if (!campoOutra.readOnly && campoOutra.value.trim() && !ensureInputDate(campoOutra)) return;
-            if (tipo === 'acumulado') await aoAlterarDataConsolidacaoAcumulado();
+            await processarDataPrincipalAlterada(tipo, true);
             focusNextField(campoOutra);
           });
         }
@@ -3980,7 +4254,7 @@
         radio.dataset.controleDataConsolidacaoBound = '1';
         radio.addEventListener('change', async () => {
           atualizarEstadoControleDataConsolidacao(tipo);
-          if (tipo === 'acumulado') await aoAlterarDataConsolidacaoAcumulado();
+          await processarDataPrincipalAlterada(tipo);
           if (radio.value === 'outra' && campoOutra) {
             setTimeout(() => {
               campoOutra.focus();
@@ -4258,6 +4532,7 @@
       destino.modoSelicAcumulado = origem.modoSelicAcumulado || destino.modoSelicAcumulado;
       destino.modoSapiensAtualizacao = origem.modoSapiensAtualizacao || destino.modoSapiensAtualizacao;
       destino.modoCorrecaoMonetariaAtualizacao = origem.modoCorrecaoMonetariaAtualizacao || destino.modoCorrecaoMonetariaAtualizacao;
+      destino._alteracoesMonetariasLocais = { ...(origem._alteracoesMonetariasLocais || {}) };
       return destino;
     }
 
@@ -5250,6 +5525,17 @@
         if (!validarDataAtualizacaoContraAnterior(dados.dataConsolidacao, indiceDestino)) {
           throw new Error(MENSAGEM_DATA_ATUALIZACAO_INVALIDA);
         }
+        if (indiceDestino !== null && simulacoesAdicionais[indiceDestino]
+            && existemConsolidacoesPosteriores(indiceDestino)) {
+          const anterior = simulacoesAdicionais[indiceDestino];
+          const novaData = String(dados.dataConsolidacao || '');
+          const dataMudou = novaData !== String(anterior.dataConsolidacao || '');
+          const decisao = dataMudou
+            ? await avaliarAlteracaoDataConsolidacao(indiceDestino, novaData, String(anterior.dataConsolidacao || ''))
+            : { permitido: await solicitarAlteracaoDeDadosAnteriores(indiceDestino), remover: false };
+          if (!decisao.permitido) { fecharProgressoPDF(); return; }
+          if (decisao.remover) removerConsolidacoesPosteriores(indiceDestino);
+        }
         dados.statusMemoria = 'carregado';
         registrarReferenciaMemoriaAtualizacao(dados);
         const criandoNovaConsolidacao = indiceDestino === null || !simulacoesAdicionais[indiceDestino];
@@ -5262,6 +5548,7 @@
           simulacoesAdicionais.push(dados);
         }
         renderizarAtualizacoes();
+        if (!criandoNovaConsolidacao) await reprocessarFuturasEmSequencia(indiceDestino);
         atualizarProgressoPDF(100, 'Memória de cálculo carregada com sucesso.');
         setTimeout(() => {
           fecharProgressoPDF();
@@ -5627,6 +5914,7 @@
       novo.modoMultaAcumulado = dados.modoMultaAcumulado || 'sicafi';
       novo.modoSelicAcumulado = dados.modoSelicAcumulado || 'sicafi';
       novo.modoSapiensAtualizacao = dados.modoSapiensAtualizacao || '';
+      novo._alteracoesMonetariasLocais = { ...(dados._alteracoesMonetariasLocais || {}) };
       return novo;
     }
 
@@ -5746,7 +6034,7 @@
       return (linhas || []).find(l => normalizarTextoBusca(l.descricao || '').includes(norm)) || null;
     }
 
-    function mesclarLinhasEditaveisAcumuladoParaReprocessamento(linhasBase, linhasAtuais) {
+    function mesclarLinhasEditaveisAcumuladoParaReprocessamento(linhasBase, linhasAtuais, alteracoesLocais = {}) {
       const linhas = JSON.parse(JSON.stringify(linhasBase || []));
       const copiar = (trecho, campos) => {
         const origem = obterLinhaEmListaPorDescricao(linhasAtuais, trecho);
@@ -5756,12 +6044,13 @@
           if (Object.prototype.hasOwnProperty.call(origem, campo)) destino[campo] = origem[campo];
         });
       };
-      copiar('Somatório da amortização', ['valor']);
+      if ('somatorioAmortizacao' in alteracoesLocais) copiar('Somatório da amortização', ['valor']);
       copiar('Desconto', ['percentual']);
-      copiar('Compensação Estadual', ['valor']);
-      copiar('Amortização sobre o Saldo Parcial', ['percentual', 'valor']);
-      copiar('Correção Monetária', ['valor']);
-      copiar('Juros', ['valor']);
+      if ('compensacaoEstadual' in alteracoesLocais) copiar('Compensação Estadual', ['valor']);
+      copiar('Amortização sobre o Saldo Parcial', ['percentual']);
+      if ('somatorioSapiens' in alteracoesLocais) copiar('Amortização sobre o Saldo Parcial', ['valor']);
+      if ('correcaoMonetaria' in alteracoesLocais) copiar('Correção Monetária', ['valor']);
+      if ('valorJuros' in alteracoesLocais) copiar('Juros', ['valor']);
       copiar('Encargos Legais', ['percentual']);
       return linhas;
     }
@@ -5795,6 +6084,9 @@
         if (campo === 'percentualEncargos') campos.percentualEncargos = valorNumerico;
         const novo = dadosPdfDeCamposSimples(campos);
         copiarMetadadosAtualizacao(dadosOriginais, novo);
+        if (['somatorioAmortizacao', 'compensacaoEstadual', 'somatorioSapiens', 'correcaoMonetaria', 'amortizacaoCorrecaoMonetariaSapiensDivida'].includes(campo)) {
+          novo._alteracoesMonetariasLocais[campo] = valorNumerico;
+        }
         novo.modoCorrecaoMonetariaAtualizacao = 'percentual';
         inicializarMetadadosEncargoAtualizacaoSimples(novo, novo.modoMulta === 'automatica' || novo.modoSelic === 'sicalc' ? 'automatica' : 'manual');
         return novo;
@@ -5816,6 +6108,9 @@
       if (campo === 'percentualEncargos') alterarLinhaDadosAtualizacao(dados, 'Encargos Legais', { percentual: numeroParaPercentual(valorNumerico) });
       const novo = recomporDadosAcumuladoAtualizacao(dados);
       copiarMetadadosAtualizacao(dadosOriginais, novo);
+      if (['somatorioAmortizacao', 'compensacaoEstadual', 'somatorioSapiens', 'correcaoMonetaria', 'valorJuros'].includes(campo)) {
+        novo._alteracoesMonetariasLocais[campo] = valorNumerico;
+      }
       novo.modoSapiensAtualizacao = dados.modoSapiensAtualizacao || dadosOriginais.modoSapiensAtualizacao;
       return novo;
     }
@@ -5869,10 +6164,16 @@
           modoSapiensAtualizacao: dadosAtuais.modoSapiensAtualizacao || 'valor'
         }, linhasPercentuais, anterior);
         copiarMetadadosAtualizacao(dadosAtuais, novo);
+        // Campos monetários editados nesta própria consolidação são exceções
+        // explícitas à herança progressiva; os demais vêm da etapa anterior.
+        let recalculado = novo;
+        for (const [campo, valor] of Object.entries(dadosAtuais._alteracoesMonetariasLocais || {})) {
+          recalculado = aplicarAlteracaoConsolidacaoAtualizacao(recalculado, campo, valor);
+        }
         // Os modos de cálculo selecionados permanecem como estavam antes do reprocessamento.
-        novo.modoMultaAcumulado = modoMulta;
-        novo.modoSelicAcumulado = modoSelic;
-        return novo;
+        recalculado.modoMultaAcumulado = modoMulta;
+        recalculado.modoSelicAcumulado = modoSelic;
+        return recalculado;
       }
 
       const campos = dadosSimplesParaCampos(anterior);
@@ -5892,7 +6193,12 @@
       campos.dataFimMulta = taxas.dataFimMulta || data;
       campos.dataInicioSelic = taxas.dataInicioSelic || campos.dataInicioSelic;
       campos.dataFimSelic = taxas.dataFimSelic || data;
+      campos.somatorioSapiens = dadosAtuais.modoSapiensAtualizacao === 'percentual' ? undefined : campos.somatorioSapiens;
       campos.modoCorrecaoMonetaria = 'percentual';
+      for (const [campo, valor] of Object.entries(dadosAtuais._alteracoesMonetariasLocais || {})) {
+        campos[campo] = Number(valor);
+        if (campo === 'correcaoMonetaria') campos.modoCorrecaoMonetaria = 'valor';
+      }
       if (modoEncargoAtualizacao(dadosAtuais, 'multa') === 'automatica') {
         campos.percentualMulta = calcularPercentualMultaAutomatica(campos.dataInicioMulta, campos.dataFimMulta);
       }
@@ -5908,8 +6214,17 @@
     async function criarAtualizacaoReprocessadaConformeModo(dadosAtuais, indice) {
       if (!dadosAtuais) return null;
       if (dadosAtuais.consolidacaoPG && dadosAtuais.pagamento) {
+        // No reprocessamento, a consolidaçãoPG permanece vinculada à mesma
+        // data da consolidação imediatamente anterior. Se a data anterior
+        // foi alterada, refaz-se a simulação do pagamento nessa nova data.
+        // A data gravada no pagamento não deve bloquear o recálculo.
+        const anterior = obterConsolidacaoVigenteParaPagamento(indice);
+        const dataVigente = String(anterior?.dataConsolidacao || '').trim();
+        if (!parseDataPtBr(dataVigente)) {
+          throw new Error('A consolidação anterior precisa ter uma data válida para reprocessar o pagamento.');
+        }
         return criarConsolidacaoPagamento(Number(dadosAtuais.pagamento.valor || 0),
-          String(dadosAtuais.pagamento.data || dadosAtuais.dataConsolidacao), indice);
+          dataVigente, indice);
       }
       if ((dadosAtuais.statusMemoria || 'vazio') !== 'vazio') {
         return reprocessarAtualizacaoProgressivaDeMemoria(dadosAtuais, indice);
@@ -5921,9 +6236,12 @@
         try {
           base = await criarAtualizacaoAutomatica(dataFinal, indice);
         } catch (_) {
-          base = JSON.parse(JSON.stringify(dadosAtuais));
+          // Mesmo se a atualização automática externa não estiver disponível,
+          // o ponto de partida é a composição anterior, nunca saldos antigos.
+          base = obterConsolidacaoVigenteParaPagamento(indice);
         }
         const dados = JSON.parse(JSON.stringify(base));
+        dados.dataConsolidacao = dataFinal;
         dados.tituloSecao = dadosAtuais.tituloSecao;
         dados.statusMemoria = dadosAtuais.statusMemoria || 'vazio';
         dados.assinaturaMemoriaCarregada = dadosAtuais.assinaturaMemoriaCarregada || '';
@@ -5936,8 +6254,9 @@
 
         const rowsBase = dados.composicao || [];
         const rowsAtuais = dadosAtuais.composicao || [];
+        const taxasPorNumeroDebito = new Map(rowsAtuais.map(row => [String(row.debito || ''), row]));
         rowsBase.forEach((row, idx) => {
-          const atual = rowsAtuais[idx] || {};
+          const atual = taxasPorNumeroDebito.get(String(row.debito || '')) || rowsAtuais[idx] || {};
           normalizarPercentuaisManuaisComposicao(atual);
           if (Number.isFinite(Number(atual.correcaoPct))) row.correcaoPct = Number(atual.correcaoPct);
           if (Number.isFinite(Number(atual.jurosPct))) row.jurosPct = Number(atual.jurosPct);
@@ -5967,7 +6286,7 @@
         const temp = recomporDadosAcumuladoAtualizacao({
           ...dados,
           composicao: rowsBase,
-          linhas: mesclarLinhasEditaveisAcumuladoParaReprocessamento(dados.linhas, dadosAtuais.linhas),
+          linhas: mesclarLinhasEditaveisAcumuladoParaReprocessamento(dados.linhas, dadosAtuais.linhas, dadosAtuais._alteracoesMonetariasLocais),
           modoMultaAcumulado: dados.modoMultaAcumulado,
           modoSelicAcumulado: dados.modoSelicAcumulado,
           modoSapiensAtualizacao: dados.modoSapiensAtualizacao
@@ -5981,22 +6300,22 @@
       try {
         base = await criarAtualizacaoAutomatica(dataFinal, indice);
       } catch (_) {
-        base = dadosAtuais;
+        // Mesmo sem consulta disponível à Selic, a base monetária vem
+        // obrigatoriamente da etapa anterior; nunca do valor antigo desta etapa.
+        base = obterConsolidacaoVigenteParaPagamento(indice);
       }
       const camposBase = dadosSimplesParaCampos(base);
       const camposAtuais = dadosSimplesParaCampos(dadosAtuais);
       const campos = {
         ...camposBase,
         dataConsolidacao: dataFinal || camposAtuais.dataConsolidacao || camposBase.dataConsolidacao,
-        somatorioAmortizacao: camposAtuais.somatorioAmortizacao,
+        // Saldos e abatimentos herdados da etapa anterior; apenas percentuais,
+        // períodos e edições monetárias EXPLÍCITAS pertencem a esta etapa.
         percentualDesconto: camposAtuais.percentualDesconto,
-        compensacaoEstadual: camposAtuais.compensacaoEstadual,
         percentualSapiens: camposAtuais.percentualSapiens,
-        somatorioSapiens: camposAtuais.somatorioSapiens,
+        somatorioSapiens: dadosAtuais.modoSapiensAtualizacao === 'percentual' ? undefined : camposBase.somatorioSapiens,
         percentualCorrecaoMonetaria: camposAtuais.percentualCorrecaoMonetaria,
-        correcaoMonetaria: camposAtuais.correcaoMonetaria,
-        amortizacaoCorrecaoMonetariaSapiensDivida: camposAtuais.amortizacaoCorrecaoMonetariaSapiensDivida,
-        modoCorrecaoMonetaria: dadosAtuais.modoCorrecaoMonetariaAtualizacao || camposAtuais.modoCorrecaoMonetaria || 'percentual',
+        modoCorrecaoMonetaria: 'percentual',
         percentualJuros: camposAtuais.percentualJuros,
         percentualEncargos: camposAtuais.percentualEncargos,
         dataInicioMulta: camposAtuais.dataInicioMulta || camposBase.dataInicioMulta,
@@ -6004,6 +6323,10 @@
         dataInicioSelic: camposAtuais.dataInicioSelic || camposBase.dataInicioSelic,
         dataFimSelic: camposAtuais.dataFimSelic || dataFinal || camposBase.dataFimSelic
       };
+      for (const [campo, valor] of Object.entries(dadosAtuais._alteracoesMonetariasLocais || {})) {
+        campos[campo] = Number(valor);
+        if (campo === 'correcaoMonetaria') campos.modoCorrecaoMonetaria = 'valor';
+      }
       if (modoEncargoAtualizacao(dadosAtuais, 'multa') === 'automatica') {
         campos.percentualMulta = calcularPercentualMultaAutomatica(campos.dataInicioMulta, campos.dataFimMulta || campos.dataConsolidacao);
       } else {
@@ -6023,8 +6346,13 @@
     async function reprocessarAtualizacao(indice) {
       if (!Number.isInteger(indice) || !simulacoesAdicionais[indice]) return;
       const dadosAtuais = simulacoesAdicionais[indice];
-      const dataAtualizacao = String(dadosAtuais.dataConsolidacao || '').trim();
-      if (!validarDataAtualizacaoContraAnterior(dataAtualizacao, indice)) {
+      // Para consolidaçãoPG, a data será herdada da consolidação anterior
+      // durante o reprocessamento; não validar a antiga data do pagamento.
+      const ehPagamento = !!(dadosAtuais.consolidacaoPG && dadosAtuais.pagamento);
+      const dataAtualizacao = ehPagamento
+        ? obterDataConsolidacaoAnteriorParaAtualizacao(indice)
+        : String(dadosAtuais.dataConsolidacao || '').trim();
+      if (!ehPagamento && !validarDataAtualizacaoContraAnterior(dataAtualizacao, indice)) {
         showToast(MENSAGEM_DATA_ATUALIZACAO_INVALIDA, 'error');
         return;
       }
@@ -6049,6 +6377,7 @@
         simulacoesAdicionais[indice] = dadosReprocessados;
         marcarAtualizacoesPosterioresParaReprocessar(indice);
         renderizarAtualizacoes();
+        await reprocessarFuturasEmSequencia(indice);
         showToast('Cálculos reprocessados com sucesso.', 'success');
       } catch (erro) {
         showToast(normalizarMensagemErro(erro, 'Não foi possível reprocessar os cálculos.'), 'error');
@@ -6094,6 +6423,12 @@
     }
 
     function renderizarAtualizacoes() {
+      if (simulacoesAdicionais.length && !dataPrincipalConfirmada) {
+        dataPrincipalConfirmada = obterDataConsolidacaoAtualTela();
+        modoDataPrincipalConfirmado = modoDataConsolidacaoSelecionado(getTipoDebitoSelecionado() === 'TCFA_ACUMULADO' ? 'acumulado' : 'principal');
+      } else if (!simulacoesAdicionais.length) {
+        dataPrincipalConfirmada = '';
+      }
       const tipo = getTipoDebitoSelecionado();
       const containerSimples = document.getElementById('areaAtualizacoesSimples');
       const containerAcum = document.getElementById('areaAtualizacoesAcumulado');
@@ -6132,17 +6467,41 @@
         btn.addEventListener('click', () => gerarPdfAtualizacao(Number(btn.dataset.pdfAtualizacao)));
       });
       container.querySelectorAll('[data-modo-encargo-atualizacao]').forEach(radio => {
-        radio.addEventListener('change', aoAlterarModoEncargoAtualizacao);
+        radio.addEventListener('change', event => {
+          const indice = Number(radio.dataset.atualizacao), dados = simulacoesAdicionais[indice];
+          if (!dados) return;
+          const diferente = radio.value !== modoEncargoAtualizacao(dados, radio.dataset.tipo);
+          executarEdicaoEmConsolidacaoAnterior(indice, diferente,
+            () => aoAlterarModoEncargoAtualizacao(event), () => renderizarAtualizacoes());
+        });
       });
       container.querySelectorAll('[data-data-encargo-atualizacao]').forEach(input => {
         input.addEventListener('focus', () => { setTimeout(() => input.select(), 0); });
         input.addEventListener('click', () => { setTimeout(() => input.select(), 0); });
         input.addEventListener('input', () => { if (!input.readOnly) maskDateDdMmYyyyRealtime(input); });
-        input.addEventListener('blur', aoAlterarDataEncargoAtualizacao);
+        input.addEventListener('blur', event => {
+          const indice = Number(input.dataset.atualizacao), dados = simulacoesAdicionais[indice];
+          if (!dados) return;
+          const campos = dadosSimplesParaCampos(dados), tipoEnc = input.dataset.tipo;
+          const antigo = tipoEnc === 'multa'
+            ? (input.dataset.campo === 'inicio' ? campos.dataInicioMulta : campos.dataFimMulta)
+            : (input.dataset.campo === 'inicio' ? campos.dataInicioSelic : campos.dataFimSelic);
+          const diferente = String(input.value).trim() !== String(antigo || '').trim();
+          executarEdicaoEmConsolidacaoAnterior(indice, diferente,
+            () => aoAlterarDataEncargoAtualizacao(event), () => renderizarAtualizacoes());
+        });
       });
       container.querySelectorAll('[data-percentual-encargo-atualizacao]').forEach(input => {
         input.addEventListener('focus', () => input.select());
-        input.addEventListener('blur', aoAlterarPercentualEncargoAtualizacao);
+        input.addEventListener('blur', event => {
+          const indice = Number(input.dataset.atualizacao), dados = simulacoesAdicionais[indice];
+          if (!dados) return;
+          const campos = dadosSimplesParaCampos(dados);
+          const antigo = Number(input.dataset.tipo === 'multa' ? campos.percentualMulta : campos.percentualSelic);
+          const diferente = parseNumeroFlexivel(input.value) !== antigo;
+          executarEdicaoEmConsolidacaoAnterior(indice, diferente,
+            () => aoAlterarPercentualEncargoAtualizacao(event), () => renderizarAtualizacoes());
+        });
         input.addEventListener('keydown', event => {
           if (event.key === 'Enter') {
             event.preventDefault();
@@ -6159,12 +6518,25 @@
         });
       });
       container.querySelectorAll('[data-modo-composicao-atualizacao]').forEach(select => {
-        select.addEventListener('change', aoAlterarModoComposicaoAtualizacao);
+        select.addEventListener('change', event => {
+          const indice = Number(select.dataset.atualizacao), dados = simulacoesAdicionais[indice];
+          if (!dados) return;
+          const diferente = select.value !== modoComposicaoAtualizacao(dados, select.dataset.tipo);
+          executarEdicaoEmConsolidacaoAnterior(indice, diferente,
+            () => aoAlterarModoComposicaoAtualizacao(event), () => renderizarAtualizacoes());
+        });
       });
       container.querySelectorAll('[data-percentual-composicao-atualizacao]').forEach(input => {
         input.addEventListener('focus', () => input.select());
         input.addEventListener('input', () => { input.value = input.value.replace(/[^0-9,.%]/g, ''); });
-        input.addEventListener('blur', aoAlterarPercentualComposicaoAtualizacao);
+        input.addEventListener('blur', event => {
+          const indice = Number(input.dataset.atualizacao), dados = simulacoesAdicionais[indice];
+          if (!dados) return;
+          const linha = dados.composicao?.[Number(input.dataset.idx)];
+          const diferente = !!linha && parseNumeroFlexivel(input.value) !== Number(linha[input.dataset.campo] || 0);
+          executarEdicaoEmConsolidacaoAnterior(indice, diferente,
+            () => aoAlterarPercentualComposicaoAtualizacao(event), () => renderizarAtualizacoes());
+        });
         input.addEventListener('keydown', event => {
           if (event.key === 'Enter') {
             event.preventDefault();
@@ -6185,7 +6557,14 @@
             input.value = formatMoneyDigitsString(input.value) || '';
           }
         });
-        input.addEventListener('blur', aoAlterarCampoConsolidacaoAtualizacao);
+        input.addEventListener('blur', event => {
+          const indice = Number(input.dataset.atualizacao), dados = simulacoesAdicionais[indice];
+          if (!dados) return;
+          const valor = input.dataset.tipo === 'percentual' ? parseNumeroFlexivel(input.value) : moedaParaNumero(input.value);
+          const diferente = String(valor) !== input.dataset.valorNoFoco;
+          executarEdicaoEmConsolidacaoAnterior(indice, diferente,
+            () => aoAlterarCampoConsolidacaoAtualizacao(event), () => renderizarAtualizacoes());
+        });
         input.addEventListener('keydown', event => {
           if (event.key === 'Enter') {
             event.preventDefault();
@@ -6858,6 +7237,14 @@
 
 
     document.addEventListener('DOMContentLoaded', () => {
+      document.addEventListener('focusin', event => {
+        const el = event.target;
+        if (el instanceof HTMLInputElement && el.closest('#areaTabelaSimples, #areaTcfaAcumulado') && !el.closest('.bloco-atualizacao')) {
+          el.dataset.valorAnteriorProtegido = el.value;
+        }
+      }, true);
+      document.addEventListener('input', capturarEdicaoDaPrimeiraConsolidacao, true);
+      document.addEventListener('blur', observarFimEdicaoPrincipal, true);
       document.addEventListener('click', event => {
         const botao = event.target?.closest?.('[data-cabecalho-consolidacao]');
         if (botao) alternarConsolidacaoRetratil(botao);
@@ -6872,12 +7259,28 @@
         bindDateInput(el);
         if (el) el.addEventListener('blur', aoAlterarDataEncargo);
       });
-      document.querySelectorAll('input[name="modoMulta"]').forEach(radio => radio.addEventListener('change', aoAlterarModoMulta));
-      document.querySelectorAll('input[name="modoSelic"]').forEach(radio => radio.addEventListener('change', aoAlterarModoSelic));
+      document.querySelectorAll('input[name="modoMulta"]').forEach(radio => radio.addEventListener('change', event => {
+        const diferente = radio.value !== modoEncargoSelecionado('multa');
+        executarEdicaoEmConsolidacaoAnterior(-1, diferente,
+          () => aoAlterarModoMulta(event), () => selecionarModoEncargo('multa', modoEncargoSelecionado('multa')));
+      }));
+      document.querySelectorAll('input[name="modoSelic"]').forEach(radio => radio.addEventListener('change', event => {
+        const diferente = radio.value !== modoEncargoSelecionado('selic');
+        executarEdicaoEmConsolidacaoAnterior(-1, diferente,
+          () => aoAlterarModoSelic(event), () => selecionarModoEncargo('selic', modoEncargoSelecionado('selic')));
+      }));
       const modoMultaAcumuladoSelect = document.getElementById('modoMultaAcumulado');
-      if (modoMultaAcumuladoSelect) modoMultaAcumuladoSelect.addEventListener('change', aoAlterarModoMultaAcumulado);
+      if (modoMultaAcumuladoSelect) modoMultaAcumuladoSelect.addEventListener('change', event => {
+        const diferente = modoMultaAcumuladoSelect.value !== modoComposicaoAcumulado('multa');
+        executarEdicaoEmConsolidacaoAnterior(-1, diferente,
+          () => aoAlterarModoMultaAcumulado(event), () => { modoMultaAcumuladoSelect.value = modoComposicaoAcumulado('multa'); });
+      });
       const modoSelicAcumuladoSelect = document.getElementById('modoSelicAcumulado');
-      if (modoSelicAcumuladoSelect) modoSelicAcumuladoSelect.addEventListener('change', aoAlterarModoSelicAcumulado);
+      if (modoSelicAcumuladoSelect) modoSelicAcumuladoSelect.addEventListener('change', event => {
+        const diferente = modoSelicAcumuladoSelect.value !== modoComposicaoAcumulado('selic');
+        executarEdicaoEmConsolidacaoAnterior(-1, diferente,
+          () => aoAlterarModoSelicAcumulado(event), () => { modoSelicAcumuladoSelect.value = modoComposicaoAcumulado('selic'); });
+      });
       atualizarEstadoPercentuaisEncargos();
       atualizarEstadoPercentuaisComposicaoAcumulado();
 
