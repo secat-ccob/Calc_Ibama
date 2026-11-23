@@ -4,7 +4,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cálculo de parcela — CALC-IBAMA</title>
 <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
-<!-- Versão: calculo_parcela_portal_v_04 -->
+<!-- Versão: calculo_parcela_portal_v_07 -->
 <style>
 :root{--cor-primaria:#1f6f54;--cor-primaria-escura:#15513d;--cor-secundaria:#0f4c81;--cor-fundo:#f4f7f6;--cor-superficie:#fff;--cor-texto:#1f2933;--cor-texto-suave:#5b6770;--cor-borda:#d9e2dd;--sombra-suave:0 10px 30px rgba(15,76,81,.08)}
 *{box-sizing:border-box}html,body{height:100%}body{margin:0;height:100vh;font-family:Arial,Helvetica,sans-serif;color:var(--cor-texto);background:radial-gradient(circle at center,rgba(31,111,84,.07),transparent 55%),linear-gradient(180deg,#fff,var(--cor-fundo));display:flex;flex-direction:column;overflow:hidden}
@@ -30,7 +30,7 @@ main{flex:1 1 auto;min-height:0;padding:24px;overflow-y:auto}.ferramenta{width:m
 <div id="selecionarPlano" class="navegacao-planos no-print" hidden><div class="controle"><label class="rotulo-controle" for="listaPlanos">Parcelamento identificado</label><select id="listaPlanos"></select></div><div class="controle"><label class="rotulo-controle" for="numeroDebito">Nº do débito</label><input id="numeroDebito" type="text" inputmode="numeric" placeholder="Opcional"></div></div>
 <div class="separador"></div>
 <h2 class="subtitulo">Dados para cálculo de uma parcela</h2>
-<div class="grupo-campos"><div class="controle"><label for="dataSolicitacao" class="rotulo-controle">Data da solicitação</label><input class="data" id="dataSolicitacao" type="text" placeholder="dd/mm/aaaa" maxlength="10" inputmode="numeric"><span class="ajuda">Data-base da consolidação</span></div><div class="controle"><label for="quantidade" class="rotulo-controle">Quantidade de parcelas</label><input id="quantidade" type="number" min="1" max="999" step="1" placeholder="Ex.: 60"></div><div class="controle"><label for="numeroParcela" class="rotulo-controle">Parcela nº</label><input id="numeroParcela" type="number" min="1" max="999" step="1" value="1"></div><div class="controle"><label for="dataEmissao" class="rotulo-controle">Data de emissão da parcela</label><input id="dataEmissao" class="mes-ano" type="text" placeholder="mm/aaaa" maxlength="7" inputmode="numeric" autocomplete="off"><span class="ajuda">Mês e ano (mm/aaaa)</span></div><div class="controle campo-principal-destaque"><label for="principal" class="rotulo-controle">Principal na solicitação (R$)</label><input id="principal" class="moeda" type="text" inputmode="numeric" autocomplete="off" placeholder="Informe o valor"><span class="ajuda" id="helpPrincipal">Preenchimento manual obrigatório</span></div></div>
+<div class="grupo-campos"><div class="controle"><label for="dataSolicitacao" class="rotulo-controle">Data da solicitação</label><input class="data" id="dataSolicitacao" type="text" placeholder="dd/mm/aaaa" maxlength="10" inputmode="numeric"><span class="ajuda">Data-base da consolidação</span></div><div class="controle"><label for="quantidade" class="rotulo-controle">Quantidade de parcelas</label><input id="quantidade" type="number" min="1" max="999" step="1" placeholder="Ex.: 60"></div><div class="controle"><label for="numeroParcela" class="rotulo-controle">Parcela nº</label><input id="numeroParcela" type="number" min="1" max="999" step="1"></div><div class="controle"><label for="dataEmissao" class="rotulo-controle">Data de emissão da parcela</label><input id="dataEmissao" class="mes-ano" type="text" placeholder="mm/aaaa" maxlength="7" inputmode="numeric" autocomplete="off"><span class="ajuda">Mês e ano (mm/aaaa)</span></div><div class="controle campo-principal-destaque"><label for="principal" class="rotulo-controle">Principal na solicitação (R$)</label><input id="principal" class="moeda" type="text" inputmode="numeric" autocomplete="off" placeholder="Informe o valor"><span class="ajuda" id="helpPrincipal">Preenchimento manual obrigatório</span></div></div>
 <div class="container-rodape"><label class="checkbox no-print"><input type="checkbox" id="parcelaInicialSemJuros"><span>Primeira parcela emitida na consolidação, sem juros posteriores</span></label><label class="checkbox no-print"><input type="checkbox" id="verJurosAnteriores"><span>Exibir juros consolidados adicionais</span></label></div>
 <div class="separador"></div>
 <h2 class="subtitulo">Composição do valor da parcela</h2>
@@ -41,7 +41,7 @@ main{flex:1 1 auto;min-height:0;padding:24px;overflow-y:auto}.ferramenta{width:m
 <tr class="linha-opcional" id="linhaJurosAnteriores" hidden><td>(+) Juros consolidados adicionais</td><td><div class="detalhe-taxa"><span class="periodo">Quando constarem da memória</span><input id="pctJurosAnteriores" inputmode="decimal" type="text" aria-label="Percentual de juros anteriores" value="0,00"><span>%</span></div></td><td class="valor" id="vJurosAnteriores">0,00</td></tr>
 <tr><td>(+) Encargos legais na data da solicitação</td><td><div class="detalhe-taxa"><span class="periodo" id="infoEncargo">Base dos encargos: Base + Multa + Selic</span><select id="modoEncargo" class="no-print" aria-label="Modo de cálculo dos encargos legais"><option value="sicafi">SICAFI</option><option value="manual" selected>Manual</option></select><input id="pctEncargo" inputmode="decimal" type="text" aria-label="Percentual dos encargos legais" value="0,00"><span>%</span></div></td><td class="valor" id="vEncargo">0,00</td></tr>
 <tr><td>(+) Juros Selic da parcela</td><td><div class="detalhe-taxa"><span class="periodo" id="periodoParcela">Emissão: não informada</span><select id="modoParcela" class="no-print" aria-label="Modo de cálculo dos juros Selic da parcela"><option value="automatico" selected>Automático</option></select><input id="pctParcela" inputmode="decimal" type="text" aria-label="Percentual Selic da parcela" value="0,00"><span>%</span></div></td><td class="valor" id="vJurosParcela">0,00</td></tr>
-<tr class="linha-total"><td><strong>(=) Valor da parcela</strong></td><td id="resumoTotal">—</td><td class="valor" id="vTotal">0,00</td></tr>
+<tr class="linha-total"><td><strong>(=) Valor da parcela</strong></td><td id="resumoTotal">—</td><td class="valor" id="vTotal">—</td></tr>
 </tbody></table>
 <div id="alertaCalculo" class="aviso alerta" hidden></div>
 <p class="observacao observacao-regras">A parcela é calculada a partir dos valores existentes na data da solicitação.<br>A Selic consolidada é distinta dos juros posteriores da parcela.<br>O modo automático utiliza dados fornecidos pelo Sicalc - Sistema de Cálculo de Acréscimos Legais.</p>
@@ -90,7 +90,7 @@ function pctVal(id){return Number.isFinite(inputVal(id))?inputVal(id):0}
 function setPercent(id,v){$(id).value=pctFormat(v||0)}
 function setMoney(id,v){$(id).value=BR(v||0)}
 function status(s,kind=''){$('statusPDF').textContent=s;$('statusPDF').className='badge-status '+kind}
-function setDefaults(type){state.type=type;state.file=null;state.plans=[];state.activePlan=-1;state.components=[];state.refs={};state.loadedBaseline=null;state.importMatchesRequest=false;state.last=null;['dataSolicitacao','dataEmissao','inicioMulta','inicioSelic','numeroDebito'].forEach(id=>$(id).value='');$('quantidade').value='';$('numeroParcela').value='1';$('principal').value='';$('parcelaInicialSemJuros').checked=false;$('verJurosAnteriores').checked=false;$('linhaJurosAnteriores').hidden=true;setPercent('pctJurosAnteriores',0);Object.keys(modeId).forEach(k=>{ $(modeId[k]).value=k==='parcela'?'automatico':'manual';setPercent(pctId[k],0)});$('selecionarPlano').hidden=true;$('blocoAcumulado').hidden=type!=='TCFA_ACUMULADO';$('helpPrincipal').textContent=type==='TCFA_ACUMULADO'?'Total dos principais dos componentes — edite cada componente':'Preenchimento manual obrigatório';status('NÃO CARREGADO');setMessage('');notice('');render();}
+function setDefaults(type){state.type=type;state.file=null;state.plans=[];state.activePlan=-1;state.components=[];state.refs={};state.loadedBaseline=null;state.importMatchesRequest=false;state.last=null;['dataSolicitacao','dataEmissao','inicioMulta','inicioSelic','numeroDebito'].forEach(id=>$(id).value='');$('quantidade').value='';$('numeroParcela').value='';$('principal').value='';$('parcelaInicialSemJuros').checked=false;$('verJurosAnteriores').checked=false;$('linhaJurosAnteriores').hidden=true;setPercent('pctJurosAnteriores',0);Object.keys(modeId).forEach(k=>{ $(modeId[k]).value=k==='parcela'?'automatico':'manual';setPercent(pctId[k],0)});$('selecionarPlano').hidden=true;$('blocoAcumulado').hidden=type!=='TCFA_ACUMULADO';$('helpPrincipal').textContent=type==='TCFA_ACUMULADO'?'Total dos principais dos componentes — edite cada componente':'Preenchimento manual obrigatório';status('NÃO CARREGADO');setMessage('');notice('');render();}
 function sum(xs){return rd(xs.reduce((a,x)=>a+(Number(x)||0),0))}
 function modalPercent(s){return Number.isFinite(s)?BR(s)+'%':'—'}
 // ---------------------- Base Selic compartilhada ----------------------
@@ -162,7 +162,17 @@ function getAutoPct(k,component){const request=$('dataSolicitacao').value,issue=
 function choosePct(k,component){const mode=activeMode(k);if(mode==='automatico')return getAutoPct(k,component);if(component&&['multa','selic','encargo'].includes(k)){if(mode==='sicafi')return Number(component[k+'PctSicafi']??0);if(mode==='manual'&&k!=='encargo')return Number(component[k+'PctManual']??0)}return mode==='sicafi'?Number(rowReference(k).pct??0):pctVal(pctId[k])}
 function rateValid(){return Object.keys(modeId).filter(k=>activeMode(k)==='automatico'&&['selic','parcela'].includes(k));}
 function basePerComponent(c,q){return rd((+c.base||0)/q)}
-function datesAndInstallmentOK(q){const req=ym($('dataSolicitacao').value),issue=ym($('dataEmissao').value),n=Number($('numeroParcela').value);return !!(req&&issue&&issue>=req&&Number.isInteger(n)&&n>=1&&n<=q&&q<=999)}
+// O total não pode ser exibido sem a identificação válida da parcela.
+function validParcelNumber(q){
+ const raw=$('numeroParcela').value.trim();
+ if(!/^\d+$/.test(raw))return false;
+ const n=Number(raw);
+ return Number.isInteger(n)&&n>=1&&Number.isInteger(q)&&q>=1&&q<=999&&n<=q;
+}
+function datesAndInstallmentOK(q){
+ const req=ym($('dataSolicitacao').value),issue=ym($('dataEmissao').value);
+ return !!(req&&issue&&issue>=req&&validParcelNumber(q));
+}
 // ---------------------- Motor financeiro ----------------------
 function calcSimple(){let q=Number($('quantidade').value),p=inputVal('principal');if(!$('principal').value.trim()||!Number.isInteger(q)||q<=0||!Number.isFinite(p)||p<0)return null;const base=rd(p/q);const multaPct=choosePct('multa');const selicPct=choosePct('selic');const encPct=choosePct('encargo');const pPct=choosePct('parcela');const extraPct=pctVal('pctJurosAnteriores');
  // A consolidação atual pode conter amortizações posteriores; seus totais não servem como
@@ -202,9 +212,9 @@ function render(){const type=$('tipoDebito').value;const accum=type==='TCFA_ACUM
  for(const k of Object.keys(modeId)){const sicafiOption=$(modeId[k]).querySelector('option[value="sicafi"]');if(sicafiOption)sicafiOption.disabled=(!state.file||!state.importMatchesRequest);$(pctId[k]).disabled=activeMode(k)!=='manual'||(accum&&(k==='multa'||k==='selic'));if(activeMode(k)==='sicafi')setPercent(pctId[k],rowReference(k).pct||0);if(activeMode(k)==='automatico'){const v=getAutoPct(k);if(Number.isFinite(v))setPercent(pctId[k],v);else $(pctId[k]).value='—';}if(accum&&(k==='multa'||k==='selic'))$(pctId[k]).value='—';}
  const data=accum?calcAccum():calcSimple();state.last=data;
  let display=(id,v)=>$(id).textContent=Number.isFinite(v)?BR(v):'—';
- display('vAmort',data?.base??NaN);display('vMulta',data?.fine??NaN);display('vSelic',data?.selic??NaN);display('vJurosAnteriores',data?.extra??NaN);display('vEncargo',data?.enc??NaN);display('vJurosParcela',data?.parc??NaN);display('vTotal',data?.total??NaN);
+ display('vAmort',data?.base??NaN);display('vMulta',data?.fine??NaN);display('vSelic',data?.selic??NaN);display('vJurosAnteriores',data?.extra??NaN);display('vEncargo',data?.enc??NaN);display('vJurosParcela',data?.parc??NaN);display('vTotal',validParcelNumber(q)?data?.total??NaN:NaN);
  $('infoAmort').textContent=accum?`${state.components.length} débito(s) ÷ ${q||'—'} parcelas; arredondamento individual`:`${Number.isFinite(p)?money(p):'—'} ÷ ${q||'—'} parcelas`;
- $('resumoTotal').textContent=$('numeroParcela').value?`Parcela ${$('numeroParcela').value}`:'—';
+ $('resumoTotal').textContent=validParcelNumber(q)?`Parcela ${$('numeroParcela').value}`:'—';
  $('infoEncargo').textContent='Base dos encargos: Base + Multa + Selic';
  const errors=[];
  // Informar qual competência Selic está indisponível; nunca transformar taxa ausente em zero.
@@ -224,7 +234,7 @@ function render(){const type=$('tipoDebito').value;const accum=type==='TCFA_ACUM
    }
  }
  if(activeMode('multa')==='automatico'&&!accum&&!dDate($('inicioMulta').value))errors.push('Multa automática: informe uma data válida de início da multa.');
- if(q&&data&&(!Number.isInteger(Number($('numeroParcela').value))||Number($('numeroParcela').value)<1||Number($('numeroParcela').value)>q))errors.push('O número da parcela deve ser inteiro, de 1 até a quantidade de parcelas.');
+ if(q&&data&&!validParcelNumber(q))errors.push('Informe um número de parcela válido (de 1 até a quantidade de parcelas) para exibir o valor da parcela.');
   if(q>999)errors.push('O limite é 999 parcelas.');
  if(data&&!$('dataSolicitacao').value)errors.push('Informe a data da solicitação do parcelamento.');
  if(data&&!$('dataEmissao').value)errors.push('Informe o mês e ano de emissão da parcela (mm/aaaa).');
@@ -262,7 +272,7 @@ function renderSteps(d){
  const noteSelic=!accum&&activeMode('selic')!=='automatico'?' <em class="nota-inline">Percentual definido conforme o modo selecionado.</em>':'';
  const noteHistorical=accum?'Cada vencimento utiliza uma competência inicial própria.':activeMode('selic')==='automatico'?'Taxas: '+escapeHTML(term('hist'))+' + 1% no mês da solicitação.':'';
  const noteInterest=activeMode('parcela')==='automatico'
-  ?`Competência da emissão: ${monthBR(ym($('dataEmissao').value))}. Taxas desde a solicitação: ${escapeHTML(term('parcela'))} + 1% no mês da emissão.`
+  ?`Competência: taxa selic acumulada entre a solicitação, incluíndo a do mês da solicitação, até o mês da emissão`
   :'Percentual informado/registrado.';
  const article=`<div class="grade-info"><div>Amortização<strong>${v(d.base)}</strong></div><div>Selic consolidada<strong>${v(d.selic)}</strong></div><div>Juros Selic da parcela<strong>${v(d.parc)}</strong></div></div>
  <ol class="passos">
@@ -271,7 +281,7 @@ function renderSteps(d){
   <li><strong>Selic consolidada:</strong> ${selicText} = ${v(d.selic)}.${noteSelic}${noteHistorical?`<span class="termo-taxas">${noteHistorical}</span>`:''}</li>
   <li><strong>Encargos consolidados:</strong> ${v(d.encBase)} × ${modalPercent(d.pcts.encargo)} = ${v(d.enc)}. ${activeMode('encargo')==='sicafi'?'Referência das parcelas do SICAFI, quando identificada; distinta da consolidação atual.':''}</li>
   <li><strong>Juros da parcela:</strong> ${interestText} = ${v(d.parc)}. <em class="nota-inline">${noteInterest}</em></li>
-  <li><strong>Parcela:</strong> ${v(d.base)} + ${v(d.fine)} + ${v(d.selic)} + ${v(d.extra)} + ${v(d.enc)} + ${v(d.parc)} = <strong>${v(d.total)}</strong>.</li>
+  <li><strong>Parcela:</strong> ${v(d.base)} + ${v(d.fine)} + ${v(d.selic)} + ${v(d.extra)} + ${v(d.enc)} + ${v(d.parc)} = <strong>${validParcelNumber(d.q)?v(d.total):'—'}</strong>.</li>
  </ol>`;
  $('passos').innerHTML=article+(accum?`<p class="mini">Os valores consolidados e juros por componente são apresentados na tabela de composição acima. Divergências de centavos podem decorrer dos arredondamentos individuais.</p>`:'');
 }
@@ -350,7 +360,7 @@ function applyPlan(index){
  const match=!!(req&&m.consolidation&&req===m.consolidation);
  state.importMatchesRequest=match;
  $('listaPlanos').value=String(index);$('dataSolicitacao').value=req;
- $('quantidade').value=plan.qty||'';$('numeroParcela').value=1;
+ $('quantidade').value=plan.qty||'';$('numeroParcela').value='';
  $('dataEmissao').value=''; // emissão da GRU NUNCA é presumida a partir da memória.
  $('inicioMulta').value=m.periods.multa.start||firstDate(m.lines,/Data Inicio Multa/i);
  $('inicioSelic').value=m.periods.selic.start||'';
