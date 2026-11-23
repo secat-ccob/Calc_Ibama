@@ -4,7 +4,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cálculo de parcela — CALC-IBAMA</title>
 <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
-<!-- Versão: calculo_parcela_portal_v_07 -->
+<!-- Versão: calculo_parcela_portal_v_08 -->
 <style>
 :root{--cor-primaria:#1f6f54;--cor-primaria-escura:#15513d;--cor-secundaria:#0f4c81;--cor-fundo:#f4f7f6;--cor-superficie:#fff;--cor-texto:#1f2933;--cor-texto-suave:#5b6770;--cor-borda:#d9e2dd;--sombra-suave:0 10px 30px rgba(15,76,81,.08)}
 *{box-sizing:border-box}html,body{height:100%}body{margin:0;height:100vh;font-family:Arial,Helvetica,sans-serif;color:var(--cor-texto);background:radial-gradient(circle at center,rgba(31,111,84,.07),transparent 55%),linear-gradient(180deg,#fff,var(--cor-fundo));display:flex;flex-direction:column;overflow:hidden}
@@ -162,7 +162,7 @@ function getAutoPct(k,component){const request=$('dataSolicitacao').value,issue=
 function choosePct(k,component){const mode=activeMode(k);if(mode==='automatico')return getAutoPct(k,component);if(component&&['multa','selic','encargo'].includes(k)){if(mode==='sicafi')return Number(component[k+'PctSicafi']??0);if(mode==='manual'&&k!=='encargo')return Number(component[k+'PctManual']??0)}return mode==='sicafi'?Number(rowReference(k).pct??0):pctVal(pctId[k])}
 function rateValid(){return Object.keys(modeId).filter(k=>activeMode(k)==='automatico'&&['selic','parcela'].includes(k));}
 function basePerComponent(c,q){return rd((+c.base||0)/q)}
-// O total não pode ser exibido sem a identificação válida da parcela.
+// O número da parcela é opcional: somente identifica a prestação; não condiciona o cálculo.
 function validParcelNumber(q){
  const raw=$('numeroParcela').value.trim();
  if(!/^\d+$/.test(raw))return false;
@@ -171,7 +171,7 @@ function validParcelNumber(q){
 }
 function datesAndInstallmentOK(q){
  const req=ym($('dataSolicitacao').value),issue=ym($('dataEmissao').value);
- return !!(req&&issue&&issue>=req&&validParcelNumber(q));
+ return !!(req&&issue&&issue>=req&&Number.isInteger(q)&&q>=1&&q<=999);
 }
 // ---------------------- Motor financeiro ----------------------
 function calcSimple(){let q=Number($('quantidade').value),p=inputVal('principal');if(!$('principal').value.trim()||!Number.isInteger(q)||q<=0||!Number.isFinite(p)||p<0)return null;const base=rd(p/q);const multaPct=choosePct('multa');const selicPct=choosePct('selic');const encPct=choosePct('encargo');const pPct=choosePct('parcela');const extraPct=pctVal('pctJurosAnteriores');
@@ -212,7 +212,7 @@ function render(){const type=$('tipoDebito').value;const accum=type==='TCFA_ACUM
  for(const k of Object.keys(modeId)){const sicafiOption=$(modeId[k]).querySelector('option[value="sicafi"]');if(sicafiOption)sicafiOption.disabled=(!state.file||!state.importMatchesRequest);$(pctId[k]).disabled=activeMode(k)!=='manual'||(accum&&(k==='multa'||k==='selic'));if(activeMode(k)==='sicafi')setPercent(pctId[k],rowReference(k).pct||0);if(activeMode(k)==='automatico'){const v=getAutoPct(k);if(Number.isFinite(v))setPercent(pctId[k],v);else $(pctId[k]).value='—';}if(accum&&(k==='multa'||k==='selic'))$(pctId[k]).value='—';}
  const data=accum?calcAccum():calcSimple();state.last=data;
  let display=(id,v)=>$(id).textContent=Number.isFinite(v)?BR(v):'—';
- display('vAmort',data?.base??NaN);display('vMulta',data?.fine??NaN);display('vSelic',data?.selic??NaN);display('vJurosAnteriores',data?.extra??NaN);display('vEncargo',data?.enc??NaN);display('vJurosParcela',data?.parc??NaN);display('vTotal',validParcelNumber(q)?data?.total??NaN:NaN);
+ display('vAmort',data?.base??NaN);display('vMulta',data?.fine??NaN);display('vSelic',data?.selic??NaN);display('vJurosAnteriores',data?.extra??NaN);display('vEncargo',data?.enc??NaN);display('vJurosParcela',data?.parc??NaN);display('vTotal',data?.total??NaN);
  $('infoAmort').textContent=accum?`${state.components.length} débito(s) ÷ ${q||'—'} parcelas; arredondamento individual`:`${Number.isFinite(p)?money(p):'—'} ÷ ${q||'—'} parcelas`;
  $('resumoTotal').textContent=validParcelNumber(q)?`Parcela ${$('numeroParcela').value}`:'—';
  $('infoEncargo').textContent='Base dos encargos: Base + Multa + Selic';
@@ -234,7 +234,7 @@ function render(){const type=$('tipoDebito').value;const accum=type==='TCFA_ACUM
    }
  }
  if(activeMode('multa')==='automatico'&&!accum&&!dDate($('inicioMulta').value))errors.push('Multa automática: informe uma data válida de início da multa.');
- if(q&&data&&!validParcelNumber(q))errors.push('Informe um número de parcela válido (de 1 até a quantidade de parcelas) para exibir o valor da parcela.');
+ if($('numeroParcela').value.trim()&&!validParcelNumber(q))errors.push('O número da parcela informado deve estar entre 1 e a quantidade de parcelas. Este campo é opcional e não impede o cálculo.');
   if(q>999)errors.push('O limite é 999 parcelas.');
  if(data&&!$('dataSolicitacao').value)errors.push('Informe a data da solicitação do parcelamento.');
  if(data&&!$('dataEmissao').value)errors.push('Informe o mês e ano de emissão da parcela (mm/aaaa).');
@@ -281,7 +281,7 @@ function renderSteps(d){
   <li><strong>Selic consolidada:</strong> ${selicText} = ${v(d.selic)}.${noteSelic}${noteHistorical?`<span class="termo-taxas">${noteHistorical}</span>`:''}</li>
   <li><strong>Encargos consolidados:</strong> ${v(d.encBase)} × ${modalPercent(d.pcts.encargo)} = ${v(d.enc)}. ${activeMode('encargo')==='sicafi'?'Referência das parcelas do SICAFI, quando identificada; distinta da consolidação atual.':''}</li>
   <li><strong>Juros da parcela:</strong> ${interestText} = ${v(d.parc)}. <em class="nota-inline">${noteInterest}</em></li>
-  <li><strong>Parcela:</strong> ${v(d.base)} + ${v(d.fine)} + ${v(d.selic)} + ${v(d.extra)} + ${v(d.enc)} + ${v(d.parc)} = <strong>${validParcelNumber(d.q)?v(d.total):'—'}</strong>.</li>
+  <li><strong>Parcela:</strong> ${v(d.base)} + ${v(d.fine)} + ${v(d.selic)} + ${v(d.extra)} + ${v(d.enc)} + ${v(d.parc)} = <strong>${v(d.total)}</strong>.</li>
  </ol>`;
  $('passos').innerHTML=article+(accum?`<p class="mini">Os valores consolidados e juros por componente são apresentados na tabela de composição acima. Divergências de centavos podem decorrer dos arredondamentos individuais.</p>`:'');
 }
