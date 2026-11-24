@@ -4,7 +4,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cálculo de parcela — CALC-IBAMA</title>
 <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
-<!-- Versão: calculo_parcela_portal_v_08 -->
+<!-- Versão: calculo_parcela_portal_v_09 -->
 <style>
 :root{--cor-primaria:#1f6f54;--cor-primaria-escura:#15513d;--cor-secundaria:#0f4c81;--cor-fundo:#f4f7f6;--cor-superficie:#fff;--cor-texto:#1f2933;--cor-texto-suave:#5b6770;--cor-borda:#d9e2dd;--sombra-suave:0 10px 30px rgba(15,76,81,.08)}
 *{box-sizing:border-box}html,body{height:100%}body{margin:0;height:100vh;font-family:Arial,Helvetica,sans-serif;color:var(--cor-texto);background:radial-gradient(circle at center,rgba(31,111,84,.07),transparent 55%),linear-gradient(180deg,#fff,var(--cor-fundo));display:flex;flex-direction:column;overflow:hidden}
@@ -40,11 +40,11 @@ main{flex:1 1 auto;min-height:0;padding:24px;overflow-y:auto}.ferramenta{width:m
 <tr><td>(+) Selic consolidada na data da solicitação</td><td><div class="detalhe-taxa"><span class="periodo" id="periodoSelic">De: — até —</span><select id="modoSelic" class="no-print" aria-label="Modo de cálculo da Selic consolidada"><option value="sicafi">SICAFI</option><option value="automatico">Automático</option><option value="manual" selected>Manual</option></select><input id="pctSelic" inputmode="decimal" type="text" aria-label="Percentual Selic consolidada" value="0,00"><span>%</span></div></td><td class="valor" id="vSelic">0,00</td></tr>
 <tr class="linha-opcional" id="linhaJurosAnteriores" hidden><td>(+) Juros consolidados adicionais</td><td><div class="detalhe-taxa"><span class="periodo">Quando constarem da memória</span><input id="pctJurosAnteriores" inputmode="decimal" type="text" aria-label="Percentual de juros anteriores" value="0,00"><span>%</span></div></td><td class="valor" id="vJurosAnteriores">0,00</td></tr>
 <tr><td>(+) Encargos legais na data da solicitação</td><td><div class="detalhe-taxa"><span class="periodo" id="infoEncargo">Base dos encargos: Base + Multa + Selic</span><select id="modoEncargo" class="no-print" aria-label="Modo de cálculo dos encargos legais"><option value="sicafi">SICAFI</option><option value="manual" selected>Manual</option></select><input id="pctEncargo" inputmode="decimal" type="text" aria-label="Percentual dos encargos legais" value="0,00"><span>%</span></div></td><td class="valor" id="vEncargo">0,00</td></tr>
-<tr><td>(+) Juros Selic da parcela</td><td><div class="detalhe-taxa"><span class="periodo" id="periodoParcela">Emissão: não informada</span><select id="modoParcela" class="no-print" aria-label="Modo de cálculo dos juros Selic da parcela"><option value="automatico" selected>Automático</option></select><input id="pctParcela" inputmode="decimal" type="text" aria-label="Percentual Selic da parcela" value="0,00"><span>%</span></div></td><td class="valor" id="vJurosParcela">0,00</td></tr>
+<tr><td>(+) Juros Selic da parcela</td><td><div class="detalhe-taxa"><span class="periodo" id="periodoParcela">Emissão: não informada</span><select id="modoParcela" class="no-print" aria-label="Modo de cálculo dos juros Selic da parcela"><option value="automatico" selected>Automático</option><option value="manual">Manual</option></select><input id="pctParcela" inputmode="decimal" type="text" aria-label="Percentual Selic da parcela" value="0,00"><span>%</span></div></td><td class="valor" id="vJurosParcela">0,00</td></tr>
 <tr class="linha-total"><td><strong>(=) Valor da parcela</strong></td><td id="resumoTotal">—</td><td class="valor" id="vTotal">—</td></tr>
 </tbody></table>
 <div id="alertaCalculo" class="aviso alerta" hidden></div>
-<p class="observacao observacao-regras">A parcela é calculada a partir dos valores existentes na data da solicitação.<br>A Selic consolidada é distinta dos juros posteriores da parcela.<br>O modo automático utiliza dados fornecidos pelo Sicalc - Sistema de Cálculo de Acréscimos Legais.</p>
+<p class="observacao observacao-regras">A parcela é calculada a partir dos valores existentes na data da solicitação.<br>A Selic consolidada é distinta dos juros posteriores da parcela.<br>O modo automático utiliza dados fornecidos pelo Sicalc (Sistema de Cálculo de Acréscimos Legais).</p>
 <div id="statusSelic" class="info-line no-print" role="status" aria-live="polite">Base Selic: verificando disponibilidade…</div>
 <div class="acoes no-print"><button type="button" id="btnRecalcular" class="btn btn-primary">Calcular parcela</button><button type="button" id="btnImprimir" class="btn">Imprimir cálculo</button></div>
 <section id="blocoAcumulado" hidden><div class="separador"></div><h2 class="subtitulo">Composição da TCFA acumulada — cálculos por débito trimestral</h2><div class="composicao-top"><span class="mini">O principal de cada débito é dividido pela quantidade de parcelas. Os acréscimos são arredondados individualmente antes do somatório.</span><button type="button" id="adicionarComponente" class="btn no-print">Adicionar débito</button></div><div class="table-scroll"><table class="tabela-composicao" aria-label="Débitos componentes da TCFA acumulada"><thead><tr><th>Débito</th><th>Trimestre/Ano</th><th>Vencimento</th><th>Principal (R$)</th><th>Amortização (R$)</th><th>Multa (%)</th><th>Multa (R$)</th><th>Selic (%)</th><th>Selic (R$)</th><th>Encargos (R$)</th><th>Juros parcela (R$)</th><th>Subtotal (R$)</th><th class="no-print">Ação</th></tr></thead><tbody id="corpoComponentes"><tr><td colspan="13" class="sem-dados">Adicione os débitos ou carregue uma memória de TCFA acumulada.</td></tr></tbody><tfoot id="rodapeComponentes"></tfoot></table></div><p class="observacao">Em modo <strong>SICAFI</strong>, as taxas individuais são aquelas lidas da memória; em modo <strong>Automático</strong>, usam-se os vencimentos de cada trimestre; em modo <strong>Manual</strong>, cada percentual pode ser editado. A competência dos juros da parcela é comum aos componentes, mas o arredondamento é individual.</p></section>
@@ -59,7 +59,7 @@ main{flex:1 1 auto;min-height:0;padding:24px;overflow-y:auto}.ferramenta{width:m
 </div></details>
 </div></section></main><footer class="rodape">CALC-IBAMA · SECAT/CCOB</footer>
 <script type="module">
-// CALC-IBAMA · Cálculo de uma parcela · v04
+// CALC-IBAMA · Cálculo de uma parcela · v09
 // Arquitetura: utilitários → estado/base Selic → cálculo → renderização → leitura PDF → eventos.
 
 // ---------------------- Formatação e utilitários ----------------------
@@ -77,7 +77,7 @@ const validMonthYear=s=>!s||/^(0[1-9]|1[0-2])\/\d{4}$/.test(String(s).trim());
 function fmtMonthInput(el){const d=String(el.value||'').replace(/\D/g,'').slice(0,6);el.value=d.slice(0,2)+(d.length>2?'/'+d.slice(2):'')}
 const monthBR=m=>/^\d{4}-\d{2}$/.test(m||'')?m.substring(5)+'/'+m.substring(0,4):'—';
 const prevMonth=m=>shift(m,-1);function shift(m,d){if(!/^\d{4}-\d{2}$/.test(m||''))return '';const [y,mon]=m.split('-').map(Number);const z=new Date(Date.UTC(y,mon-1+d,1));return `${z.getUTCFullYear()}-${String(z.getUTCMonth()+1).padStart(2,'0')}`}
-const state={type:'AI',file:null,plans:[],activePlan:-1,components:[],refs:{},loadedBaseline:null,importMatchesRequest:false,rates:{},ratesLoading:null,rateSource:'',rateMeta:{},rateError:'',last:null,loading:false};
+const state={type:'AI',file:null,plans:[],activePlan:-1,components:[],refs:{},loadedBaseline:null,importMatchesRequest:false,rates:{},ratesLoading:null,rateSource:'',rateMeta:{},rateError:'',manualParcelPct:0,last:null,loading:false};
 const modeId={multa:'modoMulta',selic:'modoSelic',encargo:'modoEncargo',parcela:'modoParcela'};
 const pctId={multa:'pctMulta',selic:'pctSelic',encargo:'pctEncargo',parcela:'pctParcela'};
 function setMessage(s,t=''){const x=$('msg');x.hidden=!s;x.textContent=s;x.className='aviso '+(t||'')}
@@ -90,7 +90,7 @@ function pctVal(id){return Number.isFinite(inputVal(id))?inputVal(id):0}
 function setPercent(id,v){$(id).value=pctFormat(v||0)}
 function setMoney(id,v){$(id).value=BR(v||0)}
 function status(s,kind=''){$('statusPDF').textContent=s;$('statusPDF').className='badge-status '+kind}
-function setDefaults(type){state.type=type;state.file=null;state.plans=[];state.activePlan=-1;state.components=[];state.refs={};state.loadedBaseline=null;state.importMatchesRequest=false;state.last=null;['dataSolicitacao','dataEmissao','inicioMulta','inicioSelic','numeroDebito'].forEach(id=>$(id).value='');$('quantidade').value='';$('numeroParcela').value='';$('principal').value='';$('parcelaInicialSemJuros').checked=false;$('verJurosAnteriores').checked=false;$('linhaJurosAnteriores').hidden=true;setPercent('pctJurosAnteriores',0);Object.keys(modeId).forEach(k=>{ $(modeId[k]).value=k==='parcela'?'automatico':'manual';setPercent(pctId[k],0)});$('selecionarPlano').hidden=true;$('blocoAcumulado').hidden=type!=='TCFA_ACUMULADO';$('helpPrincipal').textContent=type==='TCFA_ACUMULADO'?'Total dos principais dos componentes — edite cada componente':'Preenchimento manual obrigatório';status('NÃO CARREGADO');setMessage('');notice('');render();}
+function setDefaults(type){state.type=type;state.file=null;state.plans=[];state.activePlan=-1;state.components=[];state.refs={};state.loadedBaseline=null;state.importMatchesRequest=false;state.manualParcelPct=0;state.last=null;['dataSolicitacao','dataEmissao','inicioMulta','inicioSelic','numeroDebito'].forEach(id=>$(id).value='');$('quantidade').value='';$('numeroParcela').value='';$('principal').value='';$('parcelaInicialSemJuros').checked=false;$('verJurosAnteriores').checked=false;$('linhaJurosAnteriores').hidden=true;setPercent('pctJurosAnteriores',0);Object.keys(modeId).forEach(k=>{ $(modeId[k]).value=k==='parcela'?'automatico':'manual';setPercent(pctId[k],0)});$('selecionarPlano').hidden=true;$('blocoAcumulado').hidden=type!=='TCFA_ACUMULADO';$('helpPrincipal').textContent=type==='TCFA_ACUMULADO'?'Total dos principais dos componentes — edite cada componente':'Preenchimento manual obrigatório';status('NÃO CARREGADO');setMessage('');notice('');render();}
 function sum(xs){return rd(xs.reduce((a,x)=>a+(Number(x)||0),0))}
 function modalPercent(s){return Number.isFinite(s)?BR(s)+'%':'—'}
 // ---------------------- Base Selic compartilhada ----------------------
@@ -209,6 +209,8 @@ function render(){const type=$('tipoDebito').value;const accum=type==='TCFA_ACUM
  $('periodoMulta').textContent=accum?'Por vencimento de cada débito':`De: ${$('inicioMulta').value||'—'} até ${$('dataSolicitacao').value||'—'}`;
  $('periodoSelic').textContent=accum?'Por vencimento de cada débito':`De: ${$('inicioSelic').value||'—'} até ${$('dataSolicitacao').value||'—'}`;
  $('periodoParcela').textContent=`Emissão: ${ym($('dataEmissao').value)?monthBR(ym($('dataEmissao').value)):'não informada'}`;
+ // A exceção de primeira parcela sem juros pertence somente ao cálculo automático.
+ $('parcelaInicialSemJuros').disabled=activeMode('parcela')==='manual';
  for(const k of Object.keys(modeId)){const sicafiOption=$(modeId[k]).querySelector('option[value="sicafi"]');if(sicafiOption)sicafiOption.disabled=(!state.file||!state.importMatchesRequest);$(pctId[k]).disabled=activeMode(k)!=='manual'||(accum&&(k==='multa'||k==='selic'));if(activeMode(k)==='sicafi')setPercent(pctId[k],rowReference(k).pct||0);if(activeMode(k)==='automatico'){const v=getAutoPct(k);if(Number.isFinite(v))setPercent(pctId[k],v);else $(pctId[k]).value='—';}if(accum&&(k==='multa'||k==='selic'))$(pctId[k]).value='—';}
  const data=accum?calcAccum():calcSimple();state.last=data;
  let display=(id,v)=>$(id).textContent=Number.isFinite(v)?BR(v):'—';
@@ -272,7 +274,7 @@ function renderSteps(d){
  const noteSelic=!accum&&activeMode('selic')!=='automatico'?' <em class="nota-inline">Percentual definido conforme o modo selecionado.</em>':'';
  const noteHistorical=accum?'Cada vencimento utiliza uma competência inicial própria.':activeMode('selic')==='automatico'?'Taxas: '+escapeHTML(term('hist'))+' + 1% no mês da solicitação.':'';
  const noteInterest=activeMode('parcela')==='automatico'
-  ?`Competência: taxa selic acumulada entre a solicitação, incluíndo a do mês da solicitação, até o mês da emissão`
+  ?`Competência: Selic acumulada desde o mês da solicitação até o mês anterior à emissão da parcela, acrescida de 1% referente ao mês da emissão.`
   :'Percentual informado/registrado.';
  const article=`<div class="grade-info"><div>Amortização<strong>${v(d.base)}</strong></div><div>Selic consolidada<strong>${v(d.selic)}</strong></div><div>Juros Selic da parcela<strong>${v(d.parc)}</strong></div></div>
  <ol class="passos">
@@ -359,6 +361,7 @@ function applyPlan(index){
  const m=state.file,req=plan.request||m.request;
  const match=!!(req&&m.consolidation&&req===m.consolidation);
  state.importMatchesRequest=match;
+ state.manualParcelPct=0;
  $('listaPlanos').value=String(index);$('dataSolicitacao').value=req;
  $('quantidade').value=plan.qty||'';$('numeroParcela').value='';
  $('dataEmissao').value=''; // emissão da GRU NUNCA é presumida a partir da memória.
@@ -420,13 +423,18 @@ for(const id of ['dataSolicitacao','dataEmissao','quantidade','numeroParcela','p
  el.addEventListener('focus',()=>{if(el.type==='text'&&!el.classList.contains('data')&&!el.classList.contains('mes-ano')&&!el.classList.contains('moeda'))el.select()});
  el.addEventListener('change',()=>{
   saveInput(el);
+  if(id==='pctParcela'&&activeMode('parcela')==='manual')state.manualParcelPct=pctVal('pctParcela');
   if(['inicioMulta','inicioSelic'].includes(id)&&dDate(el.value))$(id==='inicioMulta'?'modoMulta':'modoSelic').value='automatico';
   if(['principal','quantidade','dataSolicitacao','inicioMulta','inicioSelic'].includes(id))markEdited();
   if(['inicioMulta','inicioSelic'].includes(id))calculateFromUI();else render();
  });
 }
 $('btnAtualizarConfig').addEventListener('click',calculateFromUI);
-for(const k of Object.keys(modeId)){$(modeId[k]).addEventListener('change',async e=>{if(e.target.value==='automatico'&&rateValid().includes(k)){try{await loadRates()}catch(err){setMessage('Selic automática indisponível: '+err.message,'alerta')}}render()})}
+for(const k of Object.keys(modeId)){$(modeId[k]).addEventListener('change',async e=>{
+ if(k==='parcela'&&e.target.value==='manual')setPercent('pctParcela',state.manualParcelPct);
+ if(e.target.value==='automatico'&&rateValid().includes(k)){try{await loadRates()}catch(err){setMessage('Selic automática indisponível: '+err.message,'alerta')}}
+ render();
+})}
 
 $('btnRecalcular').addEventListener('click',calculateFromUI);$('btnImprimir').addEventListener('click',()=>window.print());
 for(const el of document.querySelectorAll('.data'))el.addEventListener('blur',()=>{if(el.value&&!dDate(el.value))setMessage('Data inválida no campo '+(el.labels?.[0]?.textContent||el.id)+'.','alerta')});
