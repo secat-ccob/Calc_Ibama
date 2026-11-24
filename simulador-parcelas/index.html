@@ -4,7 +4,7 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cálculo de parcela — CALC-IBAMA</title>
 <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
-<!-- Versão: calculo_parcela_portal_v_09 -->
+<!-- Versão: calculo_parcela_portal_v_10 -->
 <style>
 :root{--cor-primaria:#1f6f54;--cor-primaria-escura:#15513d;--cor-secundaria:#0f4c81;--cor-fundo:#f4f7f6;--cor-superficie:#fff;--cor-texto:#1f2933;--cor-texto-suave:#5b6770;--cor-borda:#d9e2dd;--sombra-suave:0 10px 30px rgba(15,76,81,.08)}
 *{box-sizing:border-box}html,body{height:100%}body{margin:0;height:100vh;font-family:Arial,Helvetica,sans-serif;color:var(--cor-texto);background:radial-gradient(circle at center,rgba(31,111,84,.07),transparent 55%),linear-gradient(180deg,#fff,var(--cor-fundo));display:flex;flex-direction:column;overflow:hidden}
@@ -59,7 +59,7 @@ main{flex:1 1 auto;min-height:0;padding:24px;overflow-y:auto}.ferramenta{width:m
 </div></details>
 </div></section></main><footer class="rodape">CALC-IBAMA · SECAT/CCOB</footer>
 <script type="module">
-// CALC-IBAMA · Cálculo de uma parcela · v09
+// CALC-IBAMA · Cálculo de uma parcela · v10
 // Arquitetura: utilitários → estado/base Selic → cálculo → renderização → leitura PDF → eventos.
 
 // ---------------------- Formatação e utilitários ----------------------
@@ -170,8 +170,15 @@ function validParcelNumber(q){
  return Number.isInteger(n)&&n>=1&&Number.isInteger(q)&&q>=1&&q<=999&&n<=q;
 }
 function datesAndInstallmentOK(q){
- const req=ym($('dataSolicitacao').value),issue=ym($('dataEmissao').value);
- return !!(req&&issue&&issue>=req&&Number.isInteger(q)&&q>=1&&q<=999);
+ const req=ym($('dataSolicitacao').value);
+ const issueInput=$('dataEmissao').value.trim();
+ const issue=ym(issueInput);
+ // Em modo Manual, a data da emissão é opcional; se informada, precisa ser válida
+ // e não pode anteceder a solicitação. O modo Automático continua exigindo mm/aaaa.
+ const emissionOK=activeMode('parcela')==='manual'
+  ? (!issueInput || !!(issue&&issue>=req))
+  : !!(issue&&issue>=req);
+ return !!(req&&emissionOK&&Number.isInteger(q)&&q>=1&&q<=999);
 }
 // ---------------------- Motor financeiro ----------------------
 function calcSimple(){let q=Number($('quantidade').value),p=inputVal('principal');if(!$('principal').value.trim()||!Number.isInteger(q)||q<=0||!Number.isFinite(p)||p<0)return null;const base=rd(p/q);const multaPct=choosePct('multa');const selicPct=choosePct('selic');const encPct=choosePct('encargo');const pPct=choosePct('parcela');const extraPct=pctVal('pctJurosAnteriores');
@@ -208,7 +215,8 @@ function render(){const type=$('tipoDebito').value;const accum=type==='TCFA_ACUM
  const q=Number($('quantidade').value)||0;const p=inputVal('principal');if(accum){let cp=sum(state.components.map(c=>c.base));$('principal').readOnly=true;$('principal').value=state.components.length?BR(cp):''}else $('principal').readOnly=false;
  $('periodoMulta').textContent=accum?'Por vencimento de cada débito':`De: ${$('inicioMulta').value||'—'} até ${$('dataSolicitacao').value||'—'}`;
  $('periodoSelic').textContent=accum?'Por vencimento de cada débito':`De: ${$('inicioSelic').value||'—'} até ${$('dataSolicitacao').value||'—'}`;
- $('periodoParcela').textContent=`Emissão: ${ym($('dataEmissao').value)?monthBR(ym($('dataEmissao').value)):'não informada'}`;
+ $('periodoParcela').textContent=`Emissão: ${ym($('dataEmissao').value)?monthBR(ym($('dataEmissao').value)):(activeMode('parcela')==='manual'?'opcional':'não informada')}`;
+ $('dataEmissao').nextElementSibling.textContent=activeMode('parcela')==='manual'?'Opcional no modo Manual':'Mês e ano (mm/aaaa)';
  // A exceção de primeira parcela sem juros pertence somente ao cálculo automático.
  $('parcelaInicialSemJuros').disabled=activeMode('parcela')==='manual';
  for(const k of Object.keys(modeId)){const sicafiOption=$(modeId[k]).querySelector('option[value="sicafi"]');if(sicafiOption)sicafiOption.disabled=(!state.file||!state.importMatchesRequest);$(pctId[k]).disabled=activeMode(k)!=='manual'||(accum&&(k==='multa'||k==='selic'));if(activeMode(k)==='sicafi')setPercent(pctId[k],rowReference(k).pct||0);if(activeMode(k)==='automatico'){const v=getAutoPct(k);if(Number.isFinite(v))setPercent(pctId[k],v);else $(pctId[k]).value='—';}if(accum&&(k==='multa'||k==='selic'))$(pctId[k]).value='—';}
@@ -239,7 +247,7 @@ function render(){const type=$('tipoDebito').value;const accum=type==='TCFA_ACUM
  if($('numeroParcela').value.trim()&&!validParcelNumber(q))errors.push('O número da parcela informado deve estar entre 1 e a quantidade de parcelas. Este campo é opcional e não impede o cálculo.');
   if(q>999)errors.push('O limite é 999 parcelas.');
  if(data&&!$('dataSolicitacao').value)errors.push('Informe a data da solicitação do parcelamento.');
- if(data&&!$('dataEmissao').value)errors.push('Informe o mês e ano de emissão da parcela (mm/aaaa).');
+ if(data&&activeMode('parcela')==='automatico'&&!$('dataEmissao').value.trim())errors.push('Informe o mês e ano de emissão da parcela (mm/aaaa).');
  for(const id of ['dataSolicitacao','inicioMulta','inicioSelic'])if(!validDate($(id).value))errors.push('Data inválida no campo '+({dataSolicitacao:'solicitação',inicioMulta:'início da multa',inicioSelic:'início da Selic'}[id])+'.');
  if(!validMonthYear(issue))errors.push('Emissão inválida: informe mm/aaaa.');
  if(!$('principal').value.trim()&&!accum)errors.push('Informe manualmente o principal na data da solicitação.');
