@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_89 -->
+  <!-- Versão: simulador_consolidacao_debito_v_90 -->
 
   <style>
     :root {
@@ -1461,17 +1461,25 @@
       padding: 0 22px 20px;
     }
     .acoes-confirmacao-consolidacao .btn { min-width: 100px; }
-    /* Critérios opcionais: completamente inativos no cálculo administrativo padrão. */
-    .criterios-complementares { margin: 12px 0; padding: 10px 12px; border: 1px solid #c9dcd2; background: #f7fbf9; border-radius: 5px; font-size: 12px; }
-    .criterios-complementares summary { cursor: pointer; font-weight: 700; color: #1f6f54; font-size: 13px; padding: 3px; }
-    .criterios-linha { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 7px 0; border-top: 1px solid #e3ece6; }
-    .criterios-linha:first-of-type { margin-top: 8px; }
-    .criterios-linha label { display: inline-flex; align-items: center; gap: 4px; font-weight: normal; }
-    .criterios-linha input[type=text] { width: 112px; max-width: 100%; box-sizing: border-box; border: 1px solid #b6c9c0; border-radius: 3px; padding: 5px 6px; font-size: 12px; }
-    .criterios-linha select { padding: 5px 6px; border: 1px solid #b6c9c0; border-radius: 3px; max-width: 100%; font-size: 12px; }
-    .criterios-descricao { font-weight: 700; width: 180px; }
-    .criterios-erro { font-size: 12px; color: #ac2020; padding: 4px 0; white-space: pre-wrap; }
-    .criterios-nota { color: #535b59; font-size: 11px; padding-top: 6px; }
+    /* Critérios judiciais opcionais: controles nas próprias rubricas da consolidação. */
+    .criterio-inline-seletor { display: inline-flex; align-items: center; gap: 5px; margin-left: 10px; vertical-align: middle; font-size: 11px; font-weight: normal; }
+    .criterio-inline-seletor select, .criterio-linha-aux select { border: 1px solid #b6c9c0; border-radius: 3px; background: #fff; color: #1f2933; padding: 4px 5px; font-size: 11px; max-width: 100%; }
+    .criterio-inline-seletor select { max-width: 165px; }
+    .criterio-inline-marcar { display: inline-flex; align-items: center; gap: 5px; margin-left: 10px; font-size: 11px; font-weight: normal; cursor: pointer; }
+    .criterio-inline-marcar input { margin: 0; width: auto; }
+    .criterio-linha-aux td { padding: 6px 10px !important; background: #f3f8f5 !important; }
+    .criterio-linha-aux td.rotulo { font-weight: normal; font-size: 11px; text-align: left; }
+    .criterio-linha-aux td.percentual { text-align: left !important; }
+    .criterio-campos-aux { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-size: 11px; font-weight: normal; }
+    .criterio-campos-aux label { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; font-weight: normal; }
+    .criterio-campos-aux input[type=text] { width: 112px; max-width: 100%; box-sizing: border-box; border: 1px solid #b6c9c0; border-radius: 3px; padding: 5px 6px; font-size: 12px; text-align: center; background: #fff; }
+    .criterio-erro-inline { display: block; margin-top: 3px; font-size: 11px; color: #ac2020; font-weight: normal; white-space: normal; }
+    .criterio-linha-aux .criterio-nota-inline { font-size: 10px; color: #535b59; white-space: normal; }
+    .criterio-inline-seletor, .criterio-inline-marcar { white-space: normal; }
+    @media(max-width:800px) {
+      .criterio-inline-seletor { display: flex; margin: 5px 0 0; }
+      .criterio-inline-marcar { display: flex; margin: 5px 0 0; }
+    }
   </style>
 </head>
 <body>
@@ -1739,7 +1747,6 @@
           </tbody>
         </table>
 
-        <div id="painelCriteriosPrincipalSimples" class="no-print"></div>
         <div class="acoes-pdf no-print acoes-pdf-individual">
           <button type="button" class="btn btn-primary" id="btnGerarPdf">Gerar PDF</button>
         </div>
@@ -1846,7 +1853,6 @@
             <tbody id="tbodyConsolidacaoAcumulado"></tbody>
           </table>
 
-          <div id="painelCriteriosPrincipalAcumulado" class="no-print"></div>
           <div class="acoes-pdf no-print acoes-pdf-individual">
             <button type="button" class="btn btn-primary" id="btnGerarPdfTcfaAcumulado">Gerar PDF</button>
           </div>
@@ -2474,6 +2480,7 @@
     }
 
     function limparDadosExibidos() {
+      rascunhosCriteriosInline.clear();
       limparTabelaSimples();
       limparTcfaAcumulado();
       simulacoesAdicionais = [];
@@ -2773,6 +2780,7 @@
     }
 
     function aplicarDadosMemoriaSimples(dados) {
+      rascunhosCriteriosInline.delete('principal-simples');
       criteriosPrincipalSimples = novosCriteriosComplementares();
       criteriosPrincipalSimples.ipca.sicafi = Number(dados.percentualCorrecaoMonetaria || 0);
       criteriosPrincipalSimples.ipca.inicio = dados.dataInicioCorrecaoMonetaria || '';
@@ -3310,6 +3318,7 @@
       atualizarEstadoPercentuaisComposicaoAcumulado();
       atualizarIndicadorModoAutomaticoPrincipal();
       if (!dadosTcfaAcumulado._preservarValoresCarregados) atualizarConsolidacaoAcumulado();
+      atualizarPainelPrincipalCriterios('acumulado');
       atualizarEstadoBotaoPagamento();
     }
 
@@ -3604,6 +3613,7 @@
             if (decisao.remover) removerConsolidacoesPosteriores(-1);
           }
           dadosTcfaAcumulado = dadosLidos;
+          rascunhosCriteriosInline.delete('principal-acumulado');
           criteriosPrincipalAcumulado = novosCriteriosComplementares();
           atualizarPainelPrincipalCriterios('acumulado');
           selecionarModoComposicaoAcumulado('multa', 'sicafi');
@@ -4487,45 +4497,112 @@
       linhas.splice(i,0,...novas);
       return linhas;
     }
-    function htmlPainelCriteriosComplementares(config,bloco) {
-      const c=criteriosComplementaresNormalizados(config);
-      const opt=(v,atual,txt)=>`<option value="${v}" ${v===atual?'selected':''}>${txt}</option>`;
-      const input=(campo,valor,tipo='text')=>`<input type="${tipo}" data-criterio="${escapeHtml(bloco)}" data-criterio-campo="${campo}" value="${escapeHtml(valor||'')}" ${tipo==='text'?'autocomplete="off"':''}/>`;
-      const select=(campo,val,opts)=>`<select data-criterio="${escapeHtml(bloco)}" data-criterio-campo="${campo}">${opts.map(x=>opt(x[0],val,x[1])).join('')}</select>`;
-      return `<details class="criterios-complementares" data-painel-criterios="${escapeHtml(bloco)}"><summary>Índices complementares (opcionais) — IPCA-E e juros da poupança</summary>
-        <div class="criterios-linha"><span class="criterios-descricao">(+) Correção Monetária</span>
-          <label>Modo ${select('ipca.modo',c.ipca.modo,[['sicafi','SICAFI (padrão)'],['automatico','Automático — IPCA-E'],['manual','Manual']])}</label>
-          <label>De ${input('ipca.inicio',c.ipca.inicio)}</label><label>até ${input('ipca.fim',c.ipca.fim)}</label>
-          <label>% manual ${input('ipca.manual',numeroParaPercentual(c.ipca.manual))}</label></div>
-        <div class="criterios-linha"><span class="criterios-descricao">(+) Juros da Poupança</span>
-          <label>Ativar <input type="checkbox" data-criterio="${escapeHtml(bloco)}" data-criterio-campo="poupanca.ativa" ${c.poupanca.ativa?'checked':''}></label>
-          <label>Modo ${select('poupanca.modo',c.poupanca.modo,[['automatico','Automático — juros simples'],['manual','Manual']])}</label>
-          <label>De ${input('poupanca.inicio',c.poupanca.inicio)}</label><label>até ${input('poupanca.fim',c.poupanca.fim)}</label>
-          <label>% manual ${input('poupanca.manual',numeroParaPercentual(c.poupanca.manual))}</label></div>
-        <div class="criterios-linha"><span class="criterios-descricao">(+) SELIC</span>
-          <label>Método ${select('selic.metodo',c.selic.metodo,[['usual','Usual (SICAFI/Sicalc)'],['exclusiva','Judicial exclusiva — sem 1% adicional']])}</label>
-          <label>De ${input('selic.inicio',c.selic.inicio)}</label><label>até ${input('selic.fim',c.selic.fim)}</label>
-          <label>Adicionar juros da poupança à base <input type="checkbox" data-criterio="${escapeHtml(bloco)}" data-criterio-campo="selic.incorporarPoupanca" ${c.selic.incorporarPoupanca?'checked':''}></label></div>
-        <div class="criterios-erro" data-criterios-erro="${escapeHtml(bloco)}"></div>
-        <div class="criterios-nota">IPCA-E: razão dos índices mensais da competência inicial e final. Poupança judicial: soma das taxas mensais entre competências, sem capitalização. SELIC judicial: sem acréscimo tributário automático de 1%; conferir adequação jurídica para o período escolhido. Índices oficiais armazenados em ../dados/.</div>
-      </details>`;
+    // Mantém edições ainda incompletas sem aplicar percentuais inválidos ao débito.
+    const rascunhosCriteriosInline = new Map();
+    // Os critérios ficam inseridos junto às linhas Correção Monetária, Juros e SELIC.
+    // Não existe mais bloco independente abaixo da tabela.
+    function renderizarIndicesEmTabela(tabela, bloco) {
+      if (!tabela || !tabela.tBodies?.length) return;
+      const config = rascunhosCriteriosInline.get(bloco) || criterioPorBloco(bloco);
+      if (!config) return;
+      const c = criteriosComplementaresNormalizados(config);
+      const esc = v => escapeHtml(String(v ?? ''));
+      const opt = (v, atual, legenda) => `<option value="${v}" ${v === atual ? 'selected' : ''}>${legenda}</option>`;
+      const seletor = (campo, atual, lista, titulo) => `<label class="criterio-inline-seletor no-print">${titulo}<select data-criterio="${esc(bloco)}" data-criterio-campo="${campo}" aria-label="${esc(titulo)}">${lista.map(x => opt(x[0], atual, x[1])).join('')}</select></label>`;
+      const campo = (nome, valor, rotulo, percentual = false) => `<label>${rotulo}<input type="text" data-criterio="${esc(bloco)}" data-criterio-campo="${nome}" value="${esc(valor)}" autocomplete="off" ${percentual ? 'inputmode="decimal"' : 'inputmode="numeric" maxlength="10" placeholder="DD/MM/AAAA"'}></label>`;
+      const check = (nome, marcado, rotulo, classe = 'criterio-inline-marcar') => `<label class="${classe} no-print"><input type="checkbox" data-criterio="${esc(bloco)}" data-criterio-campo="${nome}" ${marcado ? 'checked' : ''}>${rotulo}</label>`;
+      const linhas = Array.from(tabela.tBodies[0].rows);
+      const normal = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+      const encontrar = descricao => linhas.find(tr => {
+        const rotulo = tr.querySelector('td.rotulo');
+        return rotulo && normal(rotulo.textContent).startsWith(normal(descricao));
+      });
+      const correcao = encontrar('(+)Correção Monetária');
+      const juros = encontrar('(+)Juros');
+      const poupanca = encontrar('(+)Juros da Poupança');
+      const selic = encontrar('(+)SELIC');
+      if (!correcao || !juros || !selic) return;
+
+      // Sem recriar valores ou campos monetários: remover somente controles inseridos por esta rotina.
+      tabela.querySelectorAll('.criterio-gerado-inline').forEach(el => el.remove());
+      const rotuloCorrecao = correcao.querySelector('td.rotulo .grupo-correcao-linha') || correcao.querySelector('td.rotulo');
+      const rotuloJuros = juros.querySelector('td.rotulo');
+      const rotuloSelic = selic.querySelector('td.rotulo');
+      const modoIpca = document.createElement('span');
+      modoIpca.className = 'criterio-gerado-inline';
+      modoIpca.innerHTML = seletor('ipca.modo', c.ipca.modo, [['sicafi','SICAFI'], ['automatico','Automático — IPCA-E'], ['manual','Manual']], 'Modo');
+      rotuloCorrecao.appendChild(modoIpca);
+
+      const ativarPoupanca = document.createElement('span');
+      ativarPoupanca.className = 'criterio-gerado-inline';
+      ativarPoupanca.innerHTML = check('poupanca.ativa', c.poupanca.ativa, 'Incluir juros da poupança');
+      rotuloJuros.appendChild(ativarPoupanca);
+
+      const modoSelic = document.createElement('span');
+      modoSelic.className = 'criterio-gerado-inline';
+      modoSelic.innerHTML = seletor('selic.metodo', c.selic.metodo, [['usual','Usual (SICAFI/Sicalc)'], ['exclusiva','Judicial exclusiva']], 'Método');
+      rotuloSelic.appendChild(modoSelic);
+
+      // Só aparecem campos adicionais junto à rubrica correspondente quando ela é habilitada.
+      const inserirDetalhes = (apos, titulo, html, nota='') => {
+        const tr = document.createElement('tr');
+        tr.className = 'criterio-linha-aux criterio-gerado-inline no-print';
+        tr.innerHTML = `<td class="rotulo">${titulo}</td><td class="percentual" colspan="2"><div class="criterio-campos-aux">${html}</div>${nota ? `<div class="criterio-nota-inline">${nota}</div>` : ''}</td>`;
+        apos.insertAdjacentElement('afterend', tr);
+      };
+      if (c.ipca.modo !== 'sicafi') {
+        inserirDetalhes(correcao, c.ipca.modo === 'automatico' ? 'Período do IPCA-E' : 'Correção monetária manual',
+          c.ipca.modo === 'automatico' ? campo('ipca.inicio', c.ipca.inicio, 'De') + campo('ipca.fim', c.ipca.fim, 'Até')
+            : campo('ipca.manual', numeroParaPercentual(c.ipca.manual), 'Percentual', true),
+          c.ipca.modo === 'automatico' ? 'IPCA-E calculado pelos números-índice das competências escolhidas.' : 'Percentual aplicado à correção monetária.');
+      }
+      if (c.poupanca.ativa && !poupanca) {
+        // Antes de informar todo o período, o acréscimo não afeta o resultado.
+        // Os campos são exibidos no lugar que a futura linha ocupará.
+        inserirDetalhes(juros, '(+) Juros da Poupança',
+          seletor('poupanca.modo',c.poupanca.modo,[['automatico','Automático'],['manual','Manual']],'Modo') +
+          (c.poupanca.modo === 'manual' ? campo('poupanca.manual',numeroParaPercentual(c.poupanca.manual),'Percentual',true) : '') +
+          campo('poupanca.inicio',c.poupanca.inicio,'De') + campo('poupanca.fim',c.poupanca.fim,'Até'),
+          'Preencha o período para incluir o acréscimo no cálculo.');
+      }
+      if (c.poupanca.ativa && poupanca) {
+        const rotuloPoupanca = poupanca.querySelector('td.rotulo');
+        const modoPoupanca = document.createElement('span');
+        modoPoupanca.className = 'criterio-gerado-inline';
+        modoPoupanca.innerHTML = seletor('poupanca.modo', c.poupanca.modo, [['automatico','Automático'], ['manual','Manual']], 'Modo');
+        rotuloPoupanca.appendChild(modoPoupanca);
+        inserirDetalhes(poupanca, 'Juros da poupança',
+          (c.poupanca.modo === 'automatico' ? '' : campo('poupanca.manual', numeroParaPercentual(c.poupanca.manual), 'Percentual', true)) +
+            campo('poupanca.inicio',c.poupanca.inicio,'De') + campo('poupanca.fim',c.poupanca.fim,'Até'),
+          'Cálculo em juros simples, sem capitalização mensal.');
+      }
+      if (c.selic.metodo === 'exclusiva' || c.poupanca.ativa) {
+        inserirDetalhes(selic, c.selic.metodo === 'exclusiva' ? 'SELIC judicial exclusiva' : 'Base da SELIC',
+          (c.selic.metodo === 'exclusiva' ? campo('selic.inicio',c.selic.inicio,'De') + campo('selic.fim',c.selic.fim,'Até') : '') +
+          (c.poupanca.ativa ? check('selic.incorporarPoupanca',c.selic.incorporarPoupanca,'Incorporar juros da poupança à base da SELIC','criterio-inline-marcar') : ''),
+          c.selic.metodo === 'exclusiva' ? 'Série mensal, sem 1% tributário adicional. Verifique o critério judicial aplicável.' : '');
+      }
+      // Mensagens de períodos/índices devem aparecer na mesma tabela, nunca em painel separado.
+      const erro = document.createElement('span');
+      erro.className = 'criterio-erro-inline criterio-gerado-inline no-print';
+      erro.dataset.criteriosErro = bloco;
+      rotuloSelic.appendChild(erro);
     }
     function atualizarBloqueiosCorrecaoPrincipal() {
-      const tipo=criteriosPrincipalSimples?.ipca?.modo || 'sicafi';
-      for(const id of ['percentualCorrecaoMonetaria','correcaoMonetaria']) {
-        const el=document.getElementById(id);if(!el)continue;
-        el.readOnly=tipo!=='sicafi';
-        el.title=tipo==='sicafi'?'':'Edite o critério no painel de índices complementares.';
+      const tipo = criteriosPrincipalSimples?.ipca?.modo || 'sicafi';
+      for (const id of ['percentualCorrecaoMonetaria','correcaoMonetaria']) {
+        const el = document.getElementById(id); if (!el) continue;
+        el.readOnly = tipo !== 'sicafi';
+        el.title = tipo === 'sicafi' ? '' : 'Critério selecionado na própria linha da Correção Monetária.';
       }
     }
     function atualizarPainelPrincipalCriterios(tipo) {
-      const acumulado=tipo==='acumulado', bloco=acumulado?'principal-acumulado':'principal-simples';
-      const target=document.getElementById(acumulado?'painelCriteriosPrincipalAcumulado':'painelCriteriosPrincipalSimples');
-      if(!target)return;
-      const estavaAberto=!!target.querySelector('details[open]');
-      target.innerHTML=htmlPainelCriteriosComplementares(criterioPorBloco(bloco),bloco);
-      if(estavaAberto)target.querySelector('details')?.setAttribute('open','');
-      if(!acumulado) atualizarBloqueiosCorrecaoPrincipal();
+      const acumulado = tipo === 'acumulado';
+      const tabela = acumulado
+        ? document.querySelector('#areaTcfaAcumulado table.tabela-consolidacao')
+        : document.querySelector('#areaTabelaSimples table.tabela-consolidacao');
+      if (tabela) renderizarIndicesEmTabela(tabela, acumulado ? 'principal-acumulado' : 'principal-simples');
+      if (!acumulado) atualizarBloqueiosCorrecaoPrincipal();
     }
     async function resolverIndicesCriterios(c) {
       if(c.selic.metodo==='exclusiva' && c.selic.inicio && parseDataPtBr(c.selic.inicio)) {
@@ -4600,14 +4677,28 @@
       const el=event.target, bloco=el?.dataset?.criterio, campo=el?.dataset?.criterioCampo;
       if(!bloco||!campo)return;
       const antes=criterioPorBloco(bloco);if(!antes)return;
-      const novo=criteriosComplementaresNormalizados(antes);
+      const novo=criteriosComplementaresNormalizados(rascunhosCriteriosInline.get(bloco) || antes);
       const anterior=JSON.parse(JSON.stringify(antes));
       const val=el.type==='checkbox'?el.checked:campo.endsWith('.manual')?parseNumeroFlexivel(el.value):String(el.value||'').trim();
       mudarCriterio(novo,campo,val);
-      const invalida=(mensagem)=>{ el.style.borderColor='#b91c1c'; const target=document.querySelector(`[data-criterios-erro="${bloco}"]`); if(target)target.textContent=mensagem; };
+      const atualizarControles = () => {
+        if(bloco==='principal-simples') atualizarPainelPrincipalCriterios('simples');
+        else if(bloco==='principal-acumulado') atualizarPainelPrincipalCriterios('acumulado');
+        else {
+          const destino = document.querySelector(`.bloco-atualizacao[data-atualizacao="${Number(bloco)}"] table.tabela-atualizacao`);
+          if(destino) renderizarIndicesEmTabela(destino, bloco);
+        }
+      };
+      const invalida=(mensagem)=>{
+        rascunhosCriteriosInline.set(bloco,criteriosComplementaresNormalizados(novo));
+        atualizarControles();
+        const target=document.querySelector(`[data-criterios-erro="${bloco}"]`);
+        if(target) target.textContent=mensagem;
+      };
       try { await resolverIndicesCriterios(novo); }catch(e) { invalida(e.message||String(e)); return; }
       el.style.borderColor='';
       const eventoAplicar=async()=>{
+        rascunhosCriteriosInline.delete(bloco);
         Object.assign(antes,novo);
         if(bloco==='principal-simples'){
           const st=antes.ipca;
@@ -4665,10 +4756,16 @@
       };
       if(bloco!=='principal-simples'&&bloco!=='principal-acumulado'){
         const idx=Number(bloco);
-        executarEdicaoEmConsolidacaoAnterior(idx,JSON.stringify(novo)!==JSON.stringify(anterior),eventoAplicar,()=>renderizarAtualizacoes());
+        executarEdicaoEmConsolidacaoAnterior(idx,JSON.stringify(novo)!==JSON.stringify(anterior),eventoAplicar,()=>{
+          rascunhosCriteriosInline.delete(bloco);
+          renderizarAtualizacoes();
+        });
       }else if(existemConsolidacoesPosteriores(-1)){
         if(await solicitarAlteracaoDeDadosAnteriores(-1))await eventoAplicar();
-        else atualizarPainelPrincipalCriterios(bloco==='principal-acumulado'?'acumulado':'simples');
+        else {
+          rascunhosCriteriosInline.delete(bloco);
+          atualizarPainelPrincipalCriterios(bloco==='principal-acumulado'?'acumulado':'simples');
+        }
       } else await eventoAplicar();
     }
     function inicializarCriteriosComplementaresUI() {
@@ -4684,11 +4781,11 @@
         const pdf = ['btnGerarPdf','btnGerarPdfTcfaAcumulado','btnGerarPdfConsolidadoSimples',
           'btnGerarPdfConsolidadoAcumulado'].includes(id) || botao.hasAttribute('data-pdf-atualizacao');
         if(!pdf)return;
-        const erros=Array.from(document.querySelectorAll('.criterios-erro'))
-          .filter(el=>String(el.textContent||'').trim() && el.closest('.criterios-complementares')?.open);
+        const erros=Array.from(document.querySelectorAll('.criterio-erro-inline'))
+          .filter(el=>String(el.textContent||'').trim());
         if(erros.length){
           event.preventDefault();event.stopImmediatePropagation();
-          showToast('Corrija primeiro os períodos dos índices complementares: '+erros[0].textContent,'error');
+          showToast('Corrija os períodos dos índices na tabela de consolidação: '+erros[0].textContent,'error');
         }
       },true);
       document.addEventListener('focusin',event=>{
@@ -7388,7 +7485,6 @@
       }
     }
 
-    const paineisCriteriosAbertos = new Set();
     function renderizarAtualizacoes() {
       if (simulacoesAdicionais.length && !dataPrincipalConfirmada) {
         dataPrincipalConfirmada = obterDataConsolidacaoAtualTela();
@@ -7419,16 +7515,14 @@
           ${dados.tipoDebito === 'TCFA_ACUMULADO' ? htmlTabelaComposicaoDados(dados, dados.consolidacaoPG ? null : idx) : ''}
           ${dados.tipoDebito === 'TCFA_ACUMULADO' ? '<div class="subtitulo-tabela">Consolidação do débito</div>' : ''}
           ${htmlTabelaConsolidacaoDados(dados, dados.consolidacaoPG ? null : idx)}
-          ${htmlPainelCriteriosComplementares(dados.criteriosComplementares, String(idx))}
           <button type="button" class="btn btn-primary btn-pdf-atualizacao" data-pdf-atualizacao="${idx}">Gerar PDF</button>
           <div class="limpar-flutuacao"></div>
           </div>
         </div>`).join('');
       sincronizarConsolidacoesRetrateis();
-      container.querySelectorAll('[data-painel-criterios]').forEach(p=>{
-        const id=p.dataset.painelCriterios;
-        if(paineisCriteriosAbertos.has(id))p.open=true;
-        p.addEventListener('toggle',()=>{ if(p.open)paineisCriteriosAbertos.add(id);else paineisCriteriosAbertos.delete(id); });
+      container.querySelectorAll('.bloco-atualizacao').forEach(blocoEl => {
+        const indice = Number(blocoEl.dataset.atualizacao);
+        renderizarIndicesEmTabela(blocoEl.querySelector('table.tabela-atualizacao'), String(indice));
       });
       container.querySelectorAll('[data-data-consolidacao-atualizacao]').forEach(input => {
         prepararEdicaoParcialData(input);
@@ -8459,4 +8553,3 @@
   </script>
 </body>
 </html>
-
