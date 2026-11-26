@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_93 -->
+  <!-- Versão: simulador_consolidacao_debito_v_94 -->
 
   <style>
     :root {
@@ -1474,7 +1474,7 @@
     td.valor .criterio-detalhe-correcao { justify-content:flex-end; }
     .criterio-detalhe-correcao { min-height:28px !important; }
     .criterio-percentual-original [hidden], td.criterio-percentual-centralizado [hidden] { display:none !important; }
-    .criterio-poupanca-rotulo { display:block; white-space:normal; }
+    .criterio-poupanca-rotulo { display:block; margin-top:4px; white-space:normal; }
     .grupo-correcao-linha.criterio-detalhe-correcao .controle-encargo { min-height:0; padding:0; }
     td.percentual .grupo-correcao-linha.criterio-detalhe-correcao { padding-block:1px; }
     .criterio-controle-na-tabela { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:4px 7px; width:100%; margin:0; font-size:11px; font-weight:normal; }
@@ -1492,6 +1492,7 @@
     .criterio-inline-seletor select, .criterio-linha-aux select { border: 1px solid #b6c9c0; border-radius: 3px; background: #fff; color: #1f2933; padding: 4px 5px; font-size: 11px; max-width: 100%; }
     .criterio-inline-seletor select { max-width: 165px; }
     .criterio-inline-marcar { display: inline-flex; align-items: center; gap: 5px; margin-left: 10px; font-size: 11px; font-weight: normal; cursor: pointer; }
+    .criterio-poupanca-rotulo .criterio-inline-marcar { margin:0; }
     .criterio-inline-marcar input { margin: 0; width: auto; }
     .criterio-linha-aux td { padding: 6px 10px !important; background: #f3f8f5 !important; }
     .criterio-linha-aux td.rotulo { font-weight: normal; font-size: 11px; text-align: left; }
@@ -2284,12 +2285,12 @@
             simulacoesAdicionais[i] = atualizado;
           } catch (erro) {
             marcarAtualizacoesPosterioresParaReprocessar(i - 1);
-            renderizarAtualizacoes();
+            preservarFocoDosCriterios(renderizarAtualizacoes);
             showToast(`Consolidação ${String(i + 2).padStart(2, '0')}: ${normalizarMensagemErro(erro, 'Falha no reprocessamento.')}`, 'error');
             return;
           }
         }
-        renderizarAtualizacoes();
+        preservarFocoDosCriterios(renderizarAtualizacoes);
       };
       filaReprocessamentoProgressivo = filaReprocessamentoProgressivo.then(tarefa, tarefa);
       return filaReprocessamentoProgressivo;
@@ -4562,6 +4563,27 @@
     const rascunhosCriteriosInline = new Map();
     // Os critérios ficam inseridos junto às linhas Correção Monetária, Juros e SELIC.
     // Não existe mais bloco independente abaixo da tabela.
+    function preservarFocoDosCriterios(redesenhar) {
+      const campo = document.activeElement;
+      const bloco = campo?.dataset?.criterio;
+      const chave = campo?.dataset?.criterioCampo;
+      const valorEditado = chave && campo.type === 'text' && campo.value !== campo.dataset.criterioUltimoEnvio;
+      const selecao = valorEditado ? [campo.selectionStart, campo.selectionEnd, campo.selectionDirection] : null;
+      redesenhar();
+      if (!campo || campo.isConnected || document.activeElement !== document.body) return;
+      const substituto = bloco && chave
+        ? Array.from(document.querySelectorAll('[data-criterio][data-criterio-campo]')).find(input =>
+          input.dataset.criterio === bloco && input.dataset.criterioCampo === chave &&
+          (campo.type !== 'radio' || input.value === campo.value))
+        : campo.id && document.getElementById(campo.id);
+      if (!substituto || substituto.readOnly || substituto.disabled) return;
+      substituto.focus({preventScroll:true});
+      if (valorEditado) {
+        substituto.value = campo.value;
+        substituto.setSelectionRange(...selecao);
+      }
+    }
+
     function renderizarIndicesEmTabela(tabela, bloco) {
       if (!tabela || !tabela.tBodies?.length) return;
       const config = rascunhosCriteriosInline.get(bloco) || criterioPorBloco(bloco);
@@ -4720,7 +4742,8 @@
       const tabela = acumulado
         ? document.querySelector('#areaTcfaAcumulado table.tabela-consolidacao')
         : document.querySelector('#areaTabelaSimples table.tabela-consolidacao');
-      if (tabela) renderizarIndicesEmTabela(tabela, acumulado ? 'principal-acumulado' : 'principal-simples');
+      if (tabela) preservarFocoDosCriterios(() =>
+        renderizarIndicesEmTabela(tabela, acumulado ? 'principal-acumulado' : 'principal-simples'));
       if (!acumulado) atualizarBloqueiosCorrecaoPrincipal();
     }
     async function resolverIndicesCriterios(c) {
@@ -4833,18 +4856,21 @@
         else if(bloco==='principal-acumulado') atualizarPainelPrincipalCriterios('acumulado');
         else {
           const destino = document.querySelector(`.bloco-atualizacao[data-atualizacao="${Number(bloco)}"] table.tabela-atualizacao`);
-          if(destino) renderizarIndicesEmTabela(destino, bloco);
+          if(destino) preservarFocoDosCriterios(() => renderizarIndicesEmTabela(destino, bloco));
         }
       };
+      rascunhosCriteriosInline.set(bloco, novo);
       const invalida=(mensagem)=>{
-        rascunhosCriteriosInline.set(bloco,criteriosComplementaresNormalizados(novo));
+        if (rascunhosCriteriosInline.get(bloco) !== novo) return;
         atualizarControles();
         const target=document.querySelector(`[data-criterios-erro="${bloco}"]`);
         if(target) target.textContent=mensagem;
       };
       try { await resolverIndicesCriterios(novo); }catch(e) { invalida(e.message||String(e)); return; }
+      if (rascunhosCriteriosInline.get(bloco) !== novo) return;
       el.style.borderColor='';
       const eventoAplicar=async()=>{
+        if (rascunhosCriteriosInline.get(bloco) !== novo) return;
         rascunhosCriteriosInline.delete(bloco);
         Object.assign(antes,novo);
         if(bloco==='principal-simples'){
@@ -4866,12 +4892,14 @@
           atualizarPainelPrincipalCriterios('simples');
         }else if(bloco==='principal-acumulado'){
           aplicarCriteriosAcumuladoPrincipal();
-          document.getElementById('tbodyConsolidacaoAcumulado').innerHTML=montarHtmlConsolidacaoAcumulado();
-          bindCamposConsolidacaoAcumulado();
-          renderizarTcfaAcumulado();
+          preservarFocoDosCriterios(() => {
+            document.getElementById('tbodyConsolidacaoAcumulado').innerHTML=montarHtmlConsolidacaoAcumulado();
+            bindCamposConsolidacaoAcumulado();
+            renderizarTcfaAcumulado();
+            atualizarPainelPrincipalCriterios('acumulado');
+          });
           marcarMemoriaPDFAlterada();
           if(existemConsolidacoesPosteriores(-1))await reprocessarFuturasEmSequencia(-1);
-          atualizarPainelPrincipalCriterios('acumulado');
         }else{
           const idx=Number(bloco),d=simulacoesAdicionais[idx];
           if(!d)return;
@@ -4904,14 +4932,14 @@
             salvarAtualizacaoAlterada(idx,atualizado,true);
           }
           await reprocessarFuturasEmSequencia(idx);
-          renderizarAtualizacoes();
+          preservarFocoDosCriterios(renderizarAtualizacoes);
         }
       };
       if(bloco!=='principal-simples'&&bloco!=='principal-acumulado'){
         const idx=Number(bloco);
         executarEdicaoEmConsolidacaoAnterior(idx,JSON.stringify(novo)!==JSON.stringify(anterior),eventoAplicar,()=>{
           rascunhosCriteriosInline.delete(bloco);
-          renderizarAtualizacoes();
+          preservarFocoDosCriterios(renderizarAtualizacoes);
         });
       }else if(existemConsolidacoesPosteriores(-1)){
         if(await solicitarAlteracaoDeDadosAnteriores(-1))await eventoAplicar();
@@ -4923,19 +4951,20 @@
     }
     function inicializarCriteriosComplementaresUI() {
       atualizarPainelPrincipalCriterios('simples');atualizarPainelPrincipalCriterios('acumulado');
-      document.addEventListener('change',event=>{
-        const el=event.target;
-        if(!el?.dataset?.criterioCampo)return;
-        el.dataset.criterioUltimoEnvio=String(el.type==='checkbox'?el.checked:el.value);
-        alterarCriteriosComplementares(event);
-      });
-      document.addEventListener('focusout',event=>{
-        const el=event.target;
-        if(!el?.dataset?.criterioCampo || el.type!=='text')return;
-        const atual=String(el.value||'');
-        if(el.dataset.criterioUltimoEnvio===atual)return;
-        el.dataset.criterioUltimoEnvio=atual;
-        alterarCriteriosComplementares({target:el});
+      const enviarEdicao = el => {
+        if (!el?.dataset?.criterioCampo) return;
+        const valor = String(el.type === 'checkbox' ? el.checked : el.value);
+        if (el.type === 'text' && el.dataset.criterioUltimoEnvio === valor) return;
+        el.dataset.criterioUltimoEnvio = valor;
+        if (el.type === 'text') {
+          setTimeout(() => alterarCriteriosComplementares({target:el}), 0);
+        } else {
+          alterarCriteriosComplementares({target:el});
+        }
+      };
+      document.addEventListener('change', event => enviarEdicao(event.target));
+      document.addEventListener('focusout', event => {
+        if (event.target.type === 'text') enviarEdicao(event.target);
       });
       // Um período sem índices ou inválido não pode produzir PDF baseado em cálculo desatualizado.
       document.addEventListener('click',event=>{
