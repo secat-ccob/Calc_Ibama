@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_91 -->
+  <!-- Versão: simulador_consolidacao_debito_v_92 -->
 
   <style>
     :root {
@@ -1462,11 +1462,17 @@
     }
     .acoes-confirmacao-consolidacao .btn { min-width: 100px; }
     /* Critérios judiciais opcionais: controles nas próprias rubricas da consolidação. */
-    /* v91: critérios na coluna Percentual, no mesmo alinhamento da Multa. */
+    .tabela-consolidacao td.percentual.criterio-percentual-centralizado,
+    .tabela-atualizacao td.percentual.criterio-percentual-centralizado,
+    .grupo-correcao-linha.criterio-detalhe-correcao { text-align:center; justify-content:center; }
+    .grupo-correcao-linha.criterio-detalhe-correcao.rotulo-subcampo { justify-content:flex-start; }
+    td.valor .criterio-detalhe-correcao { justify-content:flex-end; }
+    .criterio-detalhe-correcao { min-height:28px !important; }
+    .criterio-percentual-original [hidden], td.criterio-percentual-centralizado [hidden] { display:none !important; }
+    .criterio-poupanca-rotulo { display:block; white-space:normal; }
+    .grupo-correcao-linha.criterio-detalhe-correcao .controle-encargo { min-height:0; padding:0; }
+    td.percentual .grupo-correcao-linha.criterio-detalhe-correcao { padding-block:1px; }
     .criterio-controle-na-tabela { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:4px 7px; width:100%; margin:0; font-size:11px; font-weight:normal; }
-    .criterio-controle-na-tabela .criterio-data-label { display:inline-flex; align-items:center; gap:3px; font-size:11px; white-space:nowrap; }
-    .criterio-controle-na-tabela .criterio-data-label input { width:91px; box-sizing:border-box; border:1px solid #b6c9c0; border-radius:3px; padding:3px 4px; text-align:center; background:#fff; font-size:11px; }
-    .criterio-controle-na-tabela .criterio-data-label input[readonly] { background:#ececec; }
     .criterio-controle-na-tabela .opcao-encargo { display:inline-flex; align-items:center; gap:3px; margin:0; white-space:nowrap; font-size:11px; cursor:pointer; }
     .criterio-controle-na-tabela .opcao-encargo input { margin:0 2px 0 0; }
     .criterio-controle-na-tabela .criterio-pct-calculado { width:74px; padding:3px 4px; text-align:center; border:1px solid #b6c9c0; border-radius:3px; font-size:11px; }
@@ -3504,6 +3510,7 @@
         setPercentual('acumPercentualSapiens', saldoParcial !== 0 ? (sapiens / saldoParcial) * 100 : 0);
       }
       setValor('acumCorrecaoMonetaria', correcao);
+      atualizarValoresIndicesCorrecao(document.getElementById('acumCorrecaoMonetaria')?.closest('table'), criteriosPrincipalAcumulado, saldoParcial, correcao, dadosTcfaAcumulado.rows);
       setValor('acumSaldoAtualizado', saldoAtualizado);
       setValor('acumValorMulta', multa);
       setValor('acumValorJuros', juros);
@@ -4405,6 +4412,7 @@
     /* Índices históricos judiciais opcionais; usados somente quando ativados. */
     function novosCriteriosComplementares() {
       return {
+        ufir: { inicio:'', fim:'', manual:0, automatico:0 },
         ipca: { modo:'sicafi', inicio:'', fim:'', sicafi:0, manual:0, automatico:0 },
         poupanca: { ativa:false, modo:'automatico', inicio:'', fim:'', manual:0, automatico:0 },
         selic: { metodo:'usual', inicio:'', fim:'', exclusiva:0, previa:0, incorporarPoupanca:false }
@@ -4412,7 +4420,7 @@
     }
     function criteriosComplementaresNormalizados(valor) {
       const base = novosCriteriosComplementares(), v = valor || {};
-      for (const nome of ['ipca','poupanca','selic']) Object.assign(base[nome], v[nome] || {});
+      for (const nome of ['ufir','ipca','poupanca','selic']) Object.assign(base[nome], v[nome] || {});
       return base;
     }
     function criterioPorBloco(bloco) {
@@ -4426,7 +4434,19 @@
       if (!obj || !obj[grupo] || !Object.prototype.hasOwnProperty.call(obj[grupo], nome)) return;
       obj[grupo][nome] = valor;
     }
+    let tabelaUfirPromise;
     async function carregarTabelaJudicial(nome) {
+      if (nome === 'ufir') {
+        tabelaUfirPromise ||= fetch('../dados/ufir-historico.json', {cache:'no-store'})
+          .then(async resposta => {
+            if (!resposta.ok) throw new Error('UFIR automática requer dados/ufir-historico.json. Use Manual enquanto a série não estiver disponível.');
+            const tabela = await resposta.json();
+            if (!tabela.competencias) throw new Error('Tabela UFIR inválida.');
+            return tabela;
+          })
+          .catch(erro => { tabelaUfirPromise = null; throw erro; });
+        return tabelaUfirPromise;
+      }
       if (nome === 'ipca') {
         if (dadosIpcaJudicial) return dadosIpcaJudicial;
         if (!promessaIpcaJudicial) promessaIpcaJudicial = fetch('../dados/ipca-e-historico.json', {cache:'no-store'})
@@ -4451,14 +4471,14 @@
       const v=new Date(ano,mes-1+quantidade,1);
       return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0');
     }
-    function percentualIpcaEPeriodo(inicio,fim,tabela) {
+    function percentualIndicePeriodo(inicio, fim, tabela, nome) {
       const a=competenciaDataJudicial(inicio), b=competenciaDataJudicial(fim);
-      if (b<a) throw new Error('O fim do IPCA-E não pode preceder o início.');
+      if (b<a) throw new Error('O fim do período de '+nome+' não pode preceder o início.');
       const x=tabela.competencias[a]?.numero_indice, y=tabela.competencias[b]?.numero_indice;
-      if (!Number.isFinite(x)||!Number.isFinite(y)||x<=0) throw new Error('IPCA-E sem índices completos para '+a+' a '+b+'.');
+      if (!Number.isFinite(x)||!Number.isFinite(y)||x<=0||y<=0) throw new Error(nome+' sem índices completos para '+a+' a '+b+'.');
       let comp=a, contador=0;
       while(comp<=b && contador++<1800){
-        if (!Number.isFinite(tabela.competencias[comp]?.numero_indice)) throw new Error('IPCA-E: competência ausente '+comp+'.');
+        if (!Number.isFinite(tabela.competencias[comp]?.numero_indice)) throw new Error(nome+': competência ausente '+comp+'.');
         comp=somarMesesCompetencia(comp,1);
       }
       return (y/x-1)*100; // números-índice: competência final / inicial, sem rateio diário
@@ -4487,11 +4507,32 @@
       }
       return Math.round(soma*1e8)/1e8; // série mensal sem 1% adicional; conferir aplicação legal
     }
+    function taxaIndiceCorrecao(c, indice) {
+      const modo = c?.ipca?.modo;
+      return modo && modo !== 'sicafi' ? Number(c[indice]?.[modo] || 0) : 0;
+    }
     function percentualCorrecaoComplementar(c, original) {
-      const ipca=c?.ipca;
-      return ipca?.modo==='manual' ? Number(ipca.manual||0)
-          : ipca?.modo==='automatico' ? Number(ipca.automatico||0)
-          : Number(original||0);
+      if (!c?.ipca || c.ipca.modo === 'sicafi') return Number(original || 0);
+      const ufir = taxaIndiceCorrecao(c, 'ufir');
+      const ipca = taxaIndiceCorrecao(c, 'ipca');
+      return ufir + ipca + ufir * ipca / 100;
+    }
+    function valoresIndicesCorrecao(c, base, total, composicao) {
+      const taxa = taxaIndiceCorrecao(c, 'ufir') / 100;
+      const ufir = Array.isArray(composicao)
+        ? roundMoneyValue(composicao.reduce((soma, row) => {
+          const saldo = roundMoneyValue((row.saldo || 0) - (row.compensacaoRegular || 0) - (row.compensacaoManual || 0));
+          return soma + roundMoneyValue(saldo * taxa);
+        }, 0))
+        : roundMoneyValue(base * taxa);
+      return {ufir, ipca: roundMoneyValue(total - ufir)};
+    }
+    function atualizarValoresIndicesCorrecao(tabela, c, base, total, composicao) {
+      if (!tabela || !c?.ipca || c.ipca.modo === 'sicafi') return;
+      const valores = valoresIndicesCorrecao(c, base, total, composicao);
+      for (const el of tabela.querySelectorAll('[data-valor-indice-correcao]')) {
+        el.textContent = numeroParaMoeda(valores[el.dataset.valorIndiceCorrecao]);
+      }
     }
     function numeroPercentualJudicial4(p) {
       return Number(p||0).toLocaleString('pt-BR',{minimumFractionDigits:4,maximumFractionDigits:4})+'%';
@@ -4520,7 +4561,12 @@
       if (!config) return;
       const c = criteriosComplementaresNormalizados(config);
       const esc = v => escapeHtml(String(v ?? ''));
-      const campo = (nome, valor, rotulo, op = {}) => `<label class="criterio-data-label">${rotulo}<input type="text" data-criterio="${esc(bloco)}" data-criterio-campo="${nome}" value="${esc(valor)}" autocomplete="off" ${op.percentual ? 'inputmode="decimal"' : 'inputmode="numeric" maxlength="10" placeholder="00/00/0000"'} ${op.readonly ? 'readonly tabindex="-1"' : ''}></label>`;
+      const campo = (nome, valor, rotulo, readonly = false) => {
+        const id = 'criterio-'+bloco+'-'+nome;
+        return `<label class="texto-periodo" for="${esc(id)}">${rotulo}</label><input id="${esc(id)}" class="campo-data-encargo" type="text" data-criterio="${esc(bloco)}" data-criterio-campo="${nome}" value="${esc(valor)}" autocomplete="off" inputmode="numeric" maxlength="10" placeholder="00/00/0000" ${readonly ? 'readonly tabindex="-1"' : ''}>`;
+      };
+      const percentual = (nome, valor, manual) =>
+        `<input class="criterio-pct-calculado" type="text" aria-label="Percentual de ${nome}" ${manual ? `data-criterio="${esc(bloco)}" data-criterio-campo="${nome}.manual"` : 'readonly tabindex="-1"'} inputmode="decimal" value="${esc(numeroPercentualJudicial4(valor))}">`;
       const radio = (nome, valor, atual, rotulo) => `<label class="opcao-encargo"><input type="radio" name="criterio-${esc(bloco)}-${nome.replace('.', '-')}" data-criterio="${esc(bloco)}" data-criterio-campo="${nome}" value="${valor}" ${valor === atual ? 'checked' : ''}>${rotulo}</label>`;
       const check = (nome, marcado, rotulo) => `<label class="criterio-inline-marcar no-print"><input type="checkbox" data-criterio="${esc(bloco)}" data-criterio-campo="${nome}" ${marcado ? 'checked' : ''}>${rotulo}</label>`;
       const normal = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
@@ -4533,7 +4579,7 @@
         return rotulo && normal(rotulo.textContent).startsWith(normal(descricao));
       });
       const correcao = encontrar('(+)Correção Monetária');
-      const juros = encontrar('(+)Juros');
+      const juros = linhas.find(tr => normal(tr.querySelector('td.rotulo')?.textContent) === '(+)JUROS');
       let poupanca = encontrar('(+)Juros da Poupança');
       const selic = encontrar('(+)SELIC');
       let baseSelic = encontrar('(=)Base para a SELIC');
@@ -4545,56 +4591,97 @@
         return d;
       };
 
-      // Correção Monetária: mesmo padrão de datas e modos da Multa, na coluna
-      // Percentual da própria linha principal, sem linha auxiliar.
-      const celulaPctCorrecao = correcao.querySelector('td.percentual');
-      const destinoCorrecao = celulaPctCorrecao?.querySelector('.grupo-correcao-linha:not(.subcampo)') || celulaPctCorrecao;
-      if (destinoCorrecao) {
-        const datas = campo('ipca.inicio',c.ipca.inicio,'De:',{readonly:c.ipca.modo==='sicafi'})+
-          campo('ipca.fim',c.ipca.fim,'até',{readonly:c.ipca.modo==='sicafi'});
-        const percentual = c.ipca.modo === 'manual' ? c.ipca.manual
-          : c.ipca.modo === 'automatico' ? c.ipca.automatico : c.ipca.sicafi;
-        const mostrarPct = `<input class="criterio-pct-calculado" type="text" aria-label="Percentual da correção monetária" ${c.ipca.modo==='manual' ? `data-criterio="${esc(bloco)}" data-criterio-campo="ipca.manual"` : 'readonly tabindex="-1"'} inputmode="decimal" value="${esc(numeroPercentualJudicial4(percentual))}">`;
-        destinoCorrecao.appendChild(montar(
-          datas + radio('ipca.modo','automatico',c.ipca.modo,'Automático')+
-          radio('ipca.modo','sicafi',c.ipca.modo,'SICAFI')+
-          radio('ipca.modo','manual',c.ipca.modo,'Manual')+mostrarPct
-        ));
+      const celulas = Array.from(correcao.cells);
+      for (const celula of celulas) {
+        if (celula.querySelector('.grupo-correcao')) continue;
+        const grupo = document.createElement('div');
+        grupo.className = 'grupo-correcao';
+        const cabecalho = document.createElement('div');
+        cabecalho.className = 'grupo-correcao-linha';
+        const total = document.createElement('div');
+        total.className = 'grupo-correcao-linha subcampo';
+        if (celula.classList.contains('rotulo')) {
+          cabecalho.textContent = celula.textContent.trim();
+          celula.textContent = '';
+          total.classList.add('rotulo-subcampo');
+          total.textContent = '(+)Valor da Correção Monetária';
+        } else {
+          const destino = celula.classList.contains('valor') ? total : cabecalho;
+          while (celula.firstChild) destino.appendChild(celula.firstChild);
+        }
+        grupo.append(cabecalho, total);
+        celula.classList.add('celula-correcao-agrupada');
+        celula.appendChild(grupo);
       }
+      const [descricao, colunaPercentual, valores] = celulas.map(td => td.querySelector('.grupo-correcao'));
+      const percentualOriginal = colunaPercentual.children[1];
+      percentualOriginal.classList.add('criterio-percentual-original');
+      for (const el of percentualOriginal.children) el.hidden = true;
+      // O percentual global do SICAFI continua disponível para o cálculo interno.
+      for (const node of percentualOriginal.childNodes) {
+        if (node.nodeType === Node.TEXT_NODE) node.textContent = '';
+      }
+      colunaPercentual.firstElementChild.replaceChildren(montar(
+        radio('ipca.modo','automatico',c.ipca.modo,'Automático')+
+        radio('ipca.modo','sicafi',c.ipca.modo,'SICAFI')+
+        radio('ipca.modo','manual',c.ipca.modo,'Manual')
+      ));
+      const sicafi = c.ipca.modo === 'sicafi';
+      for (const [indice, rotulo] of [['ipca','IPCA-E'], ['ufir','UFIR']]) {
+        const dados = c[indice];
+        const linha = (grupo, classe = '') => {
+          const el = document.createElement('div');
+          el.className = 'grupo-correcao-linha subcampo criterio-detalhe-correcao criterio-gerado-inline '+classe;
+          grupo.firstElementChild.after(el);
+          return el;
+        };
+        linha(descricao, 'rotulo-subcampo').textContent = '(+)'+rotulo;
+        const pct = linha(colunaPercentual);
+        pct.appendChild(montar(campo(indice+'.inicio', sicafi ? '' : dados.inicio, 'De:', sicafi)+
+          campo(indice+'.fim', sicafi ? '' : dados.fim, 'até', sicafi)+
+          (sicafi ? '<span>–</span>' : percentual(indice, taxaIndiceCorrecao(c, indice), c.ipca.modo === 'manual'))));
+        const valor = linha(valores);
+        valor.dataset.valorIndiceCorrecao = indice;
+        valor.textContent = '–';
+      }
+      const aplicado = criterioPorBloco(bloco);
+      const estadoAcumulado = bloco === 'principal-acumulado' ? dadosTcfaAcumulado : simulacoesAdicionais[Number(bloco)];
+      const linhaValor = rotulo => estadoAcumulado?.linhas?.find(item => normal(item.descricao) === normal(rotulo))?.valor;
+      if (!sicafi) atualizarValoresIndicesCorrecao(tabela, aplicado,
+        moedaParaNumero(bloco === 'principal-simples' ? valorCampo('saldoParcial') : linhaValor('(=)Saldo Parcial') || '0,00'),
+        moedaParaNumero(bloco === 'principal-simples' ? valorCampo('correcaoMonetaria') :
+          bloco === 'principal-acumulado' ? valorCampo('acumCorrecaoMonetaria') : linhaValor('(+)Correção Monetária') || '0,00'),
+        estadoAcumulado?.rows || estadoAcumulado?.composicao);
 
-      // A opção de poupança permanece na rubrica Juros; as datas e o modo da
-      // poupança são preenchidos AQUI, sem uma segunda linha de configuração.
-      const rotuloJuros = juros.querySelector('td.rotulo');
-      const incluir = document.createElement('span');
-      incluir.className='criterio-gerado-inline';
-      incluir.innerHTML=check('poupanca.ativa',c.poupanca.ativa,'Incluir juros da poupança');
-      rotuloJuros?.appendChild(incluir);
+      if (!poupanca) {
+        poupanca = document.createElement('tr');
+        poupanca.className = 'linha-comum criterio-gerado-inline';
+        poupanca.innerHTML = '<td class="rotulo">(+)Juros da Poupança</td><td class="percentual"></td><td class="valor valor-nao-editavel">–</td>';
+        juros.insertAdjacentElement('afterend', poupanca);
+      }
+      poupanca.style.display = 'table-row';
+      const rotuloPoupanca = poupanca.querySelector('td.rotulo');
+      const opcoesPoupanca = document.createElement('div');
+      opcoesPoupanca.className = 'criterio-poupanca-rotulo criterio-gerado-inline';
+      opcoesPoupanca.innerHTML = check('poupanca.ativa',c.poupanca.ativa,'Incluir juros da poupança');
+      rotuloPoupanca.appendChild(opcoesPoupanca);
+      const pctPoupanca = poupanca.querySelector('td.percentual');
+      pctPoupanca.classList.add('criterio-percentual-centralizado');
+      // Mantém o campo interno da tabela simples para os cálculos e o PDF.
+      for (const filho of pctPoupanca.children) filho.hidden = true;
+      for (const node of pctPoupanca.childNodes) {
+        if (node.nodeType === Node.TEXT_NODE) node.textContent = '';
+      }
       if (c.poupanca.ativa) {
-        const pctJuros = juros.querySelector('td.percentual');
-        if (pctJuros) {
-          const modoManual = c.poupanca.modo==='manual';
-          const html = campo('poupanca.inicio',c.poupanca.inicio,'De:')+
-            campo('poupanca.fim',c.poupanca.fim,'até')+
-            radio('poupanca.modo','automatico',c.poupanca.modo,'Automático')+
-            radio('poupanca.modo','manual',c.poupanca.modo,'Manual')+
-            `<input class="criterio-pct-calculado" type="text" aria-label="Percentual dos juros da poupança" ${modoManual ? `data-criterio="${esc(bloco)}" data-criterio-campo="poupanca.manual"` : 'readonly tabindex="-1"'} inputmode="decimal" value="${esc(numeroPercentualJudicial4(criterioLinhaValor(c)))}">`;
-          pctJuros.appendChild(montar(html));
-        }
-        // A rubrica Juros da Poupança SEMPRE mostra seu resultado monetário.
-        // Antes da conclusão do período, exibir zero, nunca uma linha verde.
-        if (!poupanca) {
-          const tr = document.createElement('tr');
-          tr.className='linha-comum criterio-gerado-inline';
-          tr.innerHTML='<td class="rotulo">(+)Juros da Poupança</td><td class="percentual percentual-texto">0,00%</td><td class="valor valor-nao-editavel"><input class="campo-simulado-nao-editavel" value="0,00" readonly tabindex="-1"></td>';
-          juros.insertAdjacentElement('afterend',tr);
-          poupanca=tr;
-        }
-        // O comando de incorporação está próximo dos juros, mas a linha-base
-        // só é exibida QUANDO o usuário efetivamente a selecionar.
-        const incluirNaBase=document.createElement('span');
-        incluirNaBase.className='criterio-gerado-inline';
-        incluirNaBase.innerHTML=check('selic.incorporarPoupanca',c.selic.incorporarPoupanca,'Incorporar juros da poupança à base da SELIC');
-        rotuloJuros?.appendChild(incluirNaBase);
+        pctPoupanca.appendChild(montar(campo('poupanca.inicio',c.poupanca.inicio,'De:')+
+          campo('poupanca.fim',c.poupanca.fim,'até')+
+          radio('poupanca.modo','automatico',c.poupanca.modo,'Automático')+
+          radio('poupanca.modo','manual',c.poupanca.modo,'Manual')+
+          percentual('poupanca', criterioLinhaValor(c), c.poupanca.modo === 'manual')));
+        const incluirNaBase = document.createElement('div');
+        incluirNaBase.className = 'criterio-gerado-inline';
+        incluirNaBase.innerHTML = check('selic.incorporarPoupanca',c.selic.incorporarPoupanca,'Incorporar juros da poupança à base da SELIC');
+        rotuloPoupanca.appendChild(incluirNaBase);
         if (c.selic.incorporarPoupanca && !baseSelic) {
           const tr=document.createElement('tr');
           tr.className='linha-destaque criterio-gerado-inline';
@@ -4602,9 +4689,6 @@
           selic.insertAdjacentElement('beforebegin',tr);
           baseSelic=tr;
         }
-      }
-      if (poupanca?.id === 'linhaJurosPoupancaPrincipal') {
-        poupanca.style.display = c.poupanca.ativa ? 'table-row' : 'none';
       }
       if (baseSelic?.id === 'linhaBaseSelicPrincipal') {
         baseSelic.style.display = c.poupanca.ativa && c.selic.incorporarPoupanca ? 'table-row' : 'none';
@@ -4639,9 +4723,22 @@
         if(c.poupanca.ativa && c.poupanca.fim && parseDataPtBr(c.poupanca.fim) && compararDatasPtBr(c.poupanca.fim,c.selic.inicio)>=0)
           throw new Error('O período dos juros da poupança coincide com a SELIC exclusiva. Ajuste as datas para evitar duplicidade.');
       }
-      if(c.ipca.modo==='automatico') {
-        const t=await carregarTabelaJudicial('ipca');
-        c.ipca.automatico=percentualIpcaEPeriodo(c.ipca.inicio,c.ipca.fim,t);
+      if (c.ipca.modo === 'automatico') {
+        if (![c.ufir, c.ipca].some(indice => indice.inicio || indice.fim)) {
+          throw new Error('Informe o período da UFIR ou do IPCA-E.');
+        }
+        if (c.ufir.fim && c.ipca.inicio && parseDataPtBr(c.ufir.fim) &&
+            parseDataPtBr(c.ipca.inicio) && compararDatasPtBr(c.ufir.fim, c.ipca.inicio) > 0) {
+          throw new Error('O período da UFIR deve terminar até o início do IPCA-E.');
+        }
+        for (const [indice, nome] of [['ufir','UFIR'], ['ipca','IPCA-E']]) {
+          const dados = c[indice];
+          if (dados.inicio || dados.fim) {
+            competenciaDataJudicial(dados.inicio);
+            competenciaDataJudicial(dados.fim);
+            dados.automatico = percentualIndicePeriodo(dados.inicio, dados.fim, await carregarTabelaJudicial(indice), nome);
+          } else dados.automatico = 0;
+        }
       }
       if(c.poupanca.ativa && c.poupanca.modo==='automatico') {
         const t=await carregarTabelaJudicial('poupanca');
@@ -4707,6 +4804,7 @@
       const antes=criterioPorBloco(bloco);if(!antes)return;
       const novo=criteriosComplementaresNormalizados(rascunhosCriteriosInline.get(bloco) || antes);
       const anterior=JSON.parse(JSON.stringify(antes));
+      if (/\.(inicio|fim)$/.test(campo) && el.value.trim() && !ensureInputDate(el)) return;
       const val=el.type==='checkbox'?el.checked:campo.endsWith('.manual')?parseNumeroFlexivel(el.value):String(el.value||'').trim();
       mudarCriterio(novo,campo,val);
       const atualizarControles = () => {
@@ -4759,6 +4857,12 @@
           d.criteriosComplementares=criteriosComplementaresNormalizados(novo);
           if(d.tipoDebito!=='TCFA_ACUMULADO'){
             let campos=dadosSimplesParaCampos(d);
+            if (anterior.ipca.modo === 'sicafi' && novo.ipca.modo !== 'sicafi') {
+              d.criteriosComplementares.ipca.sicafi = campos.percentualCorrecaoMonetaria;
+            } else if (anterior.ipca.modo !== 'sicafi' && novo.ipca.modo === 'sicafi') {
+              campos.percentualCorrecaoMonetaria = anterior.ipca.sicafi;
+              campos.modoCorrecaoMonetaria = 'percentual';
+            }
             campos.criteriosComplementares=d.criteriosComplementares;
             const atualizado=dadosPdfDeCamposSimples(campos);
             copiarMetadadosAtualizacao(d,atualizado);
@@ -4878,6 +4982,7 @@
       // para futuras alterações do Saldo Parcial.
       modoCorrecaoMonetaria = 'percentual';
 
+      atualizarValoresIndicesCorrecao(document.getElementById('correcaoMonetaria')?.closest('table'), criteriosPrincipalSimples, saldoParcial, correcaoMonetaria);
       const saldoAmortizacaoCorrecaoMonetaria = roundMoneyValue(correcaoMonetaria - amortizacaoCorrecaoMonetariaSapiensDivida);
       setValor('saldoAmortizacaoCorrecaoMonetaria', saldoAmortizacaoCorrecaoMonetaria);
 
@@ -4916,9 +5021,7 @@
       setPercentual('percentualJurosPoupancaPrincipal', criterio?.poupanca?.ativa ? criterioLinhaValor(criterio) : 0);
       setValor('valorJurosPoupancaPrincipal', jurosPoupanca);
       setValor('baseSelicPrincipal', baseSelic);
-      const linhaJurosPoupanca = document.getElementById('linhaJurosPoupancaPrincipal');
       const linhaBaseSelic = document.getElementById('linhaBaseSelicPrincipal');
-      if (linhaJurosPoupanca) linhaJurosPoupanca.style.display = criterio?.poupanca?.ativa ? 'table-row' : 'none';
       if (linhaBaseSelic) linhaBaseSelic.style.display = criterio?.poupanca?.ativa && criterio?.selic?.incorporarPoupanca ? 'table-row' : 'none';
       setValor('totalParcial', totalParcial);
       setValor('valorEncargos', valorEncargos);
@@ -8064,7 +8167,7 @@
               [5, 'Regular'],
               [6, 'Manual'],
               [7, '%'],
-              [8, 'Valor\nIPCA'],
+              [8, 'Valor\nCorr.'],
               [9, 'Saldo\nAtual.'],
               [10, '%'],
               [11, 'Valor'],
@@ -8132,16 +8235,21 @@
         y -= alturaLinha;
 
         function desenharCorrecaoMonetariaAgrupadaPDF(linhaCorrecao, linhaAmortizacao, linhaSaldo) {
-          const alturaGrupo = 56;
+          const alturaGrupo = linhaAmortizacao && linhaSaldo ? 78 : 57;
+          const criterios = dadosItem.criteriosComplementares;
+          const discriminada = criterios?.ipca && criterios.ipca.modo !== 'sicafi';
+          const valores = discriminada ? valoresIndicesCorrecao(criterios,
+            valorNumeroLinha(dadosItem, '(=)Saldo Parcial'),
+            moedaParaNumero(linhaCorrecao.valor), dadosItem.composicao) : null;
           const cinzaGrupo = '0.97';
           const xDescricao = x0;
           const xPercentual = x0 + colunas[0];
           const xValor = xPercentual + colunas[1];
           const margemSubcampo = 6;
           const yTitulo = y - 11;
-          const ySubcampo1 = y - 22;
-          const ySubcampo2 = y - 33;
-          const ySaldoBase = y - 47;
+          const ySubcampo1 = y - 44;
+          const ySubcampo2 = y - 55;
+          const ySaldoBase = y - 69;
 
           garantirEspaco(alturaGrupo);
 
@@ -8152,19 +8260,24 @@
 
           addText('(+)Correção Monetária', xDescricao + 5, yTitulo, 8, 'left', colunas[0] - 10, true);
 
-          // Subcampo: (+)Valor da Correção Monetária, sem espaçamento extra após o rótulo principal.
+          [['ufir','UFIR'], ['ipca','IPCA-E']].forEach(([indice, nome], i) => {
+            const yIndice = y - 22 - 11 * i;
+            const {inicio, fim} = criterios?.[indice] || {};
+            const taxa = numeroPercentualJudicial4(taxaIndiceCorrecao(criterios, indice));
+            const texto = !discriminada ? '-' : inicio && fim ? `De: ${inicio} até ${fim}: ${taxa}` : taxa;
+            addText('(+)'+nome, xDescricao + 10, yIndice, 7, 'left', colunas[0] - 20, false);
+            addText(texto, xPercentual + 5, yIndice, 7.4, 'center', colunas[1] - 10, false);
+            addText(discriminada ? numeroParaMoeda(valores[indice]) : '-', xValor + 5, yIndice, 7.4, 'right', colunas[2] - 10, false);
+          });
           addText('(+)Valor da Correção Monetária', xDescricao + margemSubcampo + 4, ySubcampo1, 7, 'left', colunas[0] - ((margemSubcampo * 2) + 8), false);
-          addText(linhaCorrecao?.percentual || '-', xPercentual + margemSubcampo + 4, ySubcampo1, 7.4, 'center', colunas[1] - ((margemSubcampo * 2) + 8), false);
           addText(linhaCorrecao?.valor || '0,00', xValor + 5, ySubcampo1, 7.4, 'right', colunas[2] - 10, false);
 
-          // Subcampo: amortização da correção monetária, imediatamente abaixo do anterior.
-          addText(linhaAmortizacao?.descricao || '(-)Amortização da Correção Monetária', xDescricao + margemSubcampo + 4, ySubcampo2, 6.6, 'left', colunas[0] - ((margemSubcampo * 2) + 8), false);
-          addText('-', xPercentual + margemSubcampo + 4, ySubcampo2, 7.4, 'center', colunas[1] - ((margemSubcampo * 2) + 8), false);
-          addText(linhaAmortizacao?.valor || '0,00', xValor + 5, ySubcampo2, 7.4, 'right', colunas[2] - 10, false);
-
-          // O saldo líquido fica fora dos subcampos, como valor efetivamente contabilizado pelo campo.
-          // A coluna de percentual permanece vazia nesta linha de resultado.
-          addText(linhaSaldo?.valor || '0,00', xValor + 5, ySaldoBase, 8, 'right', colunas[2] - 10, true);
+          if (linhaAmortizacao && linhaSaldo) {
+            addText(linhaAmortizacao?.descricao || '(-)Amortização da Correção Monetária', xDescricao + margemSubcampo + 4, ySubcampo2, 6.6, 'left', colunas[0] - ((margemSubcampo * 2) + 8), false);
+            addText('-', xPercentual + margemSubcampo + 4, ySubcampo2, 7.4, 'center', colunas[1] - ((margemSubcampo * 2) + 8), false);
+            addText(linhaAmortizacao?.valor || '0,00', xValor + 5, ySubcampo2, 7.4, 'right', colunas[2] - 10, false);
+            addText(linhaSaldo.valor, xValor + 5, ySaldoBase, 8, 'right', colunas[2] - 10, true);
+          }
 
           y -= alturaGrupo;
         }
@@ -8174,7 +8287,7 @@
           const linha = linhasPdf[indiceLinha];
           const descricaoNormalizada = normalizarTextoBusca(linha?.descricao || '');
 
-          if (dadosItem.tipoDebito !== 'TCFA_ACUMULADO' && descricaoNormalizada === normalizarTextoBusca('(+)Correção Monetária')) {
+          if (descricaoNormalizada === normalizarTextoBusca('(+)Correção Monetária')) {
             const linhaAmortizacao = linhasPdf[indiceLinha + 1];
             const linhaSaldo = linhasPdf[indiceLinha + 2];
             const ehAmortizacao = normalizarTextoBusca(linhaAmortizacao?.descricao || '').includes(normalizarTextoBusca('Amortização da Correção Monetária'));
@@ -8183,8 +8296,8 @@
             if (ehAmortizacao && ehSaldo) {
               desenharCorrecaoMonetariaAgrupadaPDF(linha, linhaAmortizacao, linhaSaldo);
               indiceLinha += 2;
-              continue;
-            }
+            } else desenharCorrecaoMonetariaAgrupadaPDF(linha);
+            continue;
           }
 
           garantirEspaco(alturaLinha);
