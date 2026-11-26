@@ -6,7 +6,7 @@
   <title>Simulador de consolidação - CALC-IBAMA</title>
   <link rel="icon" type="image/png" href="/Calc_Ibama/assets/img/favicon.png">
 
-  <!-- Versão: simulador_consolidacao_debito_v_90 -->
+  <!-- Versão: simulador_consolidacao_debito_v_91 -->
 
   <style>
     :root {
@@ -1462,6 +1462,19 @@
     }
     .acoes-confirmacao-consolidacao .btn { min-width: 100px; }
     /* Critérios judiciais opcionais: controles nas próprias rubricas da consolidação. */
+    /* v91: critérios na coluna Percentual, no mesmo alinhamento da Multa. */
+    .criterio-controle-na-tabela { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:4px 7px; width:100%; margin:0; font-size:11px; font-weight:normal; }
+    .criterio-controle-na-tabela .criterio-data-label { display:inline-flex; align-items:center; gap:3px; font-size:11px; white-space:nowrap; }
+    .criterio-controle-na-tabela .criterio-data-label input { width:91px; box-sizing:border-box; border:1px solid #b6c9c0; border-radius:3px; padding:3px 4px; text-align:center; background:#fff; font-size:11px; }
+    .criterio-controle-na-tabela .criterio-data-label input[readonly] { background:#ececec; }
+    .criterio-controle-na-tabela .opcao-encargo { display:inline-flex; align-items:center; gap:3px; margin:0; white-space:nowrap; font-size:11px; cursor:pointer; }
+    .criterio-controle-na-tabela .opcao-encargo input { margin:0 2px 0 0; }
+    .criterio-controle-na-tabela .criterio-pct-calculado { width:74px; padding:3px 4px; text-align:center; border:1px solid #b6c9c0; border-radius:3px; font-size:11px; }
+    .criterio-controle-na-tabela .criterio-pct-calculado[readonly] { background:#eee; }
+    .tabela-consolidacao td.percentual .criterio-controle-na-tabela { text-align:center; }
+    .criterio-inline-marcar { margin-left:7px; }
+    .criterio-inline-marcar input { vertical-align:middle; }
+    .tabela-consolidacao .grupo-correcao-linha:not(.subcampo) .criterio-controle-na-tabela { min-height:24px; }
     .criterio-inline-seletor { display: inline-flex; align-items: center; gap: 5px; margin-left: 10px; vertical-align: middle; font-size: 11px; font-weight: normal; }
     .criterio-inline-seletor select, .criterio-linha-aux select { border: 1px solid #b6c9c0; border-radius: 3px; background: #fff; color: #1f2933; padding: 4px 5px; font-size: 11px; max-width: 100%; }
     .criterio-inline-seletor select { max-width: 165px; }
@@ -4507,86 +4520,101 @@
       if (!config) return;
       const c = criteriosComplementaresNormalizados(config);
       const esc = v => escapeHtml(String(v ?? ''));
-      const opt = (v, atual, legenda) => `<option value="${v}" ${v === atual ? 'selected' : ''}>${legenda}</option>`;
-      const seletor = (campo, atual, lista, titulo) => `<label class="criterio-inline-seletor no-print">${titulo}<select data-criterio="${esc(bloco)}" data-criterio-campo="${campo}" aria-label="${esc(titulo)}">${lista.map(x => opt(x[0], atual, x[1])).join('')}</select></label>`;
-      const campo = (nome, valor, rotulo, percentual = false) => `<label>${rotulo}<input type="text" data-criterio="${esc(bloco)}" data-criterio-campo="${nome}" value="${esc(valor)}" autocomplete="off" ${percentual ? 'inputmode="decimal"' : 'inputmode="numeric" maxlength="10" placeholder="DD/MM/AAAA"'}></label>`;
-      const check = (nome, marcado, rotulo, classe = 'criterio-inline-marcar') => `<label class="${classe} no-print"><input type="checkbox" data-criterio="${esc(bloco)}" data-criterio-campo="${nome}" ${marcado ? 'checked' : ''}>${rotulo}</label>`;
-      const linhas = Array.from(tabela.tBodies[0].rows);
+      const campo = (nome, valor, rotulo, op = {}) => `<label class="criterio-data-label">${rotulo}<input type="text" data-criterio="${esc(bloco)}" data-criterio-campo="${nome}" value="${esc(valor)}" autocomplete="off" ${op.percentual ? 'inputmode="decimal"' : 'inputmode="numeric" maxlength="10" placeholder="00/00/0000"'} ${op.readonly ? 'readonly tabindex="-1"' : ''}></label>`;
+      const radio = (nome, valor, atual, rotulo) => `<label class="opcao-encargo"><input type="radio" name="criterio-${esc(bloco)}-${nome.replace('.', '-')}" data-criterio="${esc(bloco)}" data-criterio-campo="${nome}" value="${valor}" ${valor === atual ? 'checked' : ''}>${rotulo}</label>`;
+      const check = (nome, marcado, rotulo) => `<label class="criterio-inline-marcar no-print"><input type="checkbox" data-criterio="${esc(bloco)}" data-criterio-campo="${nome}" ${marcado ? 'checked' : ''}>${rotulo}</label>`;
       const normal = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/\s+/g, ' ').trim();
+      // Remover os controles gerados ANTES de localizar as linhas evita encontrar
+      // rótulos repetidos dentro dos próprios controles ao redesenhar a tabela.
+      tabela.querySelectorAll('.criterio-gerado-inline').forEach(el => el.remove());
+      const linhas = Array.from(tabela.tBodies[0].rows);
       const encontrar = descricao => linhas.find(tr => {
         const rotulo = tr.querySelector('td.rotulo');
         return rotulo && normal(rotulo.textContent).startsWith(normal(descricao));
       });
       const correcao = encontrar('(+)Correção Monetária');
       const juros = encontrar('(+)Juros');
-      const poupanca = encontrar('(+)Juros da Poupança');
+      let poupanca = encontrar('(+)Juros da Poupança');
       const selic = encontrar('(+)SELIC');
+      let baseSelic = encontrar('(=)Base para a SELIC');
       if (!correcao || !juros || !selic) return;
-
-      // Sem recriar valores ou campos monetários: remover somente controles inseridos por esta rotina.
-      tabela.querySelectorAll('.criterio-gerado-inline').forEach(el => el.remove());
-      const rotuloCorrecao = correcao.querySelector('td.rotulo .grupo-correcao-linha') || correcao.querySelector('td.rotulo');
-      const rotuloJuros = juros.querySelector('td.rotulo');
-      const rotuloSelic = selic.querySelector('td.rotulo');
-      const modoIpca = document.createElement('span');
-      modoIpca.className = 'criterio-gerado-inline';
-      modoIpca.innerHTML = seletor('ipca.modo', c.ipca.modo, [['sicafi','SICAFI'], ['automatico','Automático — IPCA-E'], ['manual','Manual']], 'Modo');
-      rotuloCorrecao.appendChild(modoIpca);
-
-      const ativarPoupanca = document.createElement('span');
-      ativarPoupanca.className = 'criterio-gerado-inline';
-      ativarPoupanca.innerHTML = check('poupanca.ativa', c.poupanca.ativa, 'Incluir juros da poupança');
-      rotuloJuros.appendChild(ativarPoupanca);
-
-      const modoSelic = document.createElement('span');
-      modoSelic.className = 'criterio-gerado-inline';
-      modoSelic.innerHTML = seletor('selic.metodo', c.selic.metodo, [['usual','Usual (SICAFI/Sicalc)'], ['exclusiva','Judicial exclusiva']], 'Método');
-      rotuloSelic.appendChild(modoSelic);
-
-      // Só aparecem campos adicionais junto à rubrica correspondente quando ela é habilitada.
-      const inserirDetalhes = (apos, titulo, html, nota='') => {
-        const tr = document.createElement('tr');
-        tr.className = 'criterio-linha-aux criterio-gerado-inline no-print';
-        tr.innerHTML = `<td class="rotulo">${titulo}</td><td class="percentual" colspan="2"><div class="criterio-campos-aux">${html}</div>${nota ? `<div class="criterio-nota-inline">${nota}</div>` : ''}</td>`;
-        apos.insertAdjacentElement('afterend', tr);
+      const montar = (html) => {
+        const d = document.createElement('div');
+        d.className = 'controle-encargo criterio-controle-na-tabela criterio-gerado-inline';
+        d.innerHTML = html;
+        return d;
       };
-      if (c.ipca.modo !== 'sicafi') {
-        inserirDetalhes(correcao, c.ipca.modo === 'automatico' ? 'Período do IPCA-E' : 'Correção monetária manual',
-          c.ipca.modo === 'automatico' ? campo('ipca.inicio', c.ipca.inicio, 'De') + campo('ipca.fim', c.ipca.fim, 'Até')
-            : campo('ipca.manual', numeroParaPercentual(c.ipca.manual), 'Percentual', true),
-          c.ipca.modo === 'automatico' ? 'IPCA-E calculado pelos números-índice das competências escolhidas.' : 'Percentual aplicado à correção monetária.');
+
+      // Correção Monetária: mesmo padrão de datas e modos da Multa, na coluna
+      // Percentual da própria linha principal, sem linha auxiliar.
+      const celulaPctCorrecao = correcao.querySelector('td.percentual');
+      const destinoCorrecao = celulaPctCorrecao?.querySelector('.grupo-correcao-linha:not(.subcampo)') || celulaPctCorrecao;
+      if (destinoCorrecao) {
+        const datas = campo('ipca.inicio',c.ipca.inicio,'De:',{readonly:c.ipca.modo==='sicafi'})+
+          campo('ipca.fim',c.ipca.fim,'até',{readonly:c.ipca.modo==='sicafi'});
+        const percentual = c.ipca.modo === 'manual' ? c.ipca.manual
+          : c.ipca.modo === 'automatico' ? c.ipca.automatico : c.ipca.sicafi;
+        const mostrarPct = `<input class="criterio-pct-calculado" type="text" aria-label="Percentual da correção monetária" ${c.ipca.modo==='manual' ? `data-criterio="${esc(bloco)}" data-criterio-campo="ipca.manual"` : 'readonly tabindex="-1"'} inputmode="decimal" value="${esc(numeroPercentualJudicial4(percentual))}">`;
+        destinoCorrecao.appendChild(montar(
+          datas + radio('ipca.modo','automatico',c.ipca.modo,'Automático')+
+          radio('ipca.modo','sicafi',c.ipca.modo,'SICAFI')+
+          radio('ipca.modo','manual',c.ipca.modo,'Manual')+mostrarPct
+        ));
       }
-      if (c.poupanca.ativa && !poupanca) {
-        // Antes de informar todo o período, o acréscimo não afeta o resultado.
-        // Os campos são exibidos no lugar que a futura linha ocupará.
-        inserirDetalhes(juros, '(+) Juros da Poupança',
-          seletor('poupanca.modo',c.poupanca.modo,[['automatico','Automático'],['manual','Manual']],'Modo') +
-          (c.poupanca.modo === 'manual' ? campo('poupanca.manual',numeroParaPercentual(c.poupanca.manual),'Percentual',true) : '') +
-          campo('poupanca.inicio',c.poupanca.inicio,'De') + campo('poupanca.fim',c.poupanca.fim,'Até'),
-          'Preencha o período para incluir o acréscimo no cálculo.');
+
+      // A opção de poupança permanece na rubrica Juros; as datas e o modo da
+      // poupança são preenchidos AQUI, sem uma segunda linha de configuração.
+      const rotuloJuros = juros.querySelector('td.rotulo');
+      const incluir = document.createElement('span');
+      incluir.className='criterio-gerado-inline';
+      incluir.innerHTML=check('poupanca.ativa',c.poupanca.ativa,'Incluir juros da poupança');
+      rotuloJuros?.appendChild(incluir);
+      if (c.poupanca.ativa) {
+        const pctJuros = juros.querySelector('td.percentual');
+        if (pctJuros) {
+          const modoManual = c.poupanca.modo==='manual';
+          const html = campo('poupanca.inicio',c.poupanca.inicio,'De:')+
+            campo('poupanca.fim',c.poupanca.fim,'até')+
+            radio('poupanca.modo','automatico',c.poupanca.modo,'Automático')+
+            radio('poupanca.modo','manual',c.poupanca.modo,'Manual')+
+            `<input class="criterio-pct-calculado" type="text" aria-label="Percentual dos juros da poupança" ${modoManual ? `data-criterio="${esc(bloco)}" data-criterio-campo="poupanca.manual"` : 'readonly tabindex="-1"'} inputmode="decimal" value="${esc(numeroPercentualJudicial4(criterioLinhaValor(c)))}">`;
+          pctJuros.appendChild(montar(html));
+        }
+        // A rubrica Juros da Poupança SEMPRE mostra seu resultado monetário.
+        // Antes da conclusão do período, exibir zero, nunca uma linha verde.
+        if (!poupanca) {
+          const tr = document.createElement('tr');
+          tr.className='linha-comum criterio-gerado-inline';
+          tr.innerHTML='<td class="rotulo">(+)Juros da Poupança</td><td class="percentual percentual-texto">0,00%</td><td class="valor valor-nao-editavel"><input class="campo-simulado-nao-editavel" value="0,00" readonly tabindex="-1"></td>';
+          juros.insertAdjacentElement('afterend',tr);
+          poupanca=tr;
+        }
+        // O comando de incorporação está próximo dos juros, mas a linha-base
+        // só é exibida QUANDO o usuário efetivamente a selecionar.
+        const incluirNaBase=document.createElement('span');
+        incluirNaBase.className='criterio-gerado-inline';
+        incluirNaBase.innerHTML=check('selic.incorporarPoupanca',c.selic.incorporarPoupanca,'Incorporar juros da poupança à base da SELIC');
+        rotuloJuros?.appendChild(incluirNaBase);
+        if (c.selic.incorporarPoupanca && !baseSelic) {
+          const tr=document.createElement('tr');
+          tr.className='linha-destaque criterio-gerado-inline';
+          tr.innerHTML='<td class="rotulo">(=)Base para a SELIC</td><td class="percentual percentual-vazio">-</td><td class="valor valor-nao-editavel"><input class="campo-simulado-nao-editavel" readonly tabindex="-1" value="0,00"></td>';
+          selic.insertAdjacentElement('beforebegin',tr);
+          baseSelic=tr;
+        }
       }
-      if (c.poupanca.ativa && poupanca) {
-        const rotuloPoupanca = poupanca.querySelector('td.rotulo');
-        const modoPoupanca = document.createElement('span');
-        modoPoupanca.className = 'criterio-gerado-inline';
-        modoPoupanca.innerHTML = seletor('poupanca.modo', c.poupanca.modo, [['automatico','Automático'], ['manual','Manual']], 'Modo');
-        rotuloPoupanca.appendChild(modoPoupanca);
-        inserirDetalhes(poupanca, 'Juros da poupança',
-          (c.poupanca.modo === 'automatico' ? '' : campo('poupanca.manual', numeroParaPercentual(c.poupanca.manual), 'Percentual', true)) +
-            campo('poupanca.inicio',c.poupanca.inicio,'De') + campo('poupanca.fim',c.poupanca.fim,'Até'),
-          'Cálculo em juros simples, sem capitalização mensal.');
+      if (poupanca?.id === 'linhaJurosPoupancaPrincipal') {
+        poupanca.style.display = c.poupanca.ativa ? 'table-row' : 'none';
       }
-      if (c.selic.metodo === 'exclusiva' || c.poupanca.ativa) {
-        inserirDetalhes(selic, c.selic.metodo === 'exclusiva' ? 'SELIC judicial exclusiva' : 'Base da SELIC',
-          (c.selic.metodo === 'exclusiva' ? campo('selic.inicio',c.selic.inicio,'De') + campo('selic.fim',c.selic.fim,'Até') : '') +
-          (c.poupanca.ativa ? check('selic.incorporarPoupanca',c.selic.incorporarPoupanca,'Incorporar juros da poupança à base da SELIC','criterio-inline-marcar') : ''),
-          c.selic.metodo === 'exclusiva' ? 'Série mensal, sem 1% tributário adicional. Verifique o critério judicial aplicável.' : '');
+      if (baseSelic?.id === 'linhaBaseSelicPrincipal') {
+        baseSelic.style.display = c.poupanca.ativa && c.selic.incorporarPoupanca ? 'table-row' : 'none';
       }
-      // Mensagens de períodos/índices devem aparecer na mesma tabela, nunca em painel separado.
-      const erro = document.createElement('span');
-      erro.className = 'criterio-erro-inline criterio-gerado-inline no-print';
-      erro.dataset.criteriosErro = bloco;
-      rotuloSelic.appendChild(erro);
+      // A SELIC mantém os modos e campos originais SICAFI / Automático / Manual.
+      // Não é acrescentado seletor de metodologia nem período independente.
+      const erro=document.createElement('div');
+      erro.className='criterio-erro-inline criterio-gerado-inline no-print';
+      erro.dataset.criteriosErro=bloco;
+      correcao.querySelector('td.percentual')?.appendChild(erro);
     }
     function atualizarBloqueiosCorrecaoPrincipal() {
       const tipo = criteriosPrincipalSimples?.ipca?.modo || 'sicafi';
@@ -4771,7 +4799,18 @@
     function inicializarCriteriosComplementaresUI() {
       atualizarPainelPrincipalCriterios('simples');atualizarPainelPrincipalCriterios('acumulado');
       document.addEventListener('change',event=>{
-        if(event.target?.dataset?.criterioCampo)alterarCriteriosComplementares(event);
+        const el=event.target;
+        if(!el?.dataset?.criterioCampo)return;
+        el.dataset.criterioUltimoEnvio=String(el.type==='checkbox'?el.checked:el.value);
+        alterarCriteriosComplementares(event);
+      });
+      document.addEventListener('focusout',event=>{
+        const el=event.target;
+        if(!el?.dataset?.criterioCampo || el.type!=='text')return;
+        const atual=String(el.value||'');
+        if(el.dataset.criterioUltimoEnvio===atual)return;
+        el.dataset.criterioUltimoEnvio=atual;
+        alterarCriteriosComplementares({target:el});
       });
       // Um período sem índices ou inválido não pode produzir PDF baseado em cálculo desatualizado.
       document.addEventListener('click',event=>{
